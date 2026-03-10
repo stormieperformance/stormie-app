@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>STORMIĒ</title>
+
+  <style>
+    :root{
+      --text:#0f0f10;
+      --muted:rgba(0,0,0,0.56);
+      --muted2:rgba(0,0,0,0.40);
+      --line:rgba(0,0,0,0.10);
+      --glass:rgba(255,255,255,0.78);
+      --glass2:rgba(255,255,255,0.92);
+      --shadow:0 30px 90px rgba(0,0,0,0.18);
+      --radius:22px;
+    }
+
+    *{ margin:0; padding:0; box-sizing:border-box; }
+    html,body{ height:100%; }
+
+    body{
+      background:#fff;
+      color:var(--text);
+      font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      text-align:center;
+      overflow:hidden;
+    }
+
+    .app{
+      width:100%;
+      height:100%;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      transition:filter .28s ease;
+    }
+
+    .app.is-blurred{
+      filter:blur(18px);
+    }
+
+    .logo{
+      font-size:64px;
+      letter-spacing:10px;
+      font-weight:650;
+      opacity:0;
+      transform:translateY(12px);
+      animation:reveal 1.4s ease forwards;
+      user-select:none;
+      transition:opacity .25s ease;
+    }
+
+    .logo:hover{ opacity:0.92; }
+
+    .sub{
+      margin-top:14px;
+      font-size:13px;
+      letter-spacing:4px;
+      text-transform:uppercase;
+      opacity:0;
+      line-height:1.6;
+      animation:fadeIn 1s ease forwards;
+      animation-delay:1.2s;
+      color:rgba(0,0,0,0.62);
+      user-select:none;
+    }
+
+    .tagline{
+      margin-top:16px;
+      font-size:12px;
+      letter-spacing:0.08em;
+      line-height:1.7;
+      color:rgba(0,0,0,0.52);
+      opacity:0;
+      animation:fadeIn 1s ease forwards;
+      animation-delay:1.55s;
+      user-select:none;
+      max-width:620px;
+      margin-left:auto;
+      margin-right:auto;
+      padding:0 18px;
+    }
+
+    .projects{
+      margin-top:24px;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:14px;
+      width:min(620px, 92vw);
+      opacity:0;
+      animation:fadeIn 1s ease forwards;
+      animation-delay:1.9s;
+    }
+
+    .project-card{
+      width:min(520px, 92vw);
+      text-align:center;
+      margin-left:auto;
+      margin-right:auto;
+    }
+
+    .project-toggle{
+      width:100%;
+      appearance:none;
+      border:none;
+      background:transparent;
+      cursor:pointer;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      gap:4px;
+      padding:0;
+      color:rgba(0,0,0,0.55);
+      transition:color .25s ease;
+    }
+
+    .project-toggle:hover{
+      color:rgba(0,0,0,0.90);
+    }
+
+    .project-title{
+      font-size:10px;
+      letter-spacing:0.32em;
+      text-transform:uppercase;
+      padding-bottom:4px;
+      border-bottom:1px solid rgba(0,0,0,0.18);
+      width:fit-content;
+      margin:0 auto;
+    }
+
+    .project-sub{
+      font-size:11px;
+      letter-spacing:0.18em;
+      text-transform:uppercase;
+      color:rgba(0,0,0,0.45);
+      margin-top:2px;
+    }
+
+    .project-chevron{
+      font-size:11px;
+      color:rgba(0,0,0,0.38);
+      transition:transform .22s ease;
+      margin-top:2px;
+    }
+
+    .project-card.open .project-chevron{
+      transform:rotate(180deg);
+    }
+
+    .project-panel{
+      max-height:0;
+      overflow:hidden;
+      opacity:0;
+      transform:translateY(-4px);
+      transition:max-height .28s ease, opacity .22s ease, transform .22s ease, margin-top .22s ease;
+      margin-top:0;
+    }
+
+    .project-card.open .project-panel{
+      max-height:320px;
+      opacity:1;
+      transform:translateY(0);
+      margin-top:10px;
+    }
+
+    .project-panel-inner{
+      background:rgba(255,255,255,0.72);
+      border:1px solid rgba(0,0,0,0.08);
+      border-radius:18px;
+      padding:16px 18px 14px;
+      box-shadow:0 18px 40px rgba(0,0,0,0.08);
+      text-align:center;
+      backdrop-filter:blur(10px);
+      -webkit-backdrop-filter:blur(10px);
+    }
+
+    .project-panel-inner p{
+      font-size:14px;
+      line-height:1.7;
+      color:rgba(0,0,0,0.75);
+      margin:0 0 10px;
+    }
+
+    .project-meta{
+      font-size:12px;
+      line-height:1.6;
+      color:rgba(0,0,0,0.52);
+      margin-bottom:12px;
+    }
+
+    .project-launch,
+    .overlay-link{
+      display:inline-block;
+      text-decoration:none;
+      color:#000;
+      border-bottom:1px solid rgba(0,0,0,0.22);
+      padding-bottom:2px;
+      font-size:12px;
+      letter-spacing:0.18em;
+      text-transform:uppercase;
+      opacity:0.85;
+      background:none;
+      border-top:none;
+      border-left:none;
+      border-right:none;
+      cursor:pointer;
+      font-family:inherit;
+    }
+
+    .project-launch:hover,
+    .overlay-link:hover{
+      opacity:1;
+      border-bottom-color:rgba(0,0,0,0.35);
+    }
+
+    @keyframes reveal{
+      to{
+        opacity:1;
+        transform:translateY(0);
+      }
+    }
+
+    @keyframes fadeIn{
+      to{ opacity:1; }
+    }
+
+    .menu-btn{
+      position:fixed;
+      top:18px;
+      left:18px;
+      width:44px;
+      height:44px;
+      border:1px solid var(--line);
+      background:rgba(255,255,255,0.75);
+      backdrop-filter:blur(12px);
+      -webkit-backdrop-filter:blur(12px);
+      border-radius:12px;
+      cursor:pointer;
+      z-index:50;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      transition:transform .2s ease, background .2s ease;
+    }
+
+    .menu-btn:hover{
+      transform:translateY(-1px);
+      background:rgba(255,255,255,0.92);
+    }
+
+    .icon{
+      width:18px;
+      height:12px;
+      position:relative;
+    }
+
+    .icon span{
+      position:absolute;
+      left:0;
+      right:0;
+      height:2px;
+      background:#000;
+      border-radius:2px;
+      transition:transform .25s ease, top .25s ease, opacity .2s ease;
+    }
+
+    .icon span:nth-child(1){ top:0; }
+    .icon span:nth-child(2){ top:5px; }
+    .icon span:nth-child(3){ top:10px; }
+
+    .menu-btn.open .icon span:nth-child(1){
+      top:5px;
+      transform:rotate(45deg);
+    }
+
+    .menu-btn.open .icon span:nth-child(2){
+      opacity:0;
+    }
+
+    .menu-btn.open .icon span:nth-child(3){
+      top:5px;
+      transform:rotate(-45deg);
+    }
+
+    .overlay{
+      position:fixed;
+      inset:0;
+      background:rgba(10,10,10,0.30);
+      backdrop-filter:blur(18px);
+      -webkit-backdrop-filter:blur(18px);
+      opacity:0;
+      pointer-events:none;
+      transition:opacity .28s ease;
+      z-index:60;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      padding:28px;
+    }
+
+    .overlay.active{
+      opacity:1;
+      pointer-events:auto;
+    }
+
+    .panel{
+      width:min(760px, 92vw);
+      background:var(--glass2);
+      border:1px solid rgba(255,255,255,0.50);
+      box-shadow:var(--shadow);
+      border-radius:28px;
+      padding:34px 28px 28px;
+      transform:translateY(10px);
+      opacity:0;
+      transition:transform .28s ease, opacity .28s ease;
+      position:relative;
+    }
+
+    .overlay.active .panel{
+      transform:translateY(0);
+      opacity:1;
+    }
+
+    .panel-top{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:12px;
+      margin-bottom:14px;
+    }
+
+    .kicker{
+      font-size:12px;
+      letter-spacing:0.28em;
+      text-transform:uppercase;
+      color:rgba(0,0,0,0.55);
+    }
+
+    .close-btn{
+      width:40px;
+      height:40px;
+      border-radius:14px;
+      border:1px solid rgba(0,0,0,0.10);
+      background:rgba(255,255,255,0.70);
+      cursor:pointer;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size:18px;
+      color:rgba(0,0,0,0.65);
+      transition:background .2s ease, color .2s ease, transform .2s ease;
+    }
+
+    .close-btn:hover{
+      background:rgba(255,255,255,0.95);
+      color:#000;
+      transform:translateY(-1px);
+    }
+
+    .panel h2{
+      font-size:34px;
+      letter-spacing:0.14em;
+      font-weight:650;
+      margin:6px 0 8px;
+    }
+
+    .panel .subhead{
+      font-size:12px;
+      letter-spacing:0.30em;
+      text-transform:uppercase;
+      color:rgba(0,0,0,0.45);
+      margin-bottom:18px;
+    }
+
+    .copy{
+      font-size:15px;
+      line-height:1.85;
+      color:rgba(0,0,0,0.78);
+      max-width:62ch;
+      margin:0 auto;
+    }
+
+    .copy p{ margin:0 0 12px; }
+
+    .copy h3{
+      font-size:13px;
+      letter-spacing:0.22em;
+      text-transform:uppercase;
+      color:rgba(0,0,0,0.55);
+      margin:12px 0 12px;
+    }
+
+    .copy ul{
+      list-style:none;
+      padding:0;
+      margin:10px 0 14px;
+      display:grid;
+      gap:12px;
+    }
+
+    .copy li{
+      display:flex;
+      gap:10px;
+      align-items:flex-start;
+      justify-content:flex-start;
+      text-align:left;
+      max-width:62ch;
+      margin:0 auto;
+    }
+
+    .dot{
+      width:6px;
+      height:6px;
+      border-radius:99px;
+      background:rgba(0,0,0,0.55);
+      margin-top:9px;
+      flex:0 0 auto;
+    }
+
+    .tool-link{
+      color:#000;
+      text-decoration:none;
+      border-bottom:1px solid rgba(0,0,0,0.22);
+      padding-bottom:2px;
+      opacity:0.88;
+    }
+
+    .tool-link:hover{
+      opacity:1;
+      border-bottom-color:rgba(0,0,0,0.35);
+    }
+
+    .note{
+      color:rgba(0,0,0,0.50);
+      font-size:12px;
+      line-height:1.7;
+      margin-top:10px;
+    }
+
+    .menu-links{
+      display:flex;
+      flex-direction:column;
+      gap:14px;
+      align-items:center;
+      justify-content:center;
+      margin-top:8px;
+    }
+
+    .menu-links a,
+    .menu-links button{
+      background:none;
+      border:none;
+      padding:0;
+      font:inherit;
+      cursor:pointer;
+      color:#000;
+      text-decoration:none;
+      border-bottom:1px solid rgba(0,0,0,0.22);
+      padding-bottom:2px;
+      font-size:12px;
+      letter-spacing:0.22em;
+      text-transform:uppercase;
+      opacity:0.85;
+      font-family:inherit;
+    }
+
+    .menu-links a:hover,
+    .menu-links button:hover{
+      opacity:1;
+      border-bottom-color:rgba(0,0,0,0.35);
+    }
+
+    @media (max-width:520px){
+      body{
+        overflow:auto;
+      }
+
+      .app{
+        align-items:flex-start;
+        min-height:100vh;
+        padding:120px 0 80px;
+      }
+
+      .logo{
+        font-size:56px;
+        letter-spacing:8px;
+      }
+
+      .sub{
+        font-size:11px;
+        letter-spacing:3px;
+        line-height:1.5;
+      }
+
+      .panel{
+        padding:28px 18px 22px;
+        border-radius:24px;
+      }
+
+      .panel h2{
+        font-size:30px;
+      }
+
+      .tagline{
+        font-size:11px;
+      }
+
+      .project-panel-inner p{
+        font-size:13px;
+      }
+
+      .project-meta{
+        font-size:11px;
+      }
+
+      .projects{
+        width:min(94vw, 620px);
+      }
+
+      .project-card{
+        width:min(94vw, 520px);
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <button class="menu-btn" id="menuBtn" aria-label="Menu" aria-expanded="false">
+    <div class="icon" aria-hidden="true">
+      <span></span><span></span><span></span>
+    </div>
+  </button>
+
+  <div class="app" id="app">
+    <div>
+      <div class="logo" aria-label="STORMIĒ">STORMIĒ</div>
+
+      <div class="sub">
+        AI · Products · Systems
+      </div>
+
+      <div class="tagline">
+        A small lab for AI systems, digital products, and experimental prototypes.
+      </div>
+
+      <div class="projects">
+
+        <div class="project-card">
+          <button class="project-toggle" type="button">
+            <span class="project-title">AI Assistants</span>
+            <span class="project-sub">Automation workflows</span>
+            <span class="project-chevron">⌄</span>
+          </button>
+          <div class="project-panel">
+            <div class="project-panel-inner">
+              <p>
+                AI assistants and workflow automations that handle tasks such as customer support, lead handling, and operational processes.
+              </p>
+              <div class="project-meta">AI workflows · Customer support · Operations</div>
+              <button class="project-launch" id="openSystemsOverlay" type="button">View Systems</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="project-card">
+          <button class="project-toggle" type="button">
+            <span class="project-title">Stormie Moves</span>
+            <span class="project-sub">AI training app</span>
+            <span class="project-chevron">⌄</span>
+          </button>
+          <div class="project-panel">
+            <div class="project-panel-inner">
+              <p>
+                AI-powered training planner that generates personalized multi-sport workouts based on sport, experience level, training time, and goals.
+              </p>
+              <div class="project-meta">Product · AI training app</div>
+              <a class="project-launch" href="https://stormiemoves.com" target="_blank" rel="noopener noreferrer">Open Project</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="project-card">
+          <button class="project-toggle" type="button">
+            <span class="project-title">Clinch Athletics</span>
+            <span class="project-sub">Combat sports brand</span>
+            <span class="project-chevron">⌄</span>
+          </button>
+          <div class="project-panel">
+            <div class="project-panel-inner">
+              <p>
+                Combat sports brand and e-commerce platform for premium training gear, built around controlled releases and distinct product series.
+              </p>
+              <div class="project-meta">Brand · Commerce · Muay Thai</div>
+              <a class="project-launch" href="https://clinchathletics.com" target="_blank" rel="noopener noreferrer">Open Project</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="project-card">
+          <button class="project-toggle" type="button">
+            <span class="project-title">Storm Wylder</span>
+            <span class="project-sub">Unity prototype</span>
+            <span class="project-chevron">⌄</span>
+          </button>
+          <div class="project-panel">
+            <div class="project-panel-inner">
+              <p>
+                Playable Unity vertical slice prototype featuring movement, camera follow, companion behaviour, checkpoints, and goal-triggered UI feedback.
+              </p>
+              <div class="project-meta">Experimental prototype · Unity</div>
+              <a class="project-launch" href="https://stormwylder.itch.io/storm-wylder-vertical-slice-prototype" target="_blank" rel="noopener noreferrer">Open Project</a>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="menuOverlay" aria-hidden="true">
+    <div class="panel" role="dialog" aria-modal="true" aria-label="Menu">
+      <div class="panel-top">
+        <div class="kicker">Menu</div>
+        <button class="close-btn" type="button" id="menuClose" aria-label="Close">×</button>
+      </div>
+
+      <h2>STORMIĒ</h2>
+      <div class="subhead">About · Contact</div>
+
+      <div class="menu-links">
+        <button type="button" id="openAboutFromMenu">About</button>
+        <a href="mailto:storm.kolmodin@gmail.com">Contact</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="aboutOverlay" aria-hidden="true">
+    <div class="panel" role="dialog" aria-modal="true" aria-label="About Me">
+      <div class="panel-top">
+        <div class="kicker">About</div>
+        <button class="close-btn" type="button" id="aboutClose" aria-label="Close">×</button>
+      </div>
+
+      <h2>Storm Kolmodin</h2>
+      <div class="subhead">Builder · Product · AI · Systems</div>
+
+      <div class="copy">
+        <p>
+          I build AI assistants, digital products, brand concepts, and experimental prototypes.
+        </p>
+        <p>
+          Current work spans AI workflow automation, training products, combat sports e-commerce, and game prototyping.
+        </p>
+        <p>
+          This site brings those projects together under one small lab: STORMIĒ.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="systemsOverlay" aria-hidden="true">
+    <div class="panel" role="dialog" aria-modal="true" aria-label="Systems and AI">
+      <div class="panel-top">
+        <div class="kicker">AI Assistants</div>
+        <button class="close-btn" type="button" id="systemsClose" aria-label="Close">×</button>
+      </div>
+
+      <h2>AI Systems &amp; Tools</h2>
+      <div class="subhead">Automation · workflows · prototypes</div>
+
+      <div class="copy">
+        <p>
+          AI assistants and workflow automations that handle tasks such as customer support, lead handling, and operational processes.
+        </p>
+
+        <h3>Clinch AI Assistant</h3>
+        <p>
+          AI-supported email workflow for Clinch Athletics, designed to automate customer support and operational handling.
+        </p>
+        <div class="note">In development</div>
+
+        
+            </span>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const app = document.getElementById("app");
+    const menuBtn = document.getElementById("menuBtn");
+
+    const menuOverlay = document.getElementById("menuOverlay");
+    const menuClose = document.getElementById("menuClose");
+
+    const aboutOverlay = document.getElementById("aboutOverlay");
+    const aboutClose = document.getElementById("aboutClose");
+    const openAboutFromMenu = document.getElementById("openAboutFromMenu");
+
+    const systemsOverlay = document.getElementById("systemsOverlay");
+    const systemsClose = document.getElementById("systemsClose");
+    const openSystemsOverlay = document.getElementById("openSystemsOverlay");
+
+    const projectCards = document.querySelectorAll(".project-card");
+
+    function setBlur(on){
+      app.classList.toggle("is-blurred", !!on);
+    }
+
+    function anyOverlayOpen(){
+      return menuOverlay.classList.contains("active") ||
+             aboutOverlay.classList.contains("active") ||
+             systemsOverlay.classList.contains("active");
+    }
+
+    function syncBlur(){
+      setBlur(anyOverlayOpen());
+    }
+
+    function openOverlay(overlay){
+      overlay.classList.add("active");
+      overlay.setAttribute("aria-hidden", "false");
+      syncBlur();
+    }
+
+    function closeOverlay(overlay){
+      overlay.classList.remove("active");
+      overlay.setAttribute("aria-hidden", "true");
+      syncBlur();
+    }
+
+    function openMenu(){
+      openOverlay(menuOverlay);
+      menuBtn.classList.add("open");
+      menuBtn.setAttribute("aria-expanded", "true");
+    }
+
+    function closeMenu(){
+      closeOverlay(menuOverlay);
+      menuBtn.classList.remove("open");
+      menuBtn.setAttribute("aria-expanded", "false");
+    }
+
+    function openAbout(){
+      openOverlay(aboutOverlay);
+    }
+
+    function closeAbout(){
+      closeOverlay(aboutOverlay);
+    }
+
+    menuBtn.addEventListener("click", () => {
+      const isOpen = menuOverlay.classList.contains("active");
+      if(isOpen) closeMenu();
+      else openMenu();
+    });
+
+    menuClose.addEventListener("click", closeMenu);
+    aboutClose.addEventListener("click", closeAbout);
+
+    openAboutFromMenu.addEventListener("click", () => {
+      closeMenu();
+      openAbout();
+    });
+
+    openSystemsOverlay.addEventListener("click", () => {
+      openOverlay(systemsOverlay);
+    });
+
+    systemsClose.addEventListener("click", () => {
+      closeOverlay(systemsOverlay);
+    });
+
+    [menuOverlay, aboutOverlay, systemsOverlay].forEach((overlay) => {
+      overlay.addEventListener("click", (e) => {
+        if(e.target === overlay){
+          closeOverlay(overlay);
+          if(!anyOverlayOpen()){
+            menuBtn.classList.remove("open");
+            menuBtn.setAttribute("aria-expanded", "false");
+          }
+        }
+      });
+    });
+
+    window.addEventListener("keydown", (e) => {
+      if(e.key === "Escape"){
+        if(menuOverlay.classList.contains("active")) closeMenu();
+        if(aboutOverlay.classList.contains("active")) closeAbout();
+        if(systemsOverlay.classList.contains("active")) closeOverlay(systemsOverlay);
+
+        if(!anyOverlayOpen()){
+          menuBtn.classList.remove("open");
+          menuBtn.setAttribute("aria-expanded", "false");
+        }
+      }
+    });
+
+    projectCards.forEach((card) => {
+      const toggle = card.querySelector(".project-toggle");
+      toggle.addEventListener("click", () => {
+        const isOpen = card.classList.contains("open");
+        projectCards.forEach(c => c.classList.remove("open"));
+        if(!isOpen){
+          card.classList.add("open");
+        }
+      });
+    });
+  </script>
+</body>
+</html>
