@@ -8,13 +8,9 @@
   <style>
     :root{
       --text:#0f0f10;
-      --muted:rgba(0,0,0,0.56);
-      --muted2:rgba(0,0,0,0.40);
       --line:rgba(0,0,0,0.10);
-      --glass:rgba(255,255,255,0.78);
       --glass2:rgba(255,255,255,0.92);
       --shadow:0 30px 90px rgba(0,0,0,0.18);
-      --radius:22px;
     }
 
     *{ margin:0; padding:0; box-sizing:border-box; }
@@ -80,7 +76,7 @@
       animation:fadeIn 1s ease forwards;
       animation-delay:1.55s;
       user-select:none;
-      max-width:620px;
+      max-width:640px;
       margin-left:auto;
       margin-right:auto;
       padding:0 18px;
@@ -195,8 +191,7 @@
       margin-bottom:12px;
     }
 
-    .project-launch,
-    .overlay-link{
+    .project-launch{
       display:inline-block;
       text-decoration:none;
       color:#000;
@@ -214,8 +209,7 @@
       font-family:inherit;
     }
 
-    .project-launch:hover,
-    .overlay-link:hover{
+    .project-launch:hover{
       opacity:1;
       border-bottom-color:rgba(0,0,0,0.35);
     }
@@ -389,61 +383,6 @@
 
     .copy p{ margin:0 0 12px; }
 
-    .copy h3{
-      font-size:13px;
-      letter-spacing:0.22em;
-      text-transform:uppercase;
-      color:rgba(0,0,0,0.55);
-      margin:12px 0 12px;
-    }
-
-    .copy ul{
-      list-style:none;
-      padding:0;
-      margin:10px 0 14px;
-      display:grid;
-      gap:12px;
-    }
-
-    .copy li{
-      display:flex;
-      gap:10px;
-      align-items:flex-start;
-      justify-content:flex-start;
-      text-align:left;
-      max-width:62ch;
-      margin:0 auto;
-    }
-
-    .dot{
-      width:6px;
-      height:6px;
-      border-radius:99px;
-      background:rgba(0,0,0,0.55);
-      margin-top:9px;
-      flex:0 0 auto;
-    }
-
-    .tool-link{
-      color:#000;
-      text-decoration:none;
-      border-bottom:1px solid rgba(0,0,0,0.22);
-      padding-bottom:2px;
-      opacity:0.88;
-    }
-
-    .tool-link:hover{
-      opacity:1;
-      border-bottom-color:rgba(0,0,0,0.35);
-    }
-
-    .note{
-      color:rgba(0,0,0,0.50);
-      font-size:12px;
-      line-height:1.7;
-      margin-top:10px;
-    }
-
     .menu-links{
       display:flex;
       flex-direction:column;
@@ -544,79 +483,75 @@
       <div class="logo" aria-label="STORMIĒ">STORMIĒ</div>
 
       <div class="sub">
-        AI · Products · Systems
+        AI · Assistants · Automations
       </div>
 
       <div class="tagline">
-        A small lab for AI systems, digital products, and experimental prototypes.
+        A small lab building AI assistants for inbox workflows, customer support, lead handling, and operations.
       </div>
 
       <div class="projects">
 
         <div class="project-card">
           <button class="project-toggle" type="button">
-            <span class="project-title">AI Assistants</span>
-            <span class="project-sub">Automation workflows</span>
+            <span class="project-title">Stormiē Inbox</span>
+            <span class="project-sub">AI email assistant</span>
             <span class="project-chevron">⌄</span>
           </button>
           <div class="project-panel">
             <div class="project-panel-inner">
               <p>
-                AI assistants and workflow automations that handle tasks such as customer support, lead handling, and operational processes.
+                AI-powered email workflow that reads incoming messages, identifies intent, and drafts responses automatically.
               </p>
-              <div class="project-meta">AI workflows · Customer support · Operations</div>
-              <button class="project-launch" id="openSystemsOverlay" type="button">View Systems</button>
+              <div class="project-meta">Email automation · Customer communication · In development</div>
             </div>
           </div>
         </div>
 
         <div class="project-card">
           <button class="project-toggle" type="button">
-            <span class="project-title">Stormie Moves</span>
-            <span class="project-sub">AI training app</span>
+            <span class="project-title">Stormiē Support</span>
+            <span class="project-sub">Customer support automation</span>
             <span class="project-chevron">⌄</span>
           </button>
           <div class="project-panel">
             <div class="project-panel-inner">
               <p>
-                AI-powered training planner that generates personalized multi-sport workouts based on sport, experience level, training time, and goals.
+                AI assistant designed to categorize support requests, draft helpful replies, and reduce repetitive support work.
               </p>
-              <div class="project-meta">Product · AI training app</div>
-              <a class="project-launch" href="https://stormiemoves.com" target="_blank" rel="noopener noreferrer">Open Project</a>
+              <div class="project-meta">Support automation · Workflow routing · Coming soon</div>
             </div>
           </div>
         </div>
 
         <div class="project-card">
           <button class="project-toggle" type="button">
-            <span class="project-title">Clinch Athletics</span>
-            <span class="project-sub">Combat sports brand</span>
+            <span class="project-title">Stormiē Leads</span>
+            <span class="project-sub">Lead qualification assistant</span>
             <span class="project-chevron">⌄</span>
           </button>
           <div class="project-panel">
             <div class="project-panel-inner">
               <p>
-                Combat sports brand and e-commerce platform for premium training gear, built around controlled releases and distinct product series.
+                AI workflow for analyzing incoming leads, summarizing intent, and routing qualified opportunities faster.
               </p>
-              <div class="project-meta">Brand · Commerce · Muay Thai</div>
-              <a class="project-launch" href="https://clinchathletics.com" target="_blank" rel="noopener noreferrer">Open Project</a>
+              <div class="project-meta">Lead handling · Qualification · Coming soon</div>
             </div>
           </div>
         </div>
 
         <div class="project-card">
           <button class="project-toggle" type="button">
-            <span class="project-title">Storm Wylder</span>
-            <span class="project-sub">Unity prototype</span>
+            <span class="project-title">Stormiē Ops</span>
+            <span class="project-sub">Operations workflow assistant</span>
             <span class="project-chevron">⌄</span>
           </button>
           <div class="project-panel">
             <div class="project-panel-inner">
               <p>
-                Playable Unity vertical slice prototype featuring movement, camera follow, companion behaviour, checkpoints, and goal-triggered UI feedback.
+                AI assistant for operational workflows, internal processes, and repetitive admin tasks across digital businesses.
               </p>
-              <div class="project-meta">Experimental prototype · Unity</div>
-              <a class="project-launch" href="https://stormwylder.itch.io/storm-wylder-vertical-slice-prototype" target="_blank" rel="noopener noreferrer">Open Project</a>
+              <div class="project-meta">Operations · Internal workflows · Coming soon</div>
             </div>
           </div>
         </div>
@@ -650,47 +585,15 @@
       </div>
 
       <h2>Storm Kolmodin</h2>
-      <div class="subhead">Builder · Product · AI · Systems</div>
+      <div class="subhead">Builder · AI · Systems</div>
 
       <div class="copy">
         <p>
-          I build AI assistants, digital products, brand concepts, and experimental prototypes.
+          STORMIĒ is a small lab focused on AI assistants and workflow automations for digital businesses.
         </p>
         <p>
-          Current work spans AI workflow automation, training products, combat sports e-commerce, and game prototyping.
+          Current work focuses on inbox automation, customer support workflows, lead handling, and operational systems.
         </p>
-        <p>
-          This site brings those projects together under one small lab: STORMIĒ.
-        </p>
-      </div>
-    </div>
-  </div>
-
-  <div class="overlay" id="systemsOverlay" aria-hidden="true">
-    <div class="panel" role="dialog" aria-modal="true" aria-label="Systems and AI">
-      <div class="panel-top">
-        <div class="kicker">AI Assistants</div>
-        <button class="close-btn" type="button" id="systemsClose" aria-label="Close">×</button>
-      </div>
-
-      <h2>AI Systems &amp; Tools</h2>
-      <div class="subhead">Automation · workflows · prototypes</div>
-
-      <div class="copy">
-        <p>
-          AI assistants and workflow automations that handle tasks such as customer support, lead handling, and operational processes.
-        </p>
-
-        <h3>Clinch AI Assistant</h3>
-        <p>
-          AI-supported email workflow for Clinch Athletics, designed to automate customer support and operational handling.
-        </p>
-        <div class="note">In development</div>
-
-        
-            </span>
-          </li>
-        </ul>
       </div>
     </div>
   </div>
@@ -706,10 +609,6 @@
     const aboutClose = document.getElementById("aboutClose");
     const openAboutFromMenu = document.getElementById("openAboutFromMenu");
 
-    const systemsOverlay = document.getElementById("systemsOverlay");
-    const systemsClose = document.getElementById("systemsClose");
-    const openSystemsOverlay = document.getElementById("openSystemsOverlay");
-
     const projectCards = document.querySelectorAll(".project-card");
 
     function setBlur(on){
@@ -718,8 +617,7 @@
 
     function anyOverlayOpen(){
       return menuOverlay.classList.contains("active") ||
-             aboutOverlay.classList.contains("active") ||
-             systemsOverlay.classList.contains("active");
+             aboutOverlay.classList.contains("active");
     }
 
     function syncBlur(){
@@ -772,15 +670,7 @@
       openAbout();
     });
 
-    openSystemsOverlay.addEventListener("click", () => {
-      openOverlay(systemsOverlay);
-    });
-
-    systemsClose.addEventListener("click", () => {
-      closeOverlay(systemsOverlay);
-    });
-
-    [menuOverlay, aboutOverlay, systemsOverlay].forEach((overlay) => {
+    [menuOverlay, aboutOverlay].forEach((overlay) => {
       overlay.addEventListener("click", (e) => {
         if(e.target === overlay){
           closeOverlay(overlay);
@@ -796,7 +686,6 @@
       if(e.key === "Escape"){
         if(menuOverlay.classList.contains("active")) closeMenu();
         if(aboutOverlay.classList.contains("active")) closeAbout();
-        if(systemsOverlay.classList.contains("active")) closeOverlay(systemsOverlay);
 
         if(!anyOverlayOpen()){
           menuBtn.classList.remove("open");
