@@ -1,835 +1,417 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>STORMIĒ</title>
-
-  <style>
-    :root{
-      --text:#0f0f10;
-      --line:rgba(0,0,0,0.10);
-      --glass2:rgba(255,255,255,0.92);
-      --shadow:0 30px 90px rgba(0,0,0,0.18);
-      --motion:cubic-bezier(.22,1,.36,1);
-      --intro:cubic-bezier(.16,1,.3,1);
-      --accordion:cubic-bezier(.19,1,.22,1);
-    }
-
-    *{ margin:0; padding:0; box-sizing:border-box; }
-    html,body{ height:100%; }
-
-    body{
-      background:#fff;
-      color:var(--text);
-      font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;
-      display:flex;
-      justify-content:center;
-      align-items:center;
-      text-align:center;
-      overflow:hidden;
-      position:relative;
-    }
-
-    body::before{
-      content:"";
-      position:fixed;
-      inset:0;
-      pointer-events:none;
-      background:
-        radial-gradient(circle at 50% 20%, rgba(0,0,0,0.028), transparent 28%),
-        radial-gradient(circle at 50% 72%, rgba(0,0,0,0.015), transparent 34%);
-      z-index:0;
-    }
-
-    .app{
-      width:100%;
-      height:100%;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      transition:filter .28s var(--motion);
-      position:relative;
-      z-index:1;
-    }
-
-    .app.is-blurred{
-      filter:blur(18px);
-    }
-
-    .hero{
-      width:100%;
-      position:relative;
-    }
-
-    .logo{
-      font-size:64px;
-      letter-spacing:10px;
-      font-weight:650;
-      opacity:0;
-      transform:translateY(12px);
-      animation:reveal 1.25s var(--intro) forwards;
-      user-select:none;
-      transition:opacity .25s var(--motion);
-      will-change:opacity, transform;
-    }
-
-    .logo:hover{ opacity:0.92; }
-
-    .sub{
-      margin-top:14px;
-      font-size:13px;
-      letter-spacing:4px;
-      text-transform:uppercase;
-      opacity:0;
-      line-height:1.6;
-      animation:fadeInUp .95s var(--intro) forwards;
-      animation-delay:.72s;
-      color:rgba(0,0,0,0.62);
-      user-select:none;
-      will-change:opacity, transform;
-    }
-
-    .tagline{
-      margin-top:16px;
-      font-size:12px;
-      letter-spacing:0.08em;
-      line-height:1.7;
-      color:rgba(0,0,0,0.52);
-      opacity:0;
-      animation:fadeInUp .95s var(--intro) forwards;
-      animation-delay:.9s;
-      user-select:none;
-      max-width:640px;
-      margin-left:auto;
-      margin-right:auto;
-      padding:0 18px;
-      will-change:opacity, transform;
-    }
-
-    .projects{
-      margin-top:24px;
-      display:flex;
-      flex-direction:column;
-      align-items:center;
-      gap:14px;
-      width:min(620px, 92vw);
-      opacity:0;
-      transform:translateY(8px);
-      animation:fadeInUp 1s var(--intro) forwards;
-      animation-delay:1.05s;
-      will-change:opacity, transform;
-    }
-
-    .project-card{
-      width:min(520px, 92vw);
-      text-align:center;
-      margin-left:auto;
-      margin-right:auto;
-    }
-
-    .project-toggle{
-      width:100%;
-      appearance:none;
-      border:none;
-      background:transparent;
-      cursor:pointer;
-      display:flex;
-      flex-direction:column;
-      align-items:center;
-      justify-content:center;
-      gap:4px;
-      padding:0;
-      color:rgba(0,0,0,0.55);
-      transition:color .25s var(--motion), transform .25s var(--motion);
-      will-change:transform;
-    }
-
-    .project-toggle:hover{
-      color:rgba(0,0,0,0.90);
-      transform:translateY(-1px);
-    }
-
-    .project-title{
-      font-size:10px;
-      letter-spacing:0.32em;
-      text-transform:uppercase;
-      padding-bottom:4px;
-      border-bottom:1px solid rgba(0,0,0,0.18);
-      width:fit-content;
-      margin:0 auto;
-      transition:border-color .25s var(--motion), opacity .25s var(--motion);
-    }
-
-    .project-toggle:hover .project-title{
-      border-bottom-color:rgba(0,0,0,0.30);
-    }
-
-    .project-sub{
-      font-size:11px;
-      letter-spacing:0.18em;
-      text-transform:uppercase;
-      color:rgba(0,0,0,0.45);
-      margin-top:2px;
-      transition:color .25s var(--motion);
-    }
-
-    .project-toggle:hover .project-sub{
-      color:rgba(0,0,0,0.58);
-    }
-
-    .project-chevron{
-      font-size:11px;
-      color:rgba(0,0,0,0.38);
-      transition:transform .45s var(--accordion), opacity .28s var(--accordion);
-      margin-top:2px;
-    }
-
-    .project-card.open .project-chevron{
-      transform:rotate(180deg);
-      opacity:0.72;
-    }
-
-    .project-panel{
-      max-height:0;
-      overflow:hidden;
-      opacity:0;
-      transform:translateY(-2px);
-      transition:
-        max-height .62s var(--accordion),
-        opacity .42s var(--accordion),
-        transform .42s var(--accordion),
-        margin-top .42s var(--accordion);
-      margin-top:0;
-    }
-
-    .project-card.open .project-panel{
-      max-height:320px;
-      opacity:1;
-      transform:translateY(0);
-      margin-top:10px;
-    }
-
-    .project-panel-inner{
-      background:rgba(255,255,255,0.72);
-      border:1px solid rgba(0,0,0,0.08);
-      border-radius:18px;
-      padding:16px 18px 14px;
-      box-shadow:0 18px 40px rgba(0,0,0,0.08);
-      text-align:center;
-      backdrop-filter:blur(10px);
-      -webkit-backdrop-filter:blur(10px);
-      transform:translateY(-2px) scale(0.998);
-      opacity:0.96;
-      transition:
-        transform .52s var(--accordion),
-        opacity .42s var(--accordion),
-        box-shadow .32s var(--accordion),
-        border-color .32s var(--accordion);
-    }
-
-    .project-card.open .project-panel-inner{
-      transform:translateY(0) scale(1);
-      opacity:1;
-      box-shadow:0 22px 48px rgba(0,0,0,0.095);
-      border-color:rgba(0,0,0,0.10);
-    }
-
-    .project-panel-inner p{
-      font-size:14px;
-      line-height:1.7;
-      color:rgba(0,0,0,0.75);
-      margin:0 0 10px;
-      opacity:0;
-      transform:translateY(4px);
-      transition:
-        opacity .34s var(--accordion) .06s,
-        transform .42s var(--accordion) .06s;
-    }
-
-    .project-meta{
-      font-size:12px;
-      line-height:1.6;
-      color:rgba(0,0,0,0.52);
-      margin-bottom:12px;
-      opacity:0;
-      transform:translateY(4px);
-      transition:
-        opacity .34s var(--accordion) .12s,
-        transform .42s var(--accordion) .12s;
-    }
-
-    .project-card.open .project-panel-inner p,
-    .project-card.open .project-meta{
-      opacity:1;
-      transform:translateY(0);
-    }
-
-    .project-launch{
-      display:inline-block;
-      text-decoration:none;
-      color:#000;
-      border-bottom:1px solid rgba(0,0,0,0.22);
-      padding-bottom:2px;
-      font-size:12px;
-      letter-spacing:0.18em;
-      text-transform:uppercase;
-      opacity:0.85;
-      background:none;
-      border-top:none;
-      border-left:none;
-      border-right:none;
-      cursor:pointer;
-      font-family:inherit;
-      transition:opacity .25s var(--motion), border-bottom-color .25s var(--motion);
-    }
-
-    .project-launch:hover{
-      opacity:1;
-      border-bottom-color:rgba(0,0,0,0.35);
-    }
-
-    @keyframes reveal{
-      from{
-        opacity:0;
-        transform:translateY(12px);
-      }
-      to{
-        opacity:1;
-        transform:translateY(0);
-      }
-    }
-
-    @keyframes fadeInUp{
-      from{
-        opacity:0;
-        transform:translateY(10px);
-      }
-      to{
-        opacity:1;
-        transform:translateY(0);
-      }
-    }
-
-    .menu-btn{
-      position:fixed;
-      top:18px;
-      left:18px;
-      width:44px;
-      height:44px;
-      border:1px solid var(--line);
-      background:rgba(255,255,255,0.75);
-      backdrop-filter:blur(12px);
-      -webkit-backdrop-filter:blur(12px);
-      border-radius:12px;
-      cursor:pointer;
-      z-index:50;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      transition:transform .2s var(--motion), background .2s var(--motion);
-    }
-
-    .menu-btn:hover{
-      transform:translateY(-1px);
-      background:rgba(255,255,255,0.92);
-    }
-
-    .icon{
-      width:18px;
-      height:12px;
-      position:relative;
-    }
-
-    .icon span{
-      position:absolute;
-      left:0;
-      right:0;
-      height:2px;
-      background:#000;
-      border-radius:2px;
-      transition:transform .25s var(--motion), top .25s var(--motion), opacity .2s var(--motion);
-    }
-
-    .icon span:nth-child(1){ top:0; }
-    .icon span:nth-child(2){ top:5px; }
-    .icon span:nth-child(3){ top:10px; }
-
-    .menu-btn.open .icon span:nth-child(1){
-      top:5px;
-      transform:rotate(45deg);
-    }
-
-    .menu-btn.open .icon span:nth-child(2){
-      opacity:0;
-    }
-
-    .menu-btn.open .icon span:nth-child(3){
-      top:5px;
-      transform:rotate(-45deg);
-    }
-
-    .overlay{
-      position:fixed;
-      inset:0;
-      background:rgba(10,10,10,0.30);
-      backdrop-filter:blur(18px);
-      -webkit-backdrop-filter:blur(18px);
-      opacity:0;
-      pointer-events:none;
-      transition:opacity .28s var(--motion);
-      z-index:60;
-      display:flex;
-      justify-content:center;
-      align-items:center;
-      padding:28px;
-    }
-
-    .overlay.active{
-      opacity:1;
-      pointer-events:auto;
-    }
-
-    .panel{
-      width:min(760px, 92vw);
-      background:var(--glass2);
-      border:1px solid rgba(255,255,255,0.50);
-      box-shadow:var(--shadow);
-      border-radius:28px;
-      padding:34px 28px 28px;
-      transform:translateY(10px);
-      opacity:0;
-      transition:transform .28s var(--motion), opacity .28s var(--motion);
-      position:relative;
-    }
-
-    .overlay.active .panel{
-      transform:translateY(0);
-      opacity:1;
-    }
-
-    #menuOverlay .panel,
-    #aboutOverlay .panel{
-      transform:translateY(16px) scale(0.985);
-      opacity:0;
-      filter:blur(8px);
-      transition:none;
-    }
-
-    #menuOverlay.active .panel,
-    #aboutOverlay.active .panel{
-      animation:overlayPanelReveal 0.9s var(--motion) forwards;
-    }
-
-    @keyframes overlayPanelReveal{
-      from{
-        opacity:0;
-        transform:translateY(16px) scale(0.985);
-        filter:blur(8px);
-      }
-      to{
-        opacity:1;
-        transform:translateY(0) scale(1);
-        filter:blur(0);
-      }
-    }
-
-    .panel-top{
-      display:flex;
-      align-items:flex-start;
-      justify-content:space-between;
-      gap:12px;
-      margin-bottom:14px;
-    }
-
-    .kicker{
-      font-size:12px;
-      letter-spacing:0.28em;
-      text-transform:uppercase;
-      color:rgba(0,0,0,0.55);
-    }
-
-    .close-btn{
-      width:40px;
-      height:40px;
-      border-radius:14px;
-      border:1px solid rgba(0,0,0,0.10);
-      background:rgba(255,255,255,0.70);
-      cursor:pointer;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      font-size:18px;
-      color:rgba(0,0,0,0.65);
-      transition:background .2s var(--motion), color .2s var(--motion), transform .2s var(--motion);
-    }
-
-    .close-btn:hover{
-      background:rgba(255,255,255,0.95);
-      color:#000;
-      transform:translateY(-1px);
-    }
-
-    .panel h2{
-      font-size:34px;
-      letter-spacing:0.14em;
-      font-weight:650;
-      margin:6px 0 8px;
-    }
-
-    .panel .subhead{
-      font-size:12px;
-      letter-spacing:0.30em;
-      text-transform:uppercase;
-      color:rgba(0,0,0,0.45);
-      margin-bottom:18px;
-    }
-
-    .copy{
-      font-size:15px;
-      line-height:1.85;
-      color:rgba(0,0,0,0.78);
-      max-width:62ch;
-      margin:0 auto;
-    }
-
-    .copy p{ margin:0 0 12px; }
-
-    .menu-links{
-      display:flex;
-      flex-direction:column;
-      gap:14px;
-      align-items:center;
-      justify-content:center;
-      margin-top:8px;
-    }
-
-    .menu-links a,
-    .menu-links button{
-      background:none;
-      border:none;
-      padding:0;
-      font:inherit;
-      cursor:pointer;
-      color:#000;
-      text-decoration:none;
-      border-bottom:1px solid rgba(0,0,0,0.22);
-      padding-bottom:2px;
-      font-size:12px;
-      letter-spacing:0.22em;
-      text-transform:uppercase;
-      opacity:0.85;
-      font-family:inherit;
-      transition:opacity .25s var(--motion), border-bottom-color .25s var(--motion);
-    }
-
-    .menu-links a:hover,
-    .menu-links button:hover{
-      opacity:1;
-      border-bottom-color:rgba(0,0,0,0.35);
-    }
-
-    @media (max-width:520px){
-      body{
-        overflow:auto;
-      }
-
-      .app{
-        align-items:flex-start;
-        min-height:100vh;
-        padding:120px 0 80px;
-      }
-
-      .logo{
-        font-size:56px;
-        letter-spacing:8px;
-      }
-
-      .sub{
-        font-size:11px;
-        letter-spacing:3px;
-        line-height:1.5;
-      }
-
-      .panel{
-        padding:28px 18px 22px;
-        border-radius:24px;
-      }
-
-      .panel h2{
-        font-size:30px;
-      }
-
-      .tagline{
-        font-size:11px;
-      }
-
-      .project-panel-inner p{
-        font-size:13px;
-      }
-
-      .project-meta{
-        font-size:11px;
-      }
-
-      .projects{
-        width:min(94vw, 620px);
-      }
-
-      .project-card{
-        width:min(94vw, 520px);
-      }
-    }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>STORMIĒ</title>
+
+<style>
+
+:root{
+--text:#0f0f10;
+--line:rgba(0,0,0,0.10);
+--glass2:rgba(255,255,255,0.92);
+--shadow:0 30px 90px rgba(0,0,0,0.18);
+--motion:cubic-bezier(.22,1,.36,1);
+--accordion:cubic-bezier(.19,1,.22,1);
+}
+
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;}
+
+body{
+background:#fff;
+color:var(--text);
+font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;
+display:flex;
+justify-content:center;
+align-items:center;
+text-align:center;
+overflow:hidden;
+position:relative;
+}
+
+/* $10M atmospheric gradient */
+
+body::before{
+content:"";
+position:fixed;
+inset:0;
+pointer-events:none;
+z-index:0;
+background:
+radial-gradient(circle at 50% 18%, rgba(0,0,0,0.035), transparent 32%),
+radial-gradient(circle at 50% 82%, rgba(0,0,0,0.02), transparent 38%);
+}
+
+.app{
+width:100%;
+height:100%;
+display:flex;
+align-items:center;
+justify-content:center;
+transition:filter .28s var(--motion);
+position:relative;
+z-index:1;
+}
+
+.app.is-blurred{filter:blur(18px);}
+
+.logo{
+font-size:64px;
+letter-spacing:10px;
+font-weight:650;
+opacity:0;
+transform:translateY(12px);
+animation:reveal 1.25s var(--motion) forwards;
+user-select:none;
+}
+
+.sub{
+margin-top:14px;
+font-size:13px;
+letter-spacing:4px;
+text-transform:uppercase;
+opacity:0;
+animation:fadeInUp .8s var(--motion) forwards;
+animation-delay:.6s;
+color:rgba(0,0,0,0.62);
+}
+
+.tagline{
+margin-top:16px;
+font-size:12px;
+letter-spacing:.08em;
+line-height:1.7;
+color:rgba(0,0,0,0.52);
+opacity:0;
+animation:fadeInUp .8s var(--motion) forwards;
+animation-delay:.8s;
+max-width:640px;
+margin-left:auto;
+margin-right:auto;
+padding:0 18px;
+}
+
+.projects{
+margin-top:24px;
+display:flex;
+flex-direction:column;
+align-items:center;
+gap:14px;
+width:min(620px,92vw);
+opacity:0;
+animation:fadeInUp 1s var(--motion) forwards;
+animation-delay:1s;
+}
+
+.project-card{
+width:min(520px,92vw);
+}
+
+.project-toggle{
+width:100%;
+appearance:none;
+border:none;
+background:transparent;
+cursor:pointer;
+display:flex;
+flex-direction:column;
+align-items:center;
+gap:4px;
+color:rgba(0,0,0,0.55);
+transition:color .25s var(--motion), transform .25s var(--motion);
+}
+
+.project-toggle:hover{
+color:rgba(0,0,0,0.9);
+transform:translateY(-1px);
+}
+
+.project-title{
+font-size:10px;
+letter-spacing:.32em;
+text-transform:uppercase;
+padding-bottom:4px;
+border-bottom:1px solid rgba(0,0,0,0.18);
+}
+
+.project-sub{
+font-size:11px;
+letter-spacing:.18em;
+text-transform:uppercase;
+color:rgba(0,0,0,0.45);
+}
+
+.project-chevron{
+font-size:11px;
+color:rgba(0,0,0,0.38);
+transition:transform .45s var(--accordion);
+}
+
+.project-card.open .project-chevron{
+transform:rotate(180deg);
+}
+
+.project-panel{
+max-height:0;
+overflow:hidden;
+opacity:0;
+transform:translateY(-2px);
+transition:
+max-height .55s var(--accordion),
+opacity .35s var(--accordion),
+transform .35s var(--accordion),
+margin-top .35s var(--accordion);
+margin-top:0;
+}
+
+.project-card.open .project-panel{
+max-height:320px;
+opacity:1;
+transform:translateY(0);
+margin-top:10px;
+}
+
+.project-panel-inner{
+background:rgba(255,255,255,0.72);
+border:1px solid rgba(0,0,0,0.08);
+border-radius:18px;
+padding:16px 18px 14px;
+box-shadow:0 20px 50px rgba(0,0,0,0.08);
+backdrop-filter:blur(10px);
+transform:translateY(-2px) scale(.998);
+transition:
+transform .5s var(--accordion),
+box-shadow .35s var(--accordion);
+}
+
+.project-card.open .project-panel-inner{
+transform:translateY(0) scale(1);
+box-shadow:0 26px 60px rgba(0,0,0,0.1);
+}
+
+.project-panel-inner p{
+font-size:14px;
+line-height:1.7;
+color:rgba(0,0,0,0.75);
+margin:0 0 10px;
+}
+
+.project-meta{
+font-size:12px;
+line-height:1.6;
+color:rgba(0,0,0,0.52);
+}
+
+.menu-btn{
+position:fixed;
+top:18px;
+left:18px;
+width:44px;
+height:44px;
+border:1px solid var(--line);
+background:rgba(255,255,255,0.75);
+backdrop-filter:blur(12px);
+border-radius:12px;
+cursor:pointer;
+z-index:50;
+display:flex;
+align-items:center;
+justify-content:center;
+transition:transform .2s var(--motion);
+}
+
+.menu-btn:hover{transform:translateY(-1px);}
+
+.icon{width:18px;height:12px;position:relative;}
+
+.icon span{
+position:absolute;
+left:0;right:0;
+height:2px;
+background:#000;
+border-radius:2px;
+transition:transform .25s var(--motion),top .25s var(--motion),opacity .2s var(--motion);
+}
+
+.icon span:nth-child(1){top:0;}
+.icon span:nth-child(2){top:5px;}
+.icon span:nth-child(3){top:10px;}
+
+.menu-btn.open .icon span:nth-child(1){top:5px;transform:rotate(45deg);}
+.menu-btn.open .icon span:nth-child(2){opacity:0;}
+.menu-btn.open .icon span:nth-child(3){top:5px;transform:rotate(-45deg);}
+
+.overlay{
+position:fixed;
+inset:0;
+background:rgba(10,10,10,0.30);
+backdrop-filter:blur(18px);
+opacity:0;
+pointer-events:none;
+transition:opacity .28s var(--motion);
+z-index:60;
+display:flex;
+justify-content:center;
+align-items:center;
+padding:28px;
+}
+
+.overlay.active{
+opacity:1;
+pointer-events:auto;
+}
+
+.panel{
+width:min(760px,92vw);
+background:var(--glass2);
+border:1px solid rgba(255,255,255,0.5);
+box-shadow:var(--shadow);
+border-radius:28px;
+padding:34px 28px 28px;
+transform:translateY(10px);
+opacity:0;
+transition:transform .28s var(--motion),opacity .28s var(--motion);
+}
+
+.overlay.active .panel{
+transform:translateY(0);
+opacity:1;
+}
+
+@keyframes reveal{
+from{opacity:0;transform:translateY(12px);}
+to{opacity:1;transform:translateY(0);}
+}
+
+@keyframes fadeInUp{
+from{opacity:0;transform:translateY(10px);}
+to{opacity:1;transform:translateY(0);}
+}
+
+</style>
 </head>
 
 <body>
 
-  <button class="menu-btn" id="menuBtn" aria-label="Menu" aria-expanded="false">
-    <div class="icon" aria-hidden="true">
-      <span></span><span></span><span></span>
-    </div>
-  </button>
+<button class="menu-btn" id="menuBtn">
+<div class="icon"><span></span><span></span><span></span></div>
+</button>
 
-  <div class="app" id="app">
-    <div class="hero">
-      <div class="logo" aria-label="STORMIĒ">STORMIĒ</div>
+<div class="app" id="app">
 
-      <div class="sub">
-        AI · Assistants · Automations
-      </div>
+<div>
 
-      <div class="tagline">
-        STORMIĒ AI assistants for inbox workflows, customer support, lead handling, and operations.
-      </div>
+<div class="logo">STORMIĒ</div>
 
-      <div class="projects">
+<div class="sub">
+AI · Assistants · Automations
+</div>
 
-        <div class="project-card">
-          <button class="project-toggle" type="button">
-            <span class="project-title">Stormiē Inbox</span>
-            <span class="project-sub">AI email assistant</span>
-            <span class="project-chevron">⌄</span>
-          </button>
-          <div class="project-panel">
-            <div class="project-panel-inner">
-              <p>
-                AI-powered email workflow that reads incoming messages, identifies intent, and drafts responses automatically.
-              </p>
-              <div class="project-meta">Email automation · Customer communication · In development</div>
-            </div>
-          </div>
-        </div>
+<div class="tagline">
+STORMIĒ AI assistants for inbox workflows, customer support, lead handling, and operations.
+</div>
 
-        <div class="project-card">
-          <button class="project-toggle" type="button">
-            <span class="project-title">Stormiē Support</span>
-            <span class="project-sub">Customer support automation</span>
-            <span class="project-chevron">⌄</span>
-          </button>
-          <div class="project-panel">
-            <div class="project-panel-inner">
-              <p>
-                AI assistant designed to categorize support requests, draft helpful replies, and reduce repetitive support work.
-              </p>
-              <div class="project-meta">Support automation · Workflow routing · Coming soon</div>
-            </div>
-          </div>
-        </div>
+<div class="projects">
 
-        <div class="project-card">
-          <button class="project-toggle" type="button">
-            <span class="project-title">Stormiē Leads</span>
-            <span class="project-sub">Lead qualification assistant</span>
-            <span class="project-chevron">⌄</span>
-          </button>
-          <div class="project-panel">
-            <div class="project-panel-inner">
-              <p>
-                AI workflow for analyzing incoming leads, summarizing intent, and routing qualified opportunities faster.
-              </p>
-              <div class="project-meta">Lead handling · Qualification · Coming soon</div>
-            </div>
-          </div>
-        </div>
+<div class="project-card">
+<button class="project-toggle">
+<span class="project-title">Stormiē Inbox</span>
+<span class="project-sub">AI email assistant</span>
+<span class="project-chevron">⌄</span>
+</button>
+<div class="project-panel">
+<div class="project-panel-inner">
+<p>
+AI-powered email workflow that reads incoming messages, identifies intent, and drafts responses automatically.
+</p>
+<div class="project-meta">
+Email automation · Customer communication · In development
+</div>
+</div>
+</div>
+</div>
 
-        <div class="project-card">
-          <button class="project-toggle" type="button">
-            <span class="project-title">Stormiē Ops</span>
-            <span class="project-sub">Operations workflow assistant</span>
-            <span class="project-chevron">⌄</span>
-          </button>
-          <div class="project-panel">
-            <div class="project-panel-inner">
-              <p>
-                AI assistant for operational workflows, internal processes, and repetitive admin tasks across digital businesses.
-              </p>
-              <div class="project-meta">Operations · Internal workflows · Coming soon</div>
-            </div>
-          </div>
-        </div>
+<div class="project-card">
+<button class="project-toggle">
+<span class="project-title">Stormiē Support</span>
+<span class="project-sub">Customer support automation</span>
+<span class="project-chevron">⌄</span>
+</button>
+<div class="project-panel">
+<div class="project-panel-inner">
+<p>
+AI assistant designed to categorize support requests and draft helpful replies.
+</p>
+<div class="project-meta">
+Support automation · Workflow routing · Coming soon
+</div>
+</div>
+</div>
+</div>
 
-      </div>
-    </div>
-  </div>
+<div class="project-card">
+<button class="project-toggle">
+<span class="project-title">Stormiē Leads</span>
+<span class="project-sub">Lead qualification assistant</span>
+<span class="project-chevron">⌄</span>
+</button>
+<div class="project-panel">
+<div class="project-panel-inner">
+<p>
+AI workflow for analyzing incoming leads and routing qualified opportunities faster.
+</p>
+<div class="project-meta">
+Lead handling · Qualification · Coming soon
+</div>
+</div>
+</div>
+</div>
 
-  <div class="overlay" id="menuOverlay" aria-hidden="true">
-    <div class="panel" role="dialog" aria-modal="true" aria-label="Menu">
-      <div class="panel-top">
-        <div class="kicker">Menu</div>
-        <button class="close-btn" type="button" id="menuClose" aria-label="Close">×</button>
-      </div>
+<div class="project-card">
+<button class="project-toggle">
+<span class="project-title">Stormiē Ops</span>
+<span class="project-sub">Operations workflow assistant</span>
+<span class="project-chevron">⌄</span>
+</button>
+<div class="project-panel">
+<div class="project-panel-inner">
+<p>
+AI assistant for operational workflows and repetitive admin tasks.
+</p>
+<div class="project-meta">
+Operations · Internal workflows · Coming soon
+</div>
+</div>
+</div>
+</div>
 
-      <h2>STORMIĒ</h2>
-      <div class="subhead">About · Contact</div>
+</div>
+</div>
+</div>
 
-      <div class="menu-links">
-        <button type="button" id="openAboutFromMenu">About</button>
-        <a href="mailto:storm.kolmodin@gmail.com">Contact</a>
-      </div>
-    </div>
-  </div>
+<script>
 
-  <div class="overlay" id="aboutOverlay" aria-hidden="true">
-    <div class="panel" role="dialog" aria-modal="true" aria-label="About Me">
-      <div class="panel-top">
-        <div class="kicker">About</div>
-        <button class="close-btn" type="button" id="aboutClose" aria-label="Close">×</button>
-      </div>
+const cards=document.querySelectorAll(".project-card");
 
-      <h2>STORMIĒ</h2>
-      <div class="subhead">· AI · Systems</div>
+cards.forEach(card=>{
+const toggle=card.querySelector(".project-toggle");
 
-      <div class="copy">
-        <p>
-          STORMIĒ is a small lab focused on AI assistants and workflow automations for digital businesses.
-        </p>
-        <p>
-          Current work focuses on inbox automation, customer support workflows, lead handling, and operational systems.
-        </p>
-      </div>
-    </div>
-  </div>
+toggle.addEventListener("click",()=>{
 
-  <script>
-    const app = document.getElementById("app");
-    const menuBtn = document.getElementById("menuBtn");
+const open=card.classList.contains("open");
 
-    const menuOverlay = document.getElementById("menuOverlay");
-    const menuClose = document.getElementById("menuClose");
+cards.forEach(c=>c.classList.remove("open"));
 
-    const aboutOverlay = document.getElementById("aboutOverlay");
-    const aboutClose = document.getElementById("aboutClose");
-    const openAboutFromMenu = document.getElementById("openAboutFromMenu");
+if(!open){
+card.classList.add("open");
+}
 
-    const projectCards = document.querySelectorAll(".project-card");
+});
+});
 
-    function setBlur(on){
-      app.classList.toggle("is-blurred", !!on);
-    }
+</script>
 
-    function anyOverlayOpen(){
-      return menuOverlay.classList.contains("active") ||
-             aboutOverlay.classList.contains("active");
-    }
-
-    function syncBlur(){
-      setBlur(anyOverlayOpen());
-    }
-
-    function restartPanelAnimation(overlay){
-      const panel = overlay.querySelector(".panel");
-      panel.style.animation = "none";
-      panel.offsetHeight;
-      panel.style.animation = "";
-    }
-
-    function openOverlay(overlay){
-      overlay.classList.add("active");
-      overlay.setAttribute("aria-hidden", "false");
-      syncBlur();
-
-      if(overlay === menuOverlay || overlay === aboutOverlay){
-        restartPanelAnimation(overlay);
-      }
-    }
-
-    function closeOverlay(overlay){
-      overlay.classList.remove("active");
-      overlay.setAttribute("aria-hidden", "true");
-      syncBlur();
-    }
-
-    function openMenu(){
-      openOverlay(menuOverlay);
-      menuBtn.classList.add("open");
-      menuBtn.setAttribute("aria-expanded", "true");
-    }
-
-    function closeMenu(){
-      closeOverlay(menuOverlay);
-      menuBtn.classList.remove("open");
-      menuBtn.setAttribute("aria-expanded", "false");
-    }
-
-    function openAbout(){
-      openOverlay(aboutOverlay);
-    }
-
-    function closeAbout(){
-      closeOverlay(aboutOverlay);
-    }
-
-    menuBtn.addEventListener("click", () => {
-      const isOpen = menuOverlay.classList.contains("active");
-      if(isOpen) closeMenu();
-      else openMenu();
-    });
-
-    menuClose.addEventListener("click", closeMenu);
-    aboutClose.addEventListener("click", closeAbout);
-
-    openAboutFromMenu.addEventListener("click", () => {
-      closeMenu();
-      setTimeout(() => {
-        openAbout();
-      }, 80);
-    });
-
-    [menuOverlay, aboutOverlay].forEach((overlay) => {
-      overlay.addEventListener("click", (e) => {
-        if(e.target === overlay){
-          closeOverlay(overlay);
-          if(!anyOverlayOpen()){
-            menuBtn.classList.remove("open");
-            menuBtn.setAttribute("aria-expanded", "false");
-          }
-        }
-      });
-    });
-
-    window.addEventListener("keydown", (e) => {
-      if(e.key === "Escape"){
-        if(menuOverlay.classList.contains("active")) closeMenu();
-        if(aboutOverlay.classList.contains("active")) closeAbout();
-
-        if(!anyOverlayOpen()){
-          menuBtn.classList.remove("open");
-          menuBtn.setAttribute("aria-expanded", "false");
-        }
-      }
-    });
-
-    projectCards.forEach((card) => {
-      const toggle = card.querySelector(".project-toggle");
-      toggle.addEventListener("click", () => {
-        const isOpen = card.classList.contains("open");
-        projectCards.forEach(c => c.classList.remove("open"));
-        if(!isOpen){
-          card.classList.add("open");
-        }
-      });
-    });
-  </script>
 </body>
 </html>
