@@ -11,6 +11,7 @@
       --line:rgba(0,0,0,0.10);
       --glass2:rgba(255,255,255,0.92);
       --shadow:0 30px 90px rgba(0,0,0,0.18);
+      --motion:cubic-bezier(.22,1,.36,1);
     }
 
     *{ margin:0; padding:0; box-sizing:border-box; }
@@ -33,7 +34,7 @@
       display:flex;
       align-items:center;
       justify-content:center;
-      transition:filter .28s ease;
+      transition:filter .28s var(--motion);
     }
 
     .app.is-blurred{
@@ -46,9 +47,9 @@
       font-weight:650;
       opacity:0;
       transform:translateY(12px);
-      animation:reveal 1.4s ease forwards;
+      animation:reveal 1.4s var(--motion) forwards;
       user-select:none;
-      transition:opacity .25s ease;
+      transition:opacity .25s var(--motion);
     }
 
     .logo:hover{ opacity:0.92; }
@@ -60,7 +61,7 @@
       text-transform:uppercase;
       opacity:0;
       line-height:1.6;
-      animation:fadeIn 1s ease forwards;
+      animation:fadeIn 1s var(--motion) forwards;
       animation-delay:1.2s;
       color:rgba(0,0,0,0.62);
       user-select:none;
@@ -73,7 +74,7 @@
       line-height:1.7;
       color:rgba(0,0,0,0.52);
       opacity:0;
-      animation:fadeIn 1s ease forwards;
+      animation:fadeIn 1s var(--motion) forwards;
       animation-delay:1.55s;
       user-select:none;
       max-width:640px;
@@ -90,7 +91,7 @@
       gap:14px;
       width:min(620px, 92vw);
       opacity:0;
-      animation:fadeIn 1s ease forwards;
+      animation:fadeIn 1s var(--motion) forwards;
       animation-delay:1.9s;
     }
 
@@ -114,7 +115,7 @@
       gap:4px;
       padding:0;
       color:rgba(0,0,0,0.55);
-      transition:color .25s ease;
+      transition:color .25s var(--motion);
     }
 
     .project-toggle:hover{
@@ -142,7 +143,7 @@
     .project-chevron{
       font-size:11px;
       color:rgba(0,0,0,0.38);
-      transition:transform .22s ease;
+      transition:transform .22s var(--motion);
       margin-top:2px;
     }
 
@@ -155,7 +156,7 @@
       overflow:hidden;
       opacity:0;
       transform:translateY(-4px);
-      transition:max-height .28s ease, opacity .22s ease, transform .22s ease, margin-top .22s ease;
+      transition:max-height .28s var(--motion), opacity .22s var(--motion), transform .22s var(--motion), margin-top .22s var(--motion);
       margin-top:0;
     }
 
@@ -241,7 +242,7 @@
       display:flex;
       align-items:center;
       justify-content:center;
-      transition:transform .2s ease, background .2s ease;
+      transition:transform .2s var(--motion), background .2s var(--motion);
     }
 
     .menu-btn:hover{
@@ -262,7 +263,7 @@
       height:2px;
       background:#000;
       border-radius:2px;
-      transition:transform .25s ease, top .25s ease, opacity .2s ease;
+      transition:transform .25s var(--motion), top .25s var(--motion), opacity .2s var(--motion);
     }
 
     .icon span:nth-child(1){ top:0; }
@@ -291,7 +292,7 @@
       -webkit-backdrop-filter:blur(18px);
       opacity:0;
       pointer-events:none;
-      transition:opacity .28s ease;
+      transition:opacity .28s var(--motion);
       z-index:60;
       display:flex;
       justify-content:center;
@@ -313,13 +314,40 @@
       padding:34px 28px 28px;
       transform:translateY(10px);
       opacity:0;
-      transition:transform .28s ease, opacity .28s ease;
+      transition:transform .28s var(--motion), opacity .28s var(--motion);
       position:relative;
     }
 
     .overlay.active .panel{
       transform:translateY(0);
       opacity:1;
+    }
+
+    /* Menu + About panel custom intro animation */
+    #menuOverlay .panel,
+    #aboutOverlay .panel{
+      transform:translateY(16px) scale(0.985);
+      opacity:0;
+      filter:blur(8px);
+      transition:none;
+    }
+
+    #menuOverlay.active .panel,
+    #aboutOverlay.active .panel{
+      animation:overlayPanelReveal 0.9s var(--motion) forwards;
+    }
+
+    @keyframes overlayPanelReveal{
+      from{
+        opacity:0;
+        transform:translateY(16px) scale(0.985);
+        filter:blur(8px);
+      }
+      to{
+        opacity:1;
+        transform:translateY(0) scale(1);
+        filter:blur(0);
+      }
     }
 
     .panel-top{
@@ -349,7 +377,7 @@
       justify-content:center;
       font-size:18px;
       color:rgba(0,0,0,0.65);
-      transition:background .2s ease, color .2s ease, transform .2s ease;
+      transition:background .2s var(--motion), color .2s var(--motion), transform .2s var(--motion);
     }
 
     .close-btn:hover{
@@ -624,10 +652,21 @@
       setBlur(anyOverlayOpen());
     }
 
+    function restartPanelAnimation(overlay){
+      const panel = overlay.querySelector(".panel");
+      panel.style.animation = "none";
+      panel.offsetHeight;
+      panel.style.animation = "";
+    }
+
     function openOverlay(overlay){
       overlay.classList.add("active");
       overlay.setAttribute("aria-hidden", "false");
       syncBlur();
+
+      if(overlay === menuOverlay || overlay === aboutOverlay){
+        restartPanelAnimation(overlay);
+      }
     }
 
     function closeOverlay(overlay){
@@ -667,7 +706,9 @@
 
     openAboutFromMenu.addEventListener("click", () => {
       closeMenu();
-      openAbout();
+      setTimeout(() => {
+        openAbout();
+      }, 80);
     });
 
     [menuOverlay, aboutOverlay].forEach((overlay) => {
