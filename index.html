@@ -17,17 +17,15 @@
     }
 
     *{ margin:0; padding:0; box-sizing:border-box; }
-    html,body{ height:100%; }
+    html,body{ min-height:100%; }
 
     body{
       background:#fff;
       color:var(--text);
       font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;
-      display:flex;
-      justify-content:center;
-      align-items:center;
       text-align:center;
-      overflow:hidden;
+      overflow-x:hidden;
+      overflow-y:auto;
       position:relative;
     }
 
@@ -37,17 +35,18 @@
       inset:0;
       pointer-events:none;
       background:
-        radial-gradient(circle at 50% 20%, rgba(0,0,0,0.028), transparent 28%),
-        radial-gradient(circle at 50% 72%, rgba(0,0,0,0.015), transparent 34%);
+        radial-gradient(circle at 50% 18%, rgba(0,0,0,0.028), transparent 28%),
+        radial-gradient(circle at 50% 74%, rgba(0,0,0,0.015), transparent 34%);
       z-index:0;
     }
 
     .app{
       width:100%;
-      height:100%;
+      min-height:100vh;
       display:flex;
       align-items:center;
       justify-content:center;
+      padding:96px 24px 72px;
       transition:filter .28s var(--motion);
       position:relative;
       z-index:1;
@@ -58,13 +57,14 @@
     }
 
     .hero{
-      width:100%;
+      width:min(760px, 100%);
+      margin:0 auto;
       position:relative;
     }
 
     .logo{
-      font-size:64px;
-      letter-spacing:10px;
+      font-size:72px;
+      letter-spacing:0.18em;
       font-weight:650;
       opacity:0;
       transform:translateY(12px);
@@ -72,35 +72,37 @@
       user-select:none;
       transition:opacity .25s var(--motion);
       will-change:opacity, transform;
+      padding-left:0.18em;
     }
 
     .logo:hover{ opacity:0.92; }
 
     .sub{
-      margin-top:14px;
+      margin-top:18px;
       font-size:13px;
-      letter-spacing:4px;
+      letter-spacing:0.42em;
       text-transform:uppercase;
       opacity:0;
-      line-height:1.6;
+      line-height:1.7;
       animation:fadeInUp .95s var(--intro) forwards;
       animation-delay:.72s;
       color:rgba(0,0,0,0.62);
       user-select:none;
       will-change:opacity, transform;
+      padding-left:0.42em;
     }
 
     .tagline{
-      margin-top:16px;
-      font-size:12px;
-      letter-spacing:0.08em;
-      line-height:1.7;
+      margin-top:20px;
+      font-size:14px;
+      letter-spacing:0.06em;
+      line-height:1.85;
       color:rgba(0,0,0,0.52);
       opacity:0;
       animation:fadeInUp .95s var(--intro) forwards;
       animation-delay:.9s;
       user-select:none;
-      max-width:640px;
+      max-width:680px;
       margin-left:auto;
       margin-right:auto;
       padding:0 18px;
@@ -108,12 +110,12 @@
     }
 
     .projects{
-      margin-top:24px;
+      margin-top:42px;
       display:flex;
       flex-direction:column;
       align-items:center;
-      gap:14px;
-      width:min(620px, 92vw);
+      gap:26px;
+      width:min(680px, 100%);
       opacity:0;
       transform:translateY(8px);
       animation:fadeInUp 1s var(--intro) forwards;
@@ -122,7 +124,7 @@
     }
 
     .project-card{
-      width:min(520px, 92vw);
+      width:min(560px, 100%);
       text-align:center;
       margin-left:auto;
       margin-right:auto;
@@ -138,7 +140,7 @@
       flex-direction:column;
       align-items:center;
       justify-content:center;
-      gap:4px;
+      gap:6px;
       padding:0;
       color:rgba(0,0,0,0.55);
       transition:color .25s var(--motion), transform .25s var(--motion);
@@ -151,14 +153,15 @@
     }
 
     .project-title{
-      font-size:10px;
-      letter-spacing:0.32em;
+      font-size:12px;
+      letter-spacing:0.34em;
       text-transform:uppercase;
-      padding-bottom:4px;
+      padding-bottom:6px;
       border-bottom:1px solid rgba(0,0,0,0.18);
       width:fit-content;
       margin:0 auto;
       transition:border-color .25s var(--motion), opacity .25s var(--motion);
+      padding-left:0.34em;
     }
 
     .project-toggle:hover .project-title{
@@ -166,12 +169,13 @@
     }
 
     .project-sub{
-      font-size:11px;
+      font-size:13px;
       letter-spacing:0.18em;
       text-transform:uppercase;
       color:rgba(0,0,0,0.45);
       margin-top:2px;
       transition:color .25s var(--motion);
+      padding-left:0.18em;
     }
 
     .project-toggle:hover .project-sub{
@@ -207,14 +211,14 @@
       max-height:320px;
       opacity:1;
       transform:translateY(0);
-      margin-top:10px;
+      margin-top:14px;
     }
 
     .project-panel-inner{
       background:rgba(255,255,255,0.72);
       border:1px solid rgba(0,0,0,0.08);
       border-radius:18px;
-      padding:16px 18px 14px;
+      padding:18px 22px 16px;
       box-shadow:0 18px 40px rgba(0,0,0,0.08);
       text-align:center;
       backdrop-filter:blur(10px);
@@ -237,7 +241,7 @@
 
     .project-panel-inner p{
       font-size:14px;
-      line-height:1.7;
+      line-height:1.75;
       color:rgba(0,0,0,0.75);
       margin:0 0 10px;
       opacity:0;
@@ -529,39 +533,114 @@
       border-bottom-color:rgba(0,0,0,0.35);
     }
 
-    @media (max-width:520px){
-      body{
-        overflow:auto;
+    @media (min-width: 900px){
+      .app{
+        padding:120px 32px 96px;
       }
 
+      .hero{
+        width:min(820px, 100%);
+      }
+
+      .logo{
+        font-size:86px;
+        letter-spacing:0.2em;
+        padding-left:0.2em;
+      }
+
+      .sub{
+        margin-top:20px;
+        font-size:14px;
+        letter-spacing:0.46em;
+        padding-left:0.46em;
+      }
+
+      .tagline{
+        margin-top:24px;
+        font-size:15px;
+        max-width:760px;
+      }
+
+      .projects{
+        margin-top:52px;
+        gap:30px;
+        width:min(760px, 100%);
+      }
+
+      .project-card{
+        width:min(620px, 100%);
+      }
+
+      .project-title{
+        font-size:13px;
+      }
+
+      .project-sub{
+        font-size:14px;
+      }
+
+      .project-panel-inner p{
+        font-size:15px;
+      }
+
+      .project-meta{
+        font-size:13px;
+      }
+    }
+
+    @media (max-width: 700px){
       .app{
         align-items:flex-start;
-        min-height:100vh;
-        padding:120px 0 80px;
+        padding:120px 18px 80px;
+      }
+
+      .hero{
+        width:100%;
       }
 
       .logo{
         font-size:56px;
-        letter-spacing:8px;
+        letter-spacing:0.14em;
+        padding-left:0.14em;
       }
 
       .sub{
         font-size:11px;
-        letter-spacing:3px;
+        letter-spacing:0.26em;
         line-height:1.5;
-      }
-
-      .panel{
-        padding:28px 18px 22px;
-        border-radius:24px;
-      }
-
-      .panel h2{
-        font-size:30px;
+        padding-left:0.26em;
       }
 
       .tagline{
         font-size:11px;
+        line-height:1.75;
+        max-width:520px;
+      }
+
+      .projects{
+        margin-top:34px;
+        gap:20px;
+        width:100%;
+      }
+
+      .project-card{
+        width:100%;
+      }
+
+      .project-title{
+        font-size:10px;
+        letter-spacing:0.28em;
+        padding-left:0.28em;
+      }
+
+      .project-sub{
+        font-size:11px;
+        letter-spacing:0.14em;
+        padding-left:0.14em;
+      }
+
+      .project-panel-inner{
+        padding:16px 16px 14px;
       }
 
       .project-panel-inner p{
@@ -572,12 +651,33 @@
         font-size:11px;
       }
 
-      .projects{
-        width:min(94vw, 620px);
+      .panel{
+        padding:28px 18px 22px;
+        border-radius:24px;
       }
 
-      .project-card{
-        width:min(94vw, 520px);
+      .panel h2{
+        font-size:30px;
+      }
+    }
+
+    @media (max-width: 420px){
+      .logo{
+        font-size:48px;
+      }
+
+      .sub{
+        font-size:10px;
+        letter-spacing:0.22em;
+        padding-left:0.22em;
+      }
+
+      .tagline{
+        font-size:10.5px;
+      }
+
+      .project-sub{
+        font-size:10px;
       }
     }
   </style>
