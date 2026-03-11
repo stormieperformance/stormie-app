@@ -381,7 +381,7 @@
       -webkit-backdrop-filter:blur(18px);
       opacity:0;
       pointer-events:none;
-      transition:opacity .28s var(--motion);
+      transition:opacity .28s var ease;
       z-index:60;
       display:flex;
       justify-content:center;
@@ -403,7 +403,7 @@
       padding:34px 28px 28px;
       transform:translateY(10px);
       opacity:0;
-      transition:transform .28s var(--motion), opacity .28s var(--motion);
+      transition:transform .28s ease, opacity .28s ease;
       position:relative;
     }
 
@@ -422,7 +422,7 @@
 
     #menuOverlay.active .panel,
     #aboutOverlay.active .panel{
-      animation:overlayPanelReveal 0.9s var(--motion) forwards;
+      animation:overlayPanelReveal 0.9s ease forwards;
     }
 
     @keyframes overlayPanelReveal{
