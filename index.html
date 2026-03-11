@@ -143,27 +143,20 @@
     .project-chevron{
       font-size:11px;
       color:rgba(0,0,0,0.38);
-      transition:transform .34s var(--motion), opacity .24s var(--motion);
+      transition:transform .22s var(--motion);
       margin-top:2px;
     }
 
     .project-card.open .project-chevron{
       transform:rotate(180deg);
-      opacity:0.72;
     }
 
     .project-panel{
       max-height:0;
       overflow:hidden;
       opacity:0;
-      transform:translateY(-6px);
-      filter:blur(4px);
-      transition:
-        max-height .48s var(--motion),
-        opacity .30s var(--motion),
-        transform .36s var(--motion),
-        filter .36s var(--motion),
-        margin-top .36s var(--motion);
+      transform:translateY(-4px);
+      transition:max-height .28s var(--motion), opacity .22s var(--motion), transform .22s var(--motion), margin-top .22s var(--motion);
       margin-top:0;
     }
 
@@ -171,7 +164,6 @@
       max-height:320px;
       opacity:1;
       transform:translateY(0);
-      filter:blur(0);
       margin-top:10px;
     }
 
@@ -184,17 +176,6 @@
       text-align:center;
       backdrop-filter:blur(10px);
       -webkit-backdrop-filter:blur(10px);
-      transform:translateY(-4px) scale(0.995);
-      opacity:0.92;
-      transition:
-        transform .40s var(--motion),
-        opacity .30s var(--motion),
-        box-shadow .30s var(--motion);
-    }
-
-    .project-card.open .project-panel-inner{
-      transform:translateY(0) scale(1);
-      opacity:1;
     }
 
     .project-panel-inner p{
@@ -202,11 +183,6 @@
       line-height:1.7;
       color:rgba(0,0,0,0.75);
       margin:0 0 10px;
-      opacity:0;
-      transform:translateY(6px);
-      transition:
-        opacity .28s var(--motion) .06s,
-        transform .34s var(--motion) .06s;
     }
 
     .project-meta{
@@ -214,17 +190,6 @@
       line-height:1.6;
       color:rgba(0,0,0,0.52);
       margin-bottom:12px;
-      opacity:0;
-      transform:translateY(6px);
-      transition:
-        opacity .28s var(--motion) .12s,
-        transform .34s var(--motion) .12s;
-    }
-
-    .project-card.open .project-panel-inner p,
-    .project-card.open .project-meta{
-      opacity:1;
-      transform:translateY(0);
     }
 
     .project-launch{
