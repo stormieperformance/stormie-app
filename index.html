@@ -60,11 +60,16 @@
       width:min(680px, 100%);
       margin:0 auto;
       position:relative;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
     }
 
     .logo{
+      display:inline-block;
       font-size:60px;
       letter-spacing:0.16em;
+      margin-right:-0.16em;
       font-weight:650;
       opacity:0;
       transform:translateY(12px);
@@ -77,9 +82,11 @@
     .logo:hover{ opacity:0.92; }
 
     .sub{
+      display:inline-block;
       margin-top:14px;
       font-size:12px;
       letter-spacing:0.34em;
+      margin-right:-0.34em;
       text-transform:uppercase;
       opacity:0;
       line-height:1.6;
@@ -151,13 +158,16 @@
     }
 
     .project-title{
+      display:inline-block;
       font-size:12px;
       letter-spacing:0.34em;
+      margin-right:-0.34em;
       text-transform:uppercase;
       padding-bottom:6px;
       border-bottom:1px solid rgba(0,0,0,0.18);
-      width:fit-content;
-      margin:0 auto;
+      width:auto;
+      margin-left:auto;
+      margin-right:auto;
       transition:border-color .25s var(--motion), opacity .25s var(--motion);
     }
 
@@ -166,8 +176,10 @@
     }
 
     .project-sub{
+      display:inline-block;
       font-size:13px;
       letter-spacing:0.18em;
+      margin-right:-0.18em;
       text-transform:uppercase;
       color:rgba(0,0,0,0.45);
       margin-top:2px;
@@ -541,12 +553,14 @@
       .logo{
         font-size:64px;
         letter-spacing:0.17em;
+        margin-right:-0.17em;
       }
 
       .sub{
         margin-top:14px;
         font-size:12px;
         letter-spacing:0.36em;
+        margin-right:-0.36em;
       }
 
       .tagline{
@@ -569,11 +583,13 @@
       .project-title{
         font-size:11px;
         letter-spacing:0.30em;
+        margin-right:-0.30em;
       }
 
       .project-sub{
         font-size:12px;
         letter-spacing:0.16em;
+        margin-right:-0.16em;
       }
 
       .project-panel-inner{
@@ -603,11 +619,13 @@
       .logo{
         font-size:56px;
         letter-spacing:0.14em;
+        margin-right:-0.14em;
       }
 
       .sub{
         font-size:11px;
         letter-spacing:0.26em;
+        margin-right:-0.26em;
         line-height:1.5;
       }
 
@@ -630,11 +648,13 @@
       .project-title{
         font-size:10px;
         letter-spacing:0.28em;
+        margin-right:-0.28em;
       }
 
       .project-sub{
         font-size:11px;
         letter-spacing:0.14em;
+        margin-right:-0.14em;
       }
 
       .project-panel-inner{
@@ -667,6 +687,7 @@
       .sub{
         font-size:10px;
         letter-spacing:0.22em;
+        margin-right:-0.22em;
       }
 
       .tagline{
