@@ -66,10 +66,12 @@
     }
 
     .logo{
-      display:inline-block;
+      display:block;
+      width:max-content;
+      max-width:100%;
+      margin:0 auto;
       font-size:60px;
       letter-spacing:0.16em;
-      margin-right:-0.16em;
       font-weight:650;
       opacity:0;
       transform:translateY(12px);
@@ -77,16 +79,19 @@
       user-select:none;
       transition:opacity .25s var(--motion);
       will-change:opacity, transform;
+      text-align:center;
+      white-space:nowrap;
     }
 
     .logo:hover{ opacity:0.92; }
 
     .sub{
-      display:inline-block;
-      margin-top:14px;
+      display:block;
+      width:max-content;
+      max-width:100%;
+      margin:14px auto 0;
       font-size:12px;
       letter-spacing:0.34em;
-      margin-right:-0.34em;
       text-transform:uppercase;
       opacity:0;
       line-height:1.6;
@@ -95,6 +100,8 @@
       color:rgba(0,0,0,0.62);
       user-select:none;
       will-change:opacity, transform;
+      text-align:center;
+      white-space:nowrap;
     }
 
     .tagline{
@@ -112,6 +119,7 @@
       margin-right:auto;
       padding:0 12px;
       will-change:opacity, transform;
+      text-align:center;
     }
 
     .projects{
@@ -145,7 +153,6 @@
       flex-direction:column;
       align-items:center;
       justify-content:center;
-      gap:6px;
       padding:0;
       color:rgba(0,0,0,0.55);
       transition:color .25s var(--motion), transform .25s var(--motion);
@@ -157,18 +164,31 @@
       transform:translateY(-1px);
     }
 
+    .project-head{
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      gap:6px;
+      width:max-content;
+      max-width:100%;
+      margin:0 auto;
+      text-align:center;
+    }
+
     .project-title{
-      display:inline-block;
+      display:block;
+      width:max-content;
+      max-width:100%;
+      margin:0 auto;
       font-size:12px;
       letter-spacing:0.34em;
-      margin-right:-0.34em;
       text-transform:uppercase;
       padding-bottom:6px;
       border-bottom:1px solid rgba(0,0,0,0.18);
-      width:auto;
-      margin-left:auto;
-      margin-right:auto;
       transition:border-color .25s var(--motion), opacity .25s var(--motion);
+      text-align:center;
+      white-space:nowrap;
     }
 
     .project-toggle:hover .project-title{
@@ -176,14 +196,17 @@
     }
 
     .project-sub{
-      display:inline-block;
+      display:block;
+      width:max-content;
+      max-width:100%;
+      margin:0 auto;
       font-size:13px;
       letter-spacing:0.18em;
-      margin-right:-0.18em;
       text-transform:uppercase;
       color:rgba(0,0,0,0.45);
-      margin-top:2px;
       transition:color .25s var(--motion);
+      text-align:center;
+      white-space:nowrap;
     }
 
     .project-toggle:hover .project-sub{
@@ -191,10 +214,12 @@
     }
 
     .project-chevron{
+      display:block;
+      width:max-content;
+      margin:0 auto;
       font-size:11px;
       color:rgba(0,0,0,0.38);
       transition:transform .45s var(--accordion), opacity .28s var(--accordion);
-      margin-top:2px;
     }
 
     .project-card.open .project-chevron{
@@ -553,14 +578,12 @@
       .logo{
         font-size:64px;
         letter-spacing:0.17em;
-        margin-right:-0.17em;
       }
 
       .sub{
         margin-top:14px;
         font-size:12px;
         letter-spacing:0.36em;
-        margin-right:-0.36em;
       }
 
       .tagline{
@@ -583,13 +606,11 @@
       .project-title{
         font-size:11px;
         letter-spacing:0.30em;
-        margin-right:-0.30em;
       }
 
       .project-sub{
         font-size:12px;
         letter-spacing:0.16em;
-        margin-right:-0.16em;
       }
 
       .project-panel-inner{
@@ -619,13 +640,11 @@
       .logo{
         font-size:56px;
         letter-spacing:0.14em;
-        margin-right:-0.14em;
       }
 
       .sub{
         font-size:11px;
         letter-spacing:0.26em;
-        margin-right:-0.26em;
         line-height:1.5;
       }
 
@@ -648,13 +667,11 @@
       .project-title{
         font-size:10px;
         letter-spacing:0.28em;
-        margin-right:-0.28em;
       }
 
       .project-sub{
         font-size:11px;
         letter-spacing:0.14em;
-        margin-right:-0.14em;
       }
 
       .project-panel-inner{
@@ -687,7 +704,6 @@
       .sub{
         font-size:10px;
         letter-spacing:0.22em;
-        margin-right:-0.22em;
       }
 
       .tagline{
@@ -725,9 +741,11 @@
 
         <div class="project-card">
           <button class="project-toggle" type="button">
-            <span class="project-title">Stormiē Inbox</span>
-            <span class="project-sub">AI email assistant</span>
-            <span class="project-chevron">⌄</span>
+            <div class="project-head">
+              <span class="project-title">Stormiē Inbox</span>
+              <span class="project-sub">AI email assistant</span>
+              <span class="project-chevron">⌄</span>
+            </div>
           </button>
           <div class="project-panel">
             <div class="project-panel-inner">
@@ -741,9 +759,11 @@
 
         <div class="project-card">
           <button class="project-toggle" type="button">
-            <span class="project-title">Stormiē Support</span>
-            <span class="project-sub">Customer support automation</span>
-            <span class="project-chevron">⌄</span>
+            <div class="project-head">
+              <span class="project-title">Stormiē Support</span>
+              <span class="project-sub">Customer support automation</span>
+              <span class="project-chevron">⌄</span>
+            </div>
           </button>
           <div class="project-panel">
             <div class="project-panel-inner">
@@ -757,9 +777,11 @@
 
         <div class="project-card">
           <button class="project-toggle" type="button">
-            <span class="project-title">Stormiē Leads</span>
-            <span class="project-sub">Lead qualification assistant</span>
-            <span class="project-chevron">⌄</span>
+            <div class="project-head">
+              <span class="project-title">Stormiē Leads</span>
+              <span class="project-sub">Lead qualification assistant</span>
+              <span class="project-chevron">⌄</span>
+            </div>
           </button>
           <div class="project-panel">
             <div class="project-panel-inner">
@@ -773,9 +795,11 @@
 
         <div class="project-card">
           <button class="project-toggle" type="button">
-            <span class="project-title">Stormiē Ops</span>
-            <span class="project-sub">Operations workflow assistant</span>
-            <span class="project-chevron">⌄</span>
+            <div class="project-head">
+              <span class="project-title">Stormiē Ops</span>
+              <span class="project-sub">Operations workflow assistant</span>
+              <span class="project-chevron">⌄</span>
+            </div>
           </button>
           <div class="project-panel">
             <div class="project-panel-inner">
