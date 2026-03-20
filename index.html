@@ -19,6 +19,7 @@
       --muted2: rgba(232,228,220,0.22);
       --line: rgba(232,228,220,0.08);
       --gold: #c9a96e;
+      --gold-bright: rgba(255,239,201,0.42);
       --gold-dim: rgba(201,169,110,0.18);
       --sans: 'DM Sans', sans-serif;
       --serif: 'Cormorant Garamond', serif;
@@ -147,49 +148,95 @@
       animation: fadeContent 1s ease 2.2s forwards;
     }
 
-    /* ✨ UPDATED BUTTON */
     .enter-btn {
       position: relative;
-      display: inline-block;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
       text-decoration: none;
       color: var(--text);
       font-size: 11px;
       letter-spacing: 0.18em;
       text-transform: uppercase;
       padding: 14px 20px;
-      border: 1px solid rgba(201,169,110,0.32);
-      background: transparent;
+      border: 1px solid rgba(201,169,110,0.34);
+      background: linear-gradient(
+        180deg,
+        rgba(255,255,255,0.015) 0%,
+        rgba(201,169,110,0.035) 100%
+      );
       overflow: hidden;
-      transition: all 0.3s ease;
+      isolation: isolate;
+      box-shadow:
+        inset 0 0 0 1px rgba(255,255,255,0.02),
+        0 0 0 rgba(0,0,0,0);
+      transition:
+        transform 0.28s ease,
+        border-color 0.28s ease,
+        color 0.28s ease,
+        box-shadow 0.28s ease,
+        background 0.28s ease;
     }
 
     .enter-btn::before {
       content: "";
       position: absolute;
-      top: 0;
-      left: -120%;
-      width: 120%;
-      height: 100%;
+      inset: 0;
+      z-index: 0;
       background: linear-gradient(
-        120deg,
+        90deg,
         transparent 0%,
-        rgba(212,175,55,0.15) 40%,
-        rgba(255,240,200,0.35) 50%,
-        rgba(212,175,55,0.15) 60%,
+        rgba(255,239,201,0.00) 32%,
+        rgba(255,239,201,0.06) 42%,
+        rgba(255,239,201,0.18) 50%,
+        rgba(255,239,201,0.06) 58%,
+        rgba(255,239,201,0.00) 68%,
         transparent 100%
       );
-      transition: all 0.8s ease;
+      transform: translateX(-170%);
+      animation: appleShimmer 7.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+      pointer-events: none;
     }
 
-    .enter-btn:hover::before {
-      left: 120%;
+    .enter-btn::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      background: radial-gradient(
+        circle at 50% 50%,
+        rgba(201,169,110,0.10) 0%,
+        rgba(201,169,110,0.04) 35%,
+        rgba(201,169,110,0.00) 70%
+      );
+      opacity: 0.55;
+      animation: buttonBreathe 5.6s ease-in-out infinite;
+      pointer-events: none;
     }
 
-    .enter-btn:hover {
-      color: var(--gold);
-      border-color: var(--gold);
-      box-shadow: 0 0 20px rgba(212,175,55,0.15);
+    .enter-btn span {
+      position: relative;
+      z-index: 1;
+    }
+
+    .enter-btn:hover,
+    .enter-btn:focus-visible {
+      color: #f0e6d3;
+      border-color: rgba(201,169,110,0.62);
+      background: linear-gradient(
+        180deg,
+        rgba(255,255,255,0.03) 0%,
+        rgba(201,169,110,0.08) 100%
+      );
+      box-shadow:
+        0 0 24px rgba(201,169,110,0.12),
+        0 0 48px rgba(201,169,110,0.06),
+        inset 0 0 0 1px rgba(255,255,255,0.03);
       transform: translateY(-1px);
+    }
+
+    .enter-btn:active {
+      transform: translateY(0);
     }
 
     .hero-meta {
@@ -222,18 +269,55 @@
     }
 
     @keyframes revealLabel {
-      from { opacity: 0; clip-path: inset(0 100% 0 0); }
-      to { opacity: 1; clip-path: inset(0 0 0 0); }
+      from {
+        opacity: 0;
+        clip-path: inset(0 100% 0 0);
+      }
+      to {
+        opacity: 1;
+        clip-path: inset(0 0 0 0);
+      }
     }
 
     @keyframes fadeTitle {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
 
     @keyframes fadeContent {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes appleShimmer {
+      0%   { transform: translateX(-170%); opacity: 0; }
+      8%   { opacity: 0; }
+      18%  { opacity: 1; }
+      30%  { transform: translateX(170%); opacity: 0; }
+      100% { transform: translateX(170%); opacity: 0; }
+    }
+
+    @keyframes buttonBreathe {
+      0%, 100% {
+        opacity: 0.32;
+        transform: scale(1);
+      }
+      50% {
+        opacity: 0.58;
+        transform: scale(1.015);
+      }
     }
 
     @media (max-width: 768px) {
@@ -243,11 +327,34 @@
       .hero-actions { align-items: flex-start; }
       footer { flex-direction: column; gap: 8px; text-align: center; }
 
-      .hero-label { letter-spacing: 0.18em; }
+      .hero-label {
+        letter-spacing: 0.18em;
+      }
+
+      .enter-btn {
+        padding: 15px 20px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .enter-btn::before,
+      .enter-btn::after,
+      .hero-label,
+      .hero-title,
+      .hero-desc,
+      .hero-actions,
+      body {
+        animation: none !important;
+        transition: none !important;
+        transform: none !important;
+      }
+
+      body {
+        opacity: 1;
+      }
     }
   </style>
 </head>
-
 <body>
   <div class="page">
     <div class="topbar">
@@ -270,7 +377,7 @@
           </p>
 
           <div class="hero-actions">
-            <a class="enter-btn" href="https://stormieperformance.com">Enter Stormie Performance</a>
+            <a class="enter-btn" href="https://stormieperformance.com"><span>Enter Stormie Performance</span></a>
             <div class="hero-meta">Storm Kolmodin</div>
           </div>
         </div>
