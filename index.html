@@ -33,15 +33,6 @@
       -webkit-font-smoothing: antialiased;
       position: relative;
 
-      /* NEW */
-      opacity: 0;
-      transform: translateY(8px);
-      transition: opacity 0.8s ease, transform 0.8s ease;
-    }
-
-    body.page-loaded {
-      opacity: 1;
-      transform: translateY(0);
     }
 
     body::before {
@@ -227,12 +218,5 @@
       <div class="footer-right">Stormie Performance</div>
     </footer>
   </div>
-
-  <!-- NEW -->
-  <script>
-    window.addEventListener('load', () => {
-      document.body.classList.add('page-loaded');
-    });
-  </script>
 </body>
 </html>
