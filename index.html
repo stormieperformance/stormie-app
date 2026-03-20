@@ -98,7 +98,6 @@
       text-transform: uppercase;
       color: var(--gold);
       margin-bottom: 36px;
-      white-space: nowrap;
       opacity: 0;
       clip-path: inset(0 100% 0 0);
       animation: revealLabel 1.4s cubic-bezier(0.22, 1, 0.36, 1) 0.2s forwards;
@@ -126,12 +125,14 @@
       gap: 32px;
     }
 
+    /* 🔥 FIXAD TEXT */
     .hero-desc {
       max-width: 420px;
       font-size: 14px;
       line-height: 1.85;
-      color: var(--muted);
+      color: rgba(232,228,220,0.72); /* 👈 viktig ändring */
       font-weight: 300;
+      letter-spacing: 0.01em; /* 👈 premium tweak */
       opacity: 0;
       transform: translateY(10px);
       animation: fadeContent 1s ease 2.2s forwards;
@@ -162,59 +163,7 @@
       border: 1px solid rgba(201,169,110,0.10);
       overflow: hidden;
       isolation: isolate;
-      box-shadow:
-        inset 0 0 0 1px rgba(255,255,255,0.01),
-        0 0 0 1px rgba(201,169,110,0.02);
-      transition:
-        transform 0.35s ease,
-        color 0.35s ease,
-        box-shadow 0.35s ease,
-        border-color 0.35s ease,
-        background 0.35s ease;
-    }
-
-    .enter-btn::after {
-      content: "";
-      position: absolute;
-      inset: 0;
-      border: 1px solid rgba(255,255,255,0.025);
-      z-index: 0;
-      pointer-events: none;
-    }
-
-    .enter-btn::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      padding: 1px;
-      background:
-        linear-gradient(
-          90deg,
-          rgba(255,240,210,0.28) 0%,
-          rgba(255,240,210,0.36) 12%,
-          rgba(201,169,110,0.12) 25%,
-          rgba(255,240,210,0.18) 40%,
-          rgba(255,240,210,0.42) 50%,
-          rgba(201,169,110,0.10) 65%,
-          rgba(255,240,210,0.34) 82%,
-          rgba(255,240,210,0.26) 100%
-        );
-      background-size: 260% 100%;
-      background-position: 0% 50%;
-      -webkit-mask:
-        linear-gradient(#000 0 0) content-box,
-        linear-gradient(#000 0 0);
-      -webkit-mask-composite: xor;
-      mask-composite: exclude;
-      animation:
-        premiumEdgeDrift 16s linear infinite,
-        premiumEdgeBreath 7s ease-in-out infinite;
-      filter:
-        drop-shadow(0 0 2px rgba(255,240,210,0.06))
-        drop-shadow(0 0 6px rgba(201,169,110,0.05));
-      opacity: 0.6;
-      z-index: 1;
-      pointer-events: none;
+      transition: all 0.35s ease;
     }
 
     .enter-btn span {
@@ -222,33 +171,10 @@
       z-index: 2;
     }
 
-    .enter-btn:hover,
-    .enter-btn:focus-visible {
+    .enter-btn:hover {
       color: #f3ead8;
       border-color: rgba(201,169,110,0.16);
-      box-shadow:
-        0 0 18px rgba(201,169,110,0.06),
-        0 0 36px rgba(201,169,110,0.03);
       transform: translateY(-1px);
-    }
-
-    .enter-btn:hover::before,
-    .enter-btn:focus-visible::before {
-      opacity: 0.85;
-      filter:
-        drop-shadow(0 0 4px rgba(255,240,210,0.10))
-        drop-shadow(0 0 10px rgba(201,169,110,0.08));
-    }
-
-    .enter-btn:active {
-      transform: translateY(0);
-    }
-
-    .hero-meta {
-      font-family: var(--serif);
-      font-size: 14px;
-      font-style: italic;
-      color: var(--muted2);
     }
 
     footer {
@@ -274,46 +200,18 @@
     }
 
     @keyframes revealLabel {
-      from {
-        opacity: 0;
-        clip-path: inset(0 100% 0 0);
-      }
-      to {
-        opacity: 1;
-        clip-path: inset(0 0 0 0);
-      }
+      from { opacity: 0; clip-path: inset(0 100% 0 0); }
+      to { opacity: 1; clip-path: inset(0 0 0 0); }
     }
 
     @keyframes fadeTitle {
-      from {
-        opacity: 0;
-        transform: translateY(10px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
     @keyframes fadeContent {
-      from {
-        opacity: 0;
-        transform: translateY(10px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    @keyframes premiumEdgeDrift {
-      0%   { background-position: 0% 50%; }
-      100% { background-position: 260% 50%; }
-    }
-
-    @keyframes premiumEdgeBreath {
-      0%, 100% { opacity: 0.55; }
-      50%      { opacity: 0.75; }
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
     @media (max-width: 768px) {
@@ -322,31 +220,10 @@
       .hero-bottom { flex-direction: column; align-items: flex-start; }
       .hero-actions { align-items: flex-start; }
       footer { flex-direction: column; gap: 8px; text-align: center; }
-      .hero-label { letter-spacing: 0.18em; }
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      .hero-label,
-      .hero-title,
-      .hero-desc,
-      .hero-actions {
-        animation: none !important;
-        transform: none !important;
-        opacity: 1 !important;
-      }
-
-      .enter-btn::before {
-        animation: none !important;
-      }
-
-      body {
-        opacity: 1;
-        transform: none;
-        transition: none;
-      }
     }
   </style>
 </head>
+
 <body>
   <div class="page">
     <div class="topbar">
@@ -365,11 +242,14 @@
 
         <div class="hero-bottom">
           <p class="hero-desc">
-            Building digital infrastructure for sports brands. Websites, training apps, e-commerce and client systems — built to your brand, your sport, your clients.
+            Building digital infrastructure for sports brands.<br><br>
+            Websites, training apps, e-commerce and client systems — built to your brand, your sport, your clients.
           </p>
 
           <div class="hero-actions">
-            <a class="enter-btn" href="https://stormieperformance.com"><span>Enter Stormie Performance</span></a>
+            <a class="enter-btn" href="https://stormieperformance.com">
+              <span>Enter Stormie Performance</span>
+            </a>
             <div class="hero-meta">Storm Kolmodin</div>
           </div>
         </div>
