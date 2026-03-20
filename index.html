@@ -19,7 +19,8 @@
       --muted2: rgba(232,228,220,0.22);
       --line: rgba(232,228,220,0.08);
       --gold: #c9a96e;
-      --gold-bright: rgba(255,239,201,0.42);
+      --gold-soft: rgba(201,169,110,0.28);
+      --gold-bright: rgba(255,239,201,0.78);
       --gold-dim: rgba(201,169,110,0.18);
       --sans: 'DM Sans', sans-serif;
       --serif: 'Cormorant Garamond', serif;
@@ -159,80 +160,85 @@
       letter-spacing: 0.18em;
       text-transform: uppercase;
       padding: 14px 20px;
-      border: 1px solid rgba(201,169,110,0.34);
-      background: linear-gradient(
-        180deg,
-        rgba(255,255,255,0.015) 0%,
-        rgba(201,169,110,0.035) 100%
-      );
+      background: rgba(255,255,255,0.01);
+      border: 1px solid rgba(201,169,110,0.22);
       overflow: hidden;
       isolation: isolate;
       box-shadow:
-        inset 0 0 0 1px rgba(255,255,255,0.02),
-        0 0 0 rgba(0,0,0,0);
+        inset 0 0 0 1px rgba(255,255,255,0.015),
+        0 0 0 1px rgba(201,169,110,0.03);
       transition:
-        transform 0.28s ease,
-        border-color 0.28s ease,
-        color 0.28s ease,
-        box-shadow 0.28s ease,
-        background 0.28s ease;
+        transform 0.25s ease,
+        color 0.25s ease,
+        box-shadow 0.35s ease,
+        border-color 0.35s ease,
+        background 0.35s ease;
     }
 
+    /* Basram */
     .enter-btn::before {
       content: "";
       position: absolute;
       inset: 0;
-      z-index: 0;
-      background: linear-gradient(
-        90deg,
-        transparent 0%,
-        rgba(255,239,201,0.00) 32%,
-        rgba(255,239,201,0.06) 42%,
-        rgba(255,239,201,0.18) 50%,
-        rgba(255,239,201,0.06) 58%,
-        rgba(255,239,201,0.00) 68%,
-        transparent 100%
-      );
-      transform: translateX(-170%);
-      animation: appleShimmer 7.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+      border: 1px solid rgba(201,169,110,0.18);
       pointer-events: none;
+      z-index: 0;
     }
 
+    /* Elektrisk kant-effekt */
     .enter-btn::after {
       content: "";
       position: absolute;
-      inset: 0;
-      z-index: 0;
-      background: radial-gradient(
-        circle at 50% 50%,
-        rgba(201,169,110,0.10) 0%,
-        rgba(201,169,110,0.04) 35%,
-        rgba(201,169,110,0.00) 70%
-      );
-      opacity: 0.55;
-      animation: buttonBreathe 5.6s ease-in-out infinite;
+      inset: -1px;
+      padding: 1px;
+      border-radius: 0;
+      background:
+        conic-gradient(
+          from 0deg,
+          rgba(201,169,110,0.00) 0deg,
+          rgba(201,169,110,0.00) 300deg,
+          rgba(255,239,201,0.00) 322deg,
+          rgba(255,239,201,0.95) 334deg,
+          rgba(201,169,110,0.70) 342deg,
+          rgba(201,169,110,0.00) 352deg,
+          rgba(201,169,110,0.00) 360deg
+        );
+      -webkit-mask:
+        linear-gradient(#000 0 0) content-box,
+        linear-gradient(#000 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      animation: borderOrbit 4.8s linear infinite;
+      opacity: 0.95;
       pointer-events: none;
+      z-index: 1;
+      filter:
+        drop-shadow(0 0 4px rgba(255,239,201,0.25))
+        drop-shadow(0 0 10px rgba(201,169,110,0.16));
     }
 
     .enter-btn span {
       position: relative;
-      z-index: 1;
+      z-index: 2;
     }
 
     .enter-btn:hover,
     .enter-btn:focus-visible {
-      color: #f0e6d3;
-      border-color: rgba(201,169,110,0.62);
-      background: linear-gradient(
-        180deg,
-        rgba(255,255,255,0.03) 0%,
-        rgba(201,169,110,0.08) 100%
-      );
+      color: #f3ead8;
+      border-color: rgba(201,169,110,0.34);
+      background: rgba(201,169,110,0.03);
       box-shadow:
-        0 0 24px rgba(201,169,110,0.12),
-        0 0 48px rgba(201,169,110,0.06),
-        inset 0 0 0 1px rgba(255,255,255,0.03);
+        inset 0 0 0 1px rgba(255,255,255,0.02),
+        0 0 20px rgba(201,169,110,0.08),
+        0 0 40px rgba(201,169,110,0.04);
       transform: translateY(-1px);
+    }
+
+    .enter-btn:hover::after,
+    .enter-btn:focus-visible::after {
+      filter:
+        drop-shadow(0 0 6px rgba(255,239,201,0.34))
+        drop-shadow(0 0 16px rgba(201,169,110,0.22));
     }
 
     .enter-btn:active {
@@ -301,23 +307,9 @@
       }
     }
 
-    @keyframes appleShimmer {
-      0%   { transform: translateX(-170%); opacity: 0; }
-      8%   { opacity: 0; }
-      18%  { opacity: 1; }
-      30%  { transform: translateX(170%); opacity: 0; }
-      100% { transform: translateX(170%); opacity: 0; }
-    }
-
-    @keyframes buttonBreathe {
-      0%, 100% {
-        opacity: 0.32;
-        transform: scale(1);
-      }
-      50% {
-        opacity: 0.58;
-        transform: scale(1.015);
-      }
+    @keyframes borderOrbit {
+      0%   { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
     }
 
     @media (max-width: 768px) {
@@ -330,27 +322,26 @@
       .hero-label {
         letter-spacing: 0.18em;
       }
-
-      .enter-btn {
-        padding: 15px 20px;
-      }
     }
 
     @media (prefers-reduced-motion: reduce) {
-      .enter-btn::before,
-      .enter-btn::after,
       .hero-label,
       .hero-title,
       .hero-desc,
-      .hero-actions,
-      body {
+      .hero-actions {
         animation: none !important;
-        transition: none !important;
         transform: none !important;
+        opacity: 1 !important;
+      }
+
+      .enter-btn::after {
+        animation: none !important;
       }
 
       body {
         opacity: 1;
+        transform: none;
+        transition: none;
       }
     }
   </style>
