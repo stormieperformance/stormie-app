@@ -32,7 +32,6 @@
       overflow-x: hidden;
       -webkit-font-smoothing: antialiased;
       position: relative;
-
       opacity: 0;
       transform: translateY(8px);
       transition: opacity 0.8s ease, transform 0.8s ease;
@@ -113,7 +112,6 @@
       line-height: 0.9;
       letter-spacing: -0.03em;
       margin-bottom: 56px;
-
       opacity: 0;
       transform: translateY(10px);
       animation: fadeTitle 1.1s ease 1.3s forwards;
@@ -135,6 +133,9 @@
       line-height: 1.85;
       color: var(--muted);
       font-weight: 300;
+      opacity: 0;
+      transform: translateY(10px);
+      animation: fadeContent 1s ease 2.2s forwards;
     }
 
     .hero-actions {
@@ -142,6 +143,9 @@
       flex-direction: column;
       align-items: flex-end;
       gap: 16px;
+      opacity: 0;
+      transform: translateY(10px);
+      animation: fadeContent 1s ease 2.2s forwards;
     }
 
     .enter-btn {
@@ -205,6 +209,17 @@
     }
 
     @keyframes fadeTitle {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes fadeContent {
       from {
         opacity: 0;
         transform: translateY(10px);
