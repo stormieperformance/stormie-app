@@ -32,8 +32,6 @@
       overflow-x: hidden;
       -webkit-font-smoothing: antialiased;
       position: relative;
-
-      /* NEW */
       opacity: 0;
       transform: translateY(8px);
       transition: opacity 0.8s ease, transform 0.8s ease;
@@ -128,6 +126,13 @@
       font-weight: 300;
     }
 
+    .swap-word {
+      display: inline-block;
+      min-width: 110px;
+      color: var(--gold);
+      transition: opacity 0.35s ease;
+    }
+
     .hero-actions {
       display: flex;
       flex-direction: column;
@@ -145,7 +150,7 @@
       padding: 14px 20px;
       border: 1px solid rgba(201,169,110,0.32);
       background: transparent;
-      transition: border-color 0.2s, color 0.2s, background 0.2s, transform 0.2s;
+      transition: border-color 0.2s, color 0.2s, background 0.2s, transform 0.2s, opacity 0.2s;
     }
 
     .enter-btn:hover {
@@ -153,6 +158,11 @@
       border-color: var(--gold);
       background: var(--gold-dim);
       transform: translateY(-1px);
+    }
+
+    .enter-btn.clicked {
+      transform: scale(0.98);
+      opacity: 0.72;
     }
 
     .hero-meta {
@@ -190,6 +200,7 @@
       .hero-bottom { flex-direction: column; align-items: flex-start; }
       .hero-actions { align-items: flex-start; }
       footer { flex-direction: column; gap: 8px; text-align: center; }
+      .swap-word { min-width: 0; }
     }
   </style>
 </head>
@@ -211,11 +222,13 @@
 
         <div class="hero-bottom">
           <p class="hero-desc">
-            Building digital infrastructure for sports brands. Websites, training apps, e-commerce and client systems — built to your brand, your sport, your clients.
+            Building digital infrastructure for
+            <span class="swap-word" id="swapWord">sports brands</span>.
+            Websites, training apps, e-commerce and client systems — built to your brand, your sport, your clients.
           </p>
 
           <div class="hero-actions">
-            <a class="enter-btn" href="https://stormieperformance.com">Enter Stormie Performance</a>
+            <a class="enter-btn" id="enterBtn" href="https://stormieperformance.com">Enter Stormie Performance</a>
             <div class="hero-meta">Storm Kolmodin</div>
           </div>
         </div>
@@ -228,10 +241,29 @@
     </footer>
   </div>
 
-  <!-- NEW -->
   <script>
     window.addEventListener('load', () => {
       document.body.classList.add('page-loaded');
+    });
+
+    const swapWord = document.getElementById('swapWord');
+    const words = ['sports brands', 'coaches', 'athletes'];
+    let currentIndex = 0;
+
+    setInterval(() => {
+      swapWord.style.opacity = '0';
+
+      setTimeout(() => {
+        currentIndex = (currentIndex + 1) % words.length;
+        swapWord.textContent = words[currentIndex];
+        swapWord.style.opacity = '1';
+      }, 350);
+    }, 2400);
+
+    const enterBtn = document.getElementById('enterBtn');
+
+    enterBtn.addEventListener('click', function () {
+      enterBtn.classList.add('clicked');
     });
   </script>
 </body>
