@@ -99,9 +99,8 @@
       color: var(--gold);
       margin-bottom: 36px;
       white-space: nowrap;
-      overflow: hidden;
-      width: 0;
       opacity: 0;
+      clip-path: inset(0 100% 0 0);
       animation: revealLabel 1.4s cubic-bezier(0.22, 1, 0.36, 1) 0.2s forwards;
     }
 
@@ -199,12 +198,12 @@
 
     @keyframes revealLabel {
       from {
-        width: 0;
         opacity: 0;
+        clip-path: inset(0 100% 0 0);
       }
       to {
-        width: 30ch;
         opacity: 1;
+        clip-path: inset(0 0 0 0);
       }
     }
 
@@ -236,6 +235,10 @@
       .hero-bottom { flex-direction: column; align-items: flex-start; }
       .hero-actions { align-items: flex-start; }
       footer { flex-direction: column; gap: 8px; text-align: center; }
+
+      .hero-label {
+        letter-spacing: 0.18em;
+      }
     }
   </style>
 </head>
