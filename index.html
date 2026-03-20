@@ -190,41 +190,50 @@
       background:
         linear-gradient(
           90deg,
-          rgba(255,240,210,0.28) 0%,
-          rgba(255,240,210,0.36) 12%,
-          rgba(201,169,110,0.12) 25%,
-          rgba(255,240,210,0.18) 40%,
-          rgba(255,240,210,0.42) 50%,
-          rgba(201,169,110,0.10) 65%,
-          rgba(255,240,210,0.34) 82%,
-          rgba(255,240,210,0.26) 100%
+          rgba(255,240,210,0.16) 0%,
+          rgba(255,240,210,0.24) 14%,
+          rgba(201,169,110,0.10) 28%,
+          rgba(255,240,210,0.18) 50%,
+          rgba(201,169,110,0.08) 72%,
+          rgba(255,240,210,0.20) 100%
         );
-      background-size: 260% 100%;
-      background-position: 0% 50%;
       -webkit-mask:
         linear-gradient(#000 0 0) content-box,
         linear-gradient(#000 0 0);
       -webkit-mask-composite: xor;
       mask-composite: exclude;
-      animation:
-        premiumEdgeDrift 16s linear infinite,
-        premiumEdgeBreath 7s ease-in-out infinite;
-      filter:
-        drop-shadow(0 0 2px rgba(255,240,210,0.06))
-        drop-shadow(0 0 6px rgba(201,169,110,0.05));
-      opacity: 0.6;
+      opacity: 0.42;
       z-index: 1;
       pointer-events: none;
+      filter:
+        drop-shadow(0 0 2px rgba(255,240,210,0.04))
+        drop-shadow(0 0 6px rgba(201,169,110,0.04));
     }
 
     .enter-btn span {
       position: relative;
       z-index: 2;
+      background: linear-gradient(
+        120deg,
+        rgba(232,228,220,0.96) 0%,
+        rgba(232,228,220,0.96) 42%,
+        rgba(255,240,200,0.18) 48%,
+        rgba(255,240,200,0.98) 50%,
+        rgba(255,240,200,0.18) 52%,
+        rgba(232,228,220,0.96) 58%,
+        rgba(232,228,220,0.96) 100%
+      );
+      background-size: 250% 100%;
+      background-position: -220% 50%;
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      -webkit-text-fill-color: transparent;
+      animation: electricTextPulse 8s ease-in-out infinite;
     }
 
     .enter-btn:hover,
     .enter-btn:focus-visible {
-      color: #f3ead8;
       border-color: rgba(201,169,110,0.16);
       box-shadow:
         0 0 18px rgba(201,169,110,0.06),
@@ -234,10 +243,10 @@
 
     .enter-btn:hover::before,
     .enter-btn:focus-visible::before {
-      opacity: 0.85;
+      opacity: 0.58;
       filter:
-        drop-shadow(0 0 4px rgba(255,240,210,0.10))
-        drop-shadow(0 0 10px rgba(201,169,110,0.08));
+        drop-shadow(0 0 4px rgba(255,240,210,0.08))
+        drop-shadow(0 0 10px rgba(201,169,110,0.06));
     }
 
     .enter-btn:active {
@@ -306,14 +315,16 @@
       }
     }
 
-    @keyframes premiumEdgeDrift {
-      0%   { background-position: 0% 50%; }
-      100% { background-position: 260% 50%; }
-    }
-
-    @keyframes premiumEdgeBreath {
-      0%, 100% { opacity: 0.55; }
-      50%      { opacity: 0.75; }
+    @keyframes electricTextPulse {
+      0% {
+        background-position: -220% 50%;
+      }
+      9% {
+        background-position: 130% 50%;
+      }
+      100% {
+        background-position: 130% 50%;
+      }
     }
 
     @media (max-width: 768px) {
@@ -335,8 +346,11 @@
         opacity: 1 !important;
       }
 
-      .enter-btn::before {
+      .enter-btn span {
         animation: none !important;
+        background: none !important;
+        color: var(--text) !important;
+        -webkit-text-fill-color: var(--text) !important;
       }
 
       body {
