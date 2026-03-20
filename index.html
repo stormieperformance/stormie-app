@@ -147,7 +147,9 @@
       animation: fadeContent 1s ease 2.2s forwards;
     }
 
+    /* ✨ UPDATED BUTTON */
     .enter-btn {
+      position: relative;
       display: inline-block;
       text-decoration: none;
       color: var(--text);
@@ -157,13 +159,36 @@
       padding: 14px 20px;
       border: 1px solid rgba(201,169,110,0.32);
       background: transparent;
-      transition: border-color 0.2s, color 0.2s, background 0.2s, transform 0.2s;
+      overflow: hidden;
+      transition: all 0.3s ease;
+    }
+
+    .enter-btn::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: -120%;
+      width: 120%;
+      height: 100%;
+      background: linear-gradient(
+        120deg,
+        transparent 0%,
+        rgba(212,175,55,0.15) 40%,
+        rgba(255,240,200,0.35) 50%,
+        rgba(212,175,55,0.15) 60%,
+        transparent 100%
+      );
+      transition: all 0.8s ease;
+    }
+
+    .enter-btn:hover::before {
+      left: 120%;
     }
 
     .enter-btn:hover {
       color: var(--gold);
       border-color: var(--gold);
-      background: var(--gold-dim);
+      box-shadow: 0 0 20px rgba(212,175,55,0.15);
       transform: translateY(-1px);
     }
 
@@ -197,36 +222,18 @@
     }
 
     @keyframes revealLabel {
-      from {
-        opacity: 0;
-        clip-path: inset(0 100% 0 0);
-      }
-      to {
-        opacity: 1;
-        clip-path: inset(0 0 0 0);
-      }
+      from { opacity: 0; clip-path: inset(0 100% 0 0); }
+      to { opacity: 1; clip-path: inset(0 0 0 0); }
     }
 
     @keyframes fadeTitle {
-      from {
-        opacity: 0;
-        transform: translateY(10px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
     @keyframes fadeContent {
-      from {
-        opacity: 0;
-        transform: translateY(10px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
     @media (max-width: 768px) {
@@ -236,12 +243,11 @@
       .hero-actions { align-items: flex-start; }
       footer { flex-direction: column; gap: 8px; text-align: center; }
 
-      .hero-label {
-        letter-spacing: 0.18em;
-      }
+      .hero-label { letter-spacing: 0.18em; }
     }
   </style>
 </head>
+
 <body>
   <div class="page">
     <div class="topbar">
