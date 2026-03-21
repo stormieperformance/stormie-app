@@ -251,6 +251,49 @@
       color: var(--muted2);
     }
 
+    .about {
+      display: grid;
+      grid-template-columns: minmax(260px, 420px) minmax(320px, 1fr);
+      gap: 72px;
+      align-items: start;
+      padding: 88px 0 92px;
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .about-title {
+      font-family: var(--serif);
+      font-size: clamp(56px, 7vw, 84px);
+      font-weight: 300;
+      line-height: 0.9;
+      letter-spacing: -0.03em;
+      color: var(--text);
+    }
+
+    .about-title em {
+      font-style: italic;
+      color: var(--gold);
+      font-weight: 300;
+    }
+
+    .about-right {
+      max-width: 520px;
+      justify-self: end;
+      padding-top: 6px;
+    }
+
+    .about-text {
+      font-size: 14px;
+      line-height: 1.9;
+      color: var(--muted);
+      font-weight: 300;
+      margin-bottom: 26px;
+    }
+
+    .about-text:last-child {
+      margin-bottom: 0;
+    }
+
     footer {
       padding: 24px 0;
       border-top: 1px solid var(--line);
@@ -323,6 +366,18 @@
       .hero-actions { align-items: flex-start; }
       footer { flex-direction: column; gap: 8px; text-align: center; }
       .hero-label { letter-spacing: 0.18em; }
+
+      .about {
+        grid-template-columns: 1fr;
+        gap: 32px;
+        padding: 64px 0 68px;
+      }
+
+      .about-right {
+        justify-self: start;
+        max-width: 100%;
+        padding-top: 0;
+      }
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -375,6 +430,46 @@
       </div>
     </section>
 
+    <section class="about" id="about">
+      <div>
+        <h2 class="about-title">Athlete.<br>Certified PT.<br><em>Builder.</em></h2>
+      </div>
+
+      <div class="about-right">
+        <p class="about-text">
+          Licensed personal trainer, climber and Muay Thai practitioner. Background in tech, systems and agile project management.
+        </p>
+
+        <p class="about-text">
+          I build for the sports and fitness world because I live in it. Every system is designed with the coach, the athlete, and the client in mind.
+        </p>
+
+        <p class="about-text">
+          Storm Kolmodin is the founder of Stormie Performance.
+        </p>
+      </div>
+    </section>
+
+    <section class="about" id="about-2">
+      <div>
+        <h2 class="about-title">Athlete.<br>Certified PT.<br><em>Builder.</em></h2>
+      </div>
+
+      <div class="about-right">
+        <p class="about-text">
+          Licensed personal trainer, climber and Muay Thai practitioner. Background in tech, systems and agile project management.
+        </p>
+
+        <p class="about-text">
+          I build for the sports and fitness world because I live in it. Every system is designed with the coach, the athlete, and the client in mind.
+        </p>
+
+        <p class="about-text">
+          Storm Kolmodin is the founder of Stormie Performance.
+        </p>
+      </div>
+    </section>
+
     <footer>
       <div class="footer-left">Storm Kolmodin</div>
       <div class="footer-right">Stormie Performance</div>
@@ -387,5 +482,6 @@
     });
   </script>
 </body>
+</html>
 
 
