@@ -294,6 +294,35 @@
       margin-bottom: 0;
     }
 
+    /* NEW: reveal states */
+    .reveal-line,
+    .reveal-copy {
+      display: block;
+      opacity: 0;
+      transform: translateY(42px);
+      filter: blur(8px);
+      will-change: transform, opacity, filter;
+      transition:
+        opacity 1s cubic-bezier(0.22, 1, 0.36, 1),
+        transform 1s cubic-bezier(0.22, 1, 0.36, 1),
+        filter 1s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .about.in-view .reveal-line,
+    .about.in-view .reveal-copy {
+      opacity: 1;
+      transform: translateY(0);
+      filter: blur(0);
+    }
+
+    .about.in-view .reveal-line:nth-child(1) { transition-delay: 0.02s; }
+    .about.in-view .reveal-line:nth-child(2) { transition-delay: 0.14s; }
+    .about.in-view .reveal-line:nth-child(3) { transition-delay: 0.26s; }
+
+    .about.in-view .reveal-copy:nth-child(1) { transition-delay: 0.24s; }
+    .about.in-view .reveal-copy:nth-child(2) { transition-delay: 0.38s; }
+    .about.in-view .reveal-copy:nth-child(3) { transition-delay: 0.52s; }
+
     footer {
       padding: 24px 0;
       border-top: 1px solid var(--line);
@@ -384,10 +413,14 @@
       .hero-label,
       .hero-title,
       .hero-desc,
-      .hero-actions {
+      .hero-actions,
+      .reveal-line,
+      .reveal-copy {
         animation: none !important;
         transform: none !important;
         opacity: 1 !important;
+        filter: none !important;
+        transition: none !important;
       }
 
       .enter-btn::before {
@@ -432,19 +465,23 @@
 
     <section class="about" id="about">
       <div>
-        <h2 class="about-title">Athlete.<br>Certified PT.<br><em>Builder.</em></h2>
+        <h2 class="about-title">
+          <span class="reveal-line">Athlete.</span>
+          <span class="reveal-line">Certified PT.</span>
+          <span class="reveal-line"><em>Builder.</em></span>
+        </h2>
       </div>
 
       <div class="about-right">
-        <p class="about-text">
+        <p class="about-text reveal-copy">
           Licensed personal trainer, climber and Muay Thai practitioner. Background in tech, systems and agile project management.
         </p>
 
-        <p class="about-text">
+        <p class="about-text reveal-copy">
           I build for the sports and fitness world because I live in it. Every system is designed with the coach, the athlete, and the client in mind.
         </p>
 
-        <p class="about-text">
+        <p class="about-text reveal-copy">
           Storm Kolmodin is the founder of Stormie Performance.
         </p>
       </div>
@@ -459,9 +496,30 @@
   <script>
     window.addEventListener('load', () => {
       document.body.classList.add('page-loaded');
+
+      const aboutSection = document.querySelector('.about');
+      if (!aboutSection) return;
+
+      const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (reducedMotion) {
+        aboutSection.classList.add('in-view');
+        return;
+      }
+
+      const observer = new IntersectionObserver((entries, obs) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            aboutSection.classList.add('in-view');
+            obs.unobserve(entry.target);
+          }
+        });
+      }, {
+        threshold: 0.22,
+        rootMargin: '0px 0px -8% 0px'
+      });
+
+      observer.observe(aboutSection);
     });
   </script>
 </body>
 </html>
-
-
