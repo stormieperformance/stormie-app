@@ -1,1 +1,955 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Clinch Athletics</title>
+  <meta name="description" content="Premium Muay Thai gear. Limited drops. Clinch Athletics." />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      --bg:#111115;
+      --panel:#17171c;
+      --panel-2:#1d1d23;
+      --text:#f2ede4;
+      --muted:rgba(242,237,228,0.68);
+      --muted-2:rgba(242,237,228,0.48);
+      --gold:#c9a76a;
+      --gold-soft:rgba(201,167,106,0.26);
+      --line:rgba(201,167,106,0.18);
+      --line-soft:rgba(255,255,255,0.08);
+      --max:1400px;
+      --radius:20px;
+      --shadow:0 20px 60px rgba(0,0,0,0.28);
+    }
+
+    *{
+      margin:0;
+      padding:0;
+      box-sizing:border-box;
+    }
+
+    html{
+      scroll-behavior:smooth;
+    }
+
+    body{
+      background:
+        radial-gradient(circle at top, rgba(201,167,106,0.06), transparent 30%),
+        linear-gradient(to bottom, #121216, #0e0e12 70%);
+      color:var(--text);
+      font-family:Inter, sans-serif;
+      -webkit-font-smoothing:antialiased;
+      text-rendering:optimizeLegibility;
+    }
+
+    img{
+      display:block;
+      width:100%;
+      height:auto;
+    }
+
+    a{
+      color:inherit;
+      text-decoration:none;
+    }
+
+    .container{
+      width:min(var(--max), calc(100% - 32px));
+      margin:0 auto;
+    }
+
+    /* NAV */
+
+    .nav-wrap{
+      position:sticky;
+      top:0;
+      z-index:50;
+      backdrop-filter:blur(18px);
+      background:rgba(10,10,14,0.72);
+      border-bottom:1px solid rgba(255,255,255,0.04);
+    }
+
+    .nav{
+      width:min(var(--max), calc(100% - 32px));
+      margin:0 auto;
+      min-height:82px;
+      display:grid;
+      grid-template-columns:1fr auto 1fr;
+      align-items:center;
+      gap:16px;
+    }
+
+    .nav-left,
+    .nav-right{
+      display:flex;
+      align-items:center;
+      gap:18px;
+    }
+
+    .nav-right{
+      justify-content:flex-end;
+    }
+
+    .nav-link{
+      font-size:12px;
+      letter-spacing:0.18em;
+      text-transform:uppercase;
+      color:var(--muted);
+      transition:color 0.25s ease;
+    }
+
+    .nav-link:hover{
+      color:var(--gold);
+    }
+
+    .brand{
+      text-align:center;
+      line-height:0.9;
+      letter-spacing:0.08em;
+    }
+
+    .brand .top,
+    .brand .bottom{
+      display:block;
+      font-family:"Cormorant Garamond", serif;
+      color:var(--gold);
+    }
+
+    .brand .top{
+      font-size:32px;
+      font-weight:500;
+    }
+
+    .brand .bottom{
+      font-size:26px;
+      font-weight:400;
+    }
+
+    .icon-btn{
+      width:40px;
+      height:40px;
+      border:1px solid var(--line);
+      border-radius:999px;
+      display:grid;
+      place-items:center;
+      background:rgba(255,255,255,0.02);
+      transition:all 0.25s ease;
+    }
+
+    .icon-btn:hover{
+      border-color:rgba(201,167,106,0.45);
+      background:rgba(201,167,106,0.06);
+    }
+
+    .icon-btn svg{
+      width:18px;
+      height:18px;
+      stroke:var(--gold);
+    }
+
+    /* HERO */
+
+    .hero{
+      padding:24px 0 10px;
+    }
+
+    .hero-inner{
+      width:min(var(--max), calc(100% - 32px));
+      margin:0 auto;
+      position:relative;
+      min-height:78vh;
+      border:1px solid var(--line-soft);
+      border-radius:28px;
+      overflow:hidden;
+      box-shadow:var(--shadow);
+      background:#0d0d10;
+    }
+
+    .hero-media{
+      position:absolute;
+      inset:0;
+    }
+
+    .hero-media img{
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      filter:saturate(0.92) contrast(1.04) brightness(0.8);
+      transform:scale(1.035);
+      transition:transform 1.8s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .hero-loaded .hero-media img{
+      transform:scale(1.01);
+    }
+
+    .hero-overlay{
+      position:absolute;
+      inset:0;
+      background:
+        linear-gradient(to right, rgba(7,7,9,0.88) 0%, rgba(7,7,9,0.55) 36%, rgba(7,7,9,0.18) 65%, rgba(7,7,9,0.1) 100%),
+        linear-gradient(to top, rgba(7,7,9,0.86) 0%, rgba(7,7,9,0.18) 42%, rgba(7,7,9,0.08) 100%);
+    }
+
+    .hero-content{
+      position:relative;
+      z-index:2;
+      width:min(680px, calc(100% - 48px));
+      padding:72px 0 64px 48px;
+      display:flex;
+      flex-direction:column;
+      justify-content:flex-end;
+      min-height:78vh;
+    }
+
+    .hero-content > * {
+      opacity: 0;
+      transform: translateY(28px);
+      filter: blur(8px);
+      transition:
+        opacity 0.9s cubic-bezier(0.22, 1, 0.36, 1),
+        transform 0.9s cubic-bezier(0.22, 1, 0.36, 1),
+        filter 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .hero-loaded .hero-content > * {
+      opacity: 1;
+      transform: translateY(0);
+      filter: blur(0);
+    }
+
+    .hero-loaded .hero-content > *:nth-child(1) { transition-delay: 0.08s; }
+    .hero-loaded .hero-content > *:nth-child(2) { transition-delay: 0.18s; }
+    .hero-loaded .hero-content > *:nth-child(3) { transition-delay: 0.30s; }
+    .hero-loaded .hero-content > *:nth-child(4) { transition-delay: 0.42s; }
+    .hero-loaded .hero-content > *:nth-child(5) { transition-delay: 0.54s; }
+
+    .eyebrow{
+      color:var(--gold);
+      font-size:11px;
+      letter-spacing:0.26em;
+      text-transform:uppercase;
+      margin-bottom:18px;
+    }
+
+    .hero h1{
+      font-family:"Cormorant Garamond", serif;
+      font-weight:500;
+      font-size:clamp(44px, 8vw, 88px);
+      line-height:0.94;
+      margin-bottom:20px;
+      max-width:8ch;
+    }
+
+    .hero p{
+      color:var(--muted);
+      font-size:15px;
+      line-height:1.8;
+      max-width:560px;
+      margin-bottom:28px;
+    }
+
+    .hero-actions{
+      display:flex;
+      flex-wrap:wrap;
+      gap:14px;
+    }
+
+    .btn{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      min-height:48px;
+      padding:0 20px;
+      border-radius:999px;
+      border:1px solid var(--line);
+      font-size:11px;
+      text-transform:uppercase;
+      letter-spacing:0.18em;
+      transition:all 0.25s ease;
+      cursor:pointer;
+    }
+
+    .btn-primary{
+      color:#121216;
+      background:var(--gold);
+      border-color:var(--gold);
+    }
+
+    .btn-primary:hover{
+      transform:translateY(-1px);
+      filter:brightness(1.03);
+    }
+
+    .btn-secondary{
+      color:var(--gold);
+      background:rgba(201,167,106,0.05);
+    }
+
+    .btn-secondary:hover{
+      background:rgba(201,167,106,0.1);
+      border-color:rgba(201,167,106,0.38);
+    }
+
+    /* SECTION */
+
+    .section{
+      padding:72px 0;
+    }
+
+    .section-header{
+      display:flex;
+      align-items:end;
+      justify-content:space-between;
+      gap:20px;
+      margin-bottom:26px;
+    }
+
+    .section-kicker{
+      font-size:11px;
+      letter-spacing:0.22em;
+      text-transform:uppercase;
+      color:var(--gold);
+      margin-bottom:10px;
+    }
+
+    .section h2{
+      font-family:"Cormorant Garamond", serif;
+      font-size:clamp(34px, 4vw, 54px);
+      font-weight:500;
+      line-height:0.95;
+    }
+
+    .section-sub{
+      color:var(--muted);
+      font-size:14px;
+      line-height:1.7;
+      max-width:420px;
+    }
+
+    /* CAROUSELS */
+
+    .carousel{
+      display:grid;
+      grid-auto-flow:column;
+      grid-auto-columns:minmax(280px, 320px);
+      gap:18px;
+      overflow-x:auto;
+      padding-bottom:8px;
+      scroll-snap-type:x mandatory;
+    }
+
+    .carousel::-webkit-scrollbar{
+      display:none;
+    }
+
+    .card,
+    .series-card{
+      scroll-snap-align:start;
+    }
+
+    .card{
+      background:linear-gradient(to bottom, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border:1px solid var(--line-soft);
+      border-radius:22px;
+      overflow:hidden;
+      box-shadow:var(--shadow);
+    }
+
+    .card-media{
+      aspect-ratio:4/5;
+      overflow:hidden;
+      background:#0d0d11;
+    }
+
+    .card-media img{
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      transition:transform 0.5s ease;
+    }
+
+    .card:hover .card-media img{
+      transform:scale(1.03);
+    }
+
+    .card-body{
+      padding:18px 18px 20px;
+    }
+
+    .card-title{
+      font-family:"Cormorant Garamond", serif;
+      font-size:28px;
+      margin-bottom:8px;
+      line-height:1.04;
+    }
+
+    .price{
+      color:var(--gold);
+      font-size:15px;
+      margin-bottom:16px;
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+      .card .price {
+        opacity: 0;
+        transform: translateY(10px);
+        filter: blur(4px);
+        transition:
+          opacity 0.35s ease,
+          transform 0.35s ease,
+          filter 0.35s ease;
+      }
+
+      .card:hover .price,
+      .card:focus-within .price {
+        opacity: 1;
+        transform: translateY(0);
+        filter: blur(0);
+      }
+    }
+
+    .text-link{
+      display:inline-flex;
+      align-items:center;
+      gap:10px;
+      color:var(--text);
+      font-size:11px;
+      letter-spacing:0.18em;
+      text-transform:uppercase;
+    }
+
+    .text-link span:last-child{
+      color:var(--gold);
+    }
+
+    /* SERIES */
+
+    .series-card{
+      position:relative;
+      min-width:300px;
+      border-radius:24px;
+      overflow:hidden;
+      border:1px solid var(--line-soft);
+      background:#0d0d11;
+      aspect-ratio:4/5;
+      box-shadow:var(--shadow);
+    }
+
+    .series-card img{
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      filter:brightness(0.7);
+      transition:transform 0.5s ease;
+    }
+
+    .series-card:hover img{
+      transform:scale(1.04);
+    }
+
+    .series-overlay{
+      position:absolute;
+      inset:0;
+      background:linear-gradient(to top, rgba(7,7,9,0.92), rgba(7,7,9,0.15));
+    }
+
+    .series-content{
+      position:absolute;
+      left:22px;
+      right:22px;
+      bottom:22px;
+      z-index:2;
+    }
+
+    .series-label{
+      font-size:10px;
+      letter-spacing:0.22em;
+      text-transform:uppercase;
+      color:var(--gold);
+      margin-bottom:8px;
+    }
+
+    .series-content h3{
+      font-family:"Cormorant Garamond", serif;
+      font-size:34px;
+      font-weight:500;
+      line-height:0.95;
+      margin-bottom:10px;
+    }
+
+    .series-content p{
+      color:var(--muted);
+      font-size:14px;
+      line-height:1.7;
+      max-width:28ch;
+    }
+
+    /* ABOUT */
+
+    .about-grid{
+      display:grid;
+      grid-template-columns:1.1fr 0.9fr;
+      gap:34px;
+      align-items:start;
+    }
+
+    .about-copy{
+      padding:28px;
+      border:1px solid var(--line-soft);
+      border-radius:24px;
+      background:linear-gradient(to bottom, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+    }
+
+    .about-copy h2{
+      margin-bottom:20px;
+    }
+
+    .about-copy p{
+      color:var(--muted);
+      line-height:1.9;
+      font-size:15px;
+      margin-bottom:14px;
+      max-width:62ch;
+    }
+
+    .about-note{
+      color:var(--gold);
+      font-size:11px;
+      letter-spacing:0.2em;
+      text-transform:uppercase;
+      margin-top:10px;
+    }
+
+    .about-image{
+      border-radius:24px;
+      overflow:hidden;
+      border:1px solid var(--line-soft);
+      min-height:100%;
+      background:#0d0d11;
+      box-shadow:var(--shadow);
+    }
+
+    .about-image img{
+      width:100%;
+      height:100%;
+      min-height:520px;
+      object-fit:cover;
+      filter:brightness(0.82);
+    }
+
+    /* NEWSLETTER */
+
+    .newsletter{
+      padding:0 0 88px;
+    }
+
+    .newsletter-box{
+      width:min(var(--max), calc(100% - 32px));
+      margin:0 auto;
+      border:1px solid var(--line);
+      border-radius:28px;
+      padding:34px;
+      background:
+        radial-gradient(circle at top right, rgba(201,167,106,0.08), transparent 28%),
+        linear-gradient(to bottom, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      box-shadow:var(--shadow);
+    }
+
+    .newsletter-kicker{
+      color:var(--gold);
+      text-transform:uppercase;
+      letter-spacing:0.2em;
+      font-size:11px;
+      margin-bottom:10px;
+    }
+
+    .newsletter h2{
+      font-family:"Cormorant Garamond", serif;
+      font-size:clamp(34px, 4vw, 52px);
+      font-weight:500;
+      margin-bottom:12px;
+      line-height:0.96;
+    }
+
+    .newsletter p{
+      color:var(--muted);
+      line-height:1.8;
+      margin-bottom:22px;
+      max-width:56ch;
+    }
+
+    .newsletter-form{
+      display:flex;
+      gap:12px;
+      flex-wrap:wrap;
+    }
+
+    .newsletter-form input{
+      flex:1 1 280px;
+      min-height:52px;
+      background:#0f0f13;
+      border:1px solid var(--line-soft);
+      border-radius:999px;
+      color:var(--text);
+      padding:0 18px;
+      font-size:14px;
+      outline:none;
+    }
+
+    .newsletter-form input::placeholder{
+      color:var(--muted-2);
+    }
+
+    .newsletter-form button{
+      min-height:52px;
+      padding:0 22px;
+      border-radius:999px;
+      border:1px solid var(--gold);
+      background:var(--gold);
+      color:#121216;
+      font-size:11px;
+      letter-spacing:0.18em;
+      text-transform:uppercase;
+      cursor:pointer;
+    }
+
+    /* FOOTER */
+
+    .footer{
+      width:min(var(--max), calc(100% - 32px));
+      margin:0 auto;
+      padding:0 0 28px;
+      display:flex;
+      justify-content:space-between;
+      gap:16px;
+      flex-wrap:wrap;
+      color:var(--muted-2);
+      font-size:12px;
+      border-top:1px solid rgba(255,255,255,0.05);
+      padding-top:18px;
+    }
+
+    @media (max-width: 920px){
+      .nav{
+        grid-template-columns:auto 1fr auto;
+      }
+
+      .nav-left .nav-link{
+        display:none;
+      }
+
+      .hero-inner,
+      .hero-content{
+        min-height:70vh;
+      }
+
+      .hero-content{
+        padding:56px 24px 36px;
+      }
+
+      .about-grid{
+        grid-template-columns:1fr;
+      }
+
+      .about-image img{
+        min-height:360px;
+      }
+    }
+
+    @media (max-width: 640px){
+      .nav{
+        min-height:74px;
+      }
+
+      .brand .top{
+        font-size:24px;
+      }
+
+      .brand .bottom{
+        font-size:19px;
+      }
+
+      .hero{
+        padding-top:14px;
+      }
+
+      .hero-inner{
+        border-radius:22px;
+      }
+
+      .hero h1{
+        max-width:10ch;
+      }
+
+      .section{
+        padding:56px 0;
+      }
+
+      .carousel{
+        grid-auto-columns:minmax(250px, 84vw);
+      }
+
+      .series-card{
+        min-width:82vw;
+      }
+
+      .newsletter-box{
+        padding:24px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .hero-content > * {
+        opacity: 1 !important;
+        transform: none !important;
+        filter: none !important;
+        transition: none !important;
+      }
+
+      .hero-media img {
+        transform: scale(1.01) !important;
+        transition: none !important;
+      }
+
+      .card .price {
+        opacity: 1 !important;
+        transform: none !important;
+        filter: none !important;
+        transition: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="nav-wrap">
+    <nav class="nav">
+      <div class="nav-left">
+        <a href="#" class="nav-link">Home</a>
+        <a href="#products" class="nav-link">Catalog</a>
+        <a href="#about" class="nav-link">About</a>
+      </div>
+
+      <a href="#" class="brand" aria-label="Clinch Athletics home">
+        <span class="top">CLINCH</span>
+        <span class="bottom">ATHLETICS</span>
+      </a>
+
+      <div class="nav-right">
+        <a href="#" class="icon-btn" aria-label="Search">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="11" cy="11" r="6.5"></circle>
+            <path d="M16 16l4.2 4.2"></path>
+          </svg>
+        </a>
+      </div>
+    </nav>
+  </div>
+
+  <section class="hero">
+    <div class="hero-inner">
+      <div class="hero-media">
+        <img src="images/midnighthero.png" alt="Clinch Athletics hero image">
+      </div>
+      <div class="hero-overlay"></div>
+
+      <div class="hero-content">
+        <div class="eyebrow">Limited production gear</div>
+        <div class="eyebrow">Stockholm / Bangkok</div>
+        <h1>Designed for Muay Thai.</h1>
+        <p>
+          Premium combat equipment built around controlled releases, bold silhouettes,
+          and performance-led design. Created for fighters who value precision, identity,
+          and restraint.
+        </p>
+        <div class="hero-actions">
+          <a href="#products" class="btn btn-primary">Discover collection</a>
+          <a href="#newsletter" class="btn btn-secondary">Subscribe to emails</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section container" id="products">
+    <div class="section-header">
+      <div>
+        <div class="section-kicker">Selected items</div>
+        <h2>Premium fight gear for champions</h2>
+      </div>
+      <p class="section-sub">
+       
+      </p>
+    </div>
+
+    <div class="carousel">
+      <article class="card">
+        <div class="card-media">
+         <img src="images/midnightcloseup.png" alt="Midnight Tiger Shorts">
+        </div>
+        <div class="card-body">
+          <h3 class="card-title">Midnight Tiger Shorts</h3>
+          <div class="price">1,499 kr</div>
+          <a href="#" class="text-link"><span>View product</span><span>→</span></a>
+        </div>
+      </article>
+
+      <article class="card">
+        <div class="card-media">
+          <img src="images/mouthguardbox.png" alt="Guardian Tiger Mouthguard">
+        </div>
+        <div class="card-body">
+          <h3 class="card-title">Guardian Tiger Mouthguard</h3>
+          <div class="price">699 kr</div>
+          <a href="#" class="text-link"><span>View product</span><span>→</span></a>
+        </div>
+      </article>
+
+      <article class="card">
+        <div class="card-media">
+          <img src="images/handwraps1.png" alt="Guardian Hand Wraps">
+        </div>
+        <div class="card-body">
+          <h3 class="card-title">Guardian Hand Wraps</h3>
+          <div class="price">499 kr</div>
+          <a href="#" class="text-link"><span>View product</span><span>→</span></a>
+        </div>
+      </article>
+
+      <article class="card">
+        <div class="card-media">
+          <img src="images/jumpropecloseup.png" alt="Velocity Jump Rope">
+        </div>
+        <div class="card-body">
+          <h3 class="card-title">Velocity Jump Rope</h3>
+          <div class="price">899 kr</div>
+          <a href="#" class="text-link"><span>View product</span><span>→</span></a>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <section class="section container">
+    <div class="section-header">
+      <div>
+        <div class="section-kicker">Explore our series</div>
+        <h2>Built as distinct identities</h2>
+      </div>
+      <p class="section-sub">
+        Guardian. Midnight. Velocity. Victory. Each line carries its own mood, material language, and purpose.
+      </p>
+    </div>
+
+    <div class="carousel">
+      <article class="series-card">
+        <img src="images/mouthguardcloseup.png" alt="Guardian Series">
+        <div class="series-overlay"></div>
+        <div class="series-content">
+          <div class="series-label">Series I</div>
+          <h3>Guardian</h3>
+          <p>Protection, control, and presence. A defensive visual language built for composure under pressure.</p>
+        </div>
+      </article>
+
+      <article class="series-card">
+        <img src="images/midnight.png" alt="Midnight Series">
+        <div class="series-overlay"></div>
+        <div class="series-content">
+          <div class="series-label">Series II</div>
+          <h3>Midnight</h3>
+          <p>Low-light aggression. Sharper contrast, darker energy, and a more covert luxury expression.</p>
+        </div>
+      </article>
+
+      <article class="series-card">
+        <img src="images/jumpropecloseup.png" alt="Velocity Series"> 
+        <div class="series-overlay"></div>
+        <div class="series-content">
+          <div class="series-label">Series III</div>
+          <h3>Velocity</h3>
+          <p>Speed, rhythm, and acceleration. Built around movement quality and repeat precision.</p>
+        </div>
+      </article>
+
+      <article class="series-card">
+        <img src="images/victoryhero1.png" alt="Victory Series">
+        <div class="series-overlay"></div>
+        <div class="series-content">
+          <div class="series-label">Series IIII</div>
+          <h3>Victory</h3>
+          <p>Outcome, dominance, and arrival. A ceremonial expression of earned status and final form.</p>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <section class="section container" id="about">
+    <div class="about-grid">
+      <div class="about-copy">
+        <div class="section-kicker">About Clinch</div>
+        <h2>An independent combat label.</h2>
+        <p>
+          Clinch Athletics is built around controlled releases, visual restraint, and performance-first design.
+          The intention is not mass availability, but sharper identity through fewer, stronger pieces.
+        </p>
+        <p>
+          Each series represents a distinct function in combat performance, translating movement, protection,
+          and tempo into objects that feel deliberate rather than generic.
+        </p>
+        <p>
+          Produced in restricted quantities.
+        </p>
+        <div class="about-note">Limited drops only</div>
+      </div>
+
+      <div class="about-image">
+        <img src="images/midnighthero2.png" alt="Clinch Athletics editorial image">
+      </div>
+    </div>
+  </section>
+
+  <section class="newsletter" id="newsletter">
+    <div class="newsletter-box">
+      <div class="newsletter-kicker">Subscribe to our emails</div>
+      <h2>Stay close to the next drop.</h2>
+      <p>
+        Be the first to know about future collections, restricted releases, and selected updates from Clinch Athletics.
+      </p>
+
+      <form class="newsletter-form">
+        <input type="email" placeholder="Email address" aria-label="Email address">
+        <button type="submit">Subscribe</button>
+      </form>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div>© 2026 Clinch Athletics</div>
+    <div>Premium Muay Thai gear</div>
+  </footer>
+
+  <script>
+    window.addEventListener('load', function () {
+      const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      if (reducedMotion) {
+        document.body.classList.add('hero-loaded');
+        return;
+      }
+
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          document.body.classList.add('hero-loaded');
+        });
+      });
+    });
+  </script>
+
+</body>
+</html>
 
