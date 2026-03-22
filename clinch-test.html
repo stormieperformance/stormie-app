@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Clinch Athletics</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg: #17171b;
+      --text: #f2eee8;
+      --muted: rgba(242,238,232,0.7);
+      --gold: #d4ac60;
+      --line: rgba(212,172,96,0.3);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Inter", sans-serif;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    /* NAV */
+
+    .nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .brand {
+      font-family: "Cormorant Garamond", serif;
+      color: var(--gold);
+      font-size: 36px;
+      text-align: center;
+      line-height: 0.9;
+    }
+
+    /* HERO */
+
+    .hero {
+      padding: 40px 0;
+    }
+
+    .hero h1 {
+      font-family: "Cormorant Garamond", serif;
+      font-size: 64px;
+      line-height: 0.9;
+      margin-bottom: 20px;
+    }
+
+    .hero p {
+      color: var(--muted);
+      max-width: 500px;
+      line-height: 1.8;
+    }
+
+    .hero img {
+      width: 100%;
+      margin-top: 30px;
+      border: 1px solid var(--line);
+    }
+
+    /* BUTTON */
+
+    .button {
+      display: inline-block;
+      margin-top: 20px;
+      padding: 14px 24px;
+      border: 1px solid var(--gold);
+      color: var(--gold);
+      text-transform: uppercase;
+      font-size: 12px;
+      letter-spacing: 0.15em;
+    }
+
+    .button.gold {
+      background: var(--gold);
+      color: #111;
+    }
+
+    /* SECTION */
+
+    .section {
+      padding: 60px 0;
+      border-top: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .section h2 {
+      font-family: "Cormorant Garamond", serif;
+      font-size: 56px;
+      margin-bottom: 20px;
+    }
+
+    .section p {
+      color: var(--muted);
+      max-width: 500px;
+      line-height: 1.8;
+    }
+
+    /* PRODUCT */
+
+    .product {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 30px;
+      align-items: center;
+    }
+
+    .product img {
+      width: 100%;
+      border: 1px solid var(--line);
+    }
+
+    .product h3 {
+      font-family: "Cormorant Garamond", serif;
+      font-size: 42px;
+    }
+
+    /* MOBILE */
+
+    @media (max-width: 768px) {
+      .product {
+        grid-template-columns: 1fr;
+      }
+
+      .hero h1 {
+        font-size: 48px;
+      }
+
+      .section h2 {
+        font-size: 40px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="container">
+
+    <div class="nav">
+      <div>☰</div>
+      <div class="brand">CLINCH<br>ATHLETICS</div>
+      <div>🔍</div>
+    </div>
+
+    <!-- HERO -->
+
+    <section class="hero">
+      <h1>Designed for Muay Thai.</h1>
+      <p>
+        Premium fight gear for champions. Limited production pieces built for identity and performance.
+      </p>
+
+      <a class="button gold">Discover collection</a>
+
+      <img src="https://images.unsplash.com/photo-1600185365926-3a2ce3cdb9eb?q=80&w=1200" />
+    </section>
+
+    <!-- PRODUCT -->
+
+    <section class="section">
+      <div class="product">
+        <img src="https://images.unsplash.com/photo-1600185365926-3a2ce3cdb9eb?q=80&w=1200" />
+
+        <div>
+          <h3>Midnight Tiger Shorts</h3>
+          <p>
+            Black satin base, gold detailing, premium embroidery. Built for a sharper luxury fightwear direction.
+          </p>
+
+          <a class="button gold">Join the waitlist</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ABOUT -->
+
+    <section class="section">
+      <h2>About Clinch</h2>
+      <p>
+        Clinch Athletics is a premium Muay Thai concept focused on limited production gear and strong visual identity.
+      </p>
+    </section>
+
+  </div>
+
+</body>
+</html>
