@@ -672,6 +672,7 @@
         return;
       }
 
+    setTimeout(() => {
       const observer = new IntersectionObserver((entries, obs) => {
         entries.forEach(entry => {
           if (entry.isIntersecting) {
@@ -685,7 +686,7 @@
       });
 
       revealSections.forEach(section => observer.observe(section));
-    });
+    }, 2400);
   </script>
 </body>
 </html>
