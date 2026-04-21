@@ -133,6 +133,13 @@ const acorns = [
   {x: 472, y: 648, collected: false}
 ];
 
+// SLIMES
+const slimes = [
+  { x: 300, y: 200, alive: true },
+  { x: 500, y: 400, alive: true },
+  { x: 700, y: 300, alive: true }
+];
+
 // MAGIC PROJECTILES
 const projectiles = [];
 
@@ -164,6 +171,16 @@ function updateProjectiles() {
     p.x += p.vx;
     p.y += p.vy;
     p.life--;
+
+    for (const s of slimes) {
+      if (!s.alive) continue;
+
+      const d = Math.hypot(p.x - s.x, p.y - s.y);
+      if (d < 10) {
+        s.alive = false;
+        p.life = 0;
+      }
+    }
 
     if (p.x < 0 || p.y < 0 || p.x > WORLD_W || p.y > WORLD_H || p.life <= 0) {
       projectiles.splice(i, 1);
@@ -374,6 +391,18 @@ function drawProjectile(p) {
   }
 }
 
+function drawSlime(s) {
+  if (!s.alive) return;
+
+  const sx = Math.floor(s.x - camera.x);
+  const sy = Math.floor(s.y - camera.y);
+
+  r(sx - 6, sy - 4, 12, 8, "#4caf50");
+  r(sx - 5, sy + 2, 10, 3, "#388e3c");
+  r(sx - 3, sy - 1, 2, 2, "#111");
+  r(sx + 1, sy - 1, 2, 2, "#111");
+}
+
 function drawPlayer() {
   const sx = Math.floor(player.x - camera.x);
   const sy = Math.floor(player.y - camera.y);
@@ -485,6 +514,7 @@ function drawWorld() {
   }
 
   for (const p of projectiles) drawProjectile(p);
+  for (const s of slimes) drawSlime(s);
 
   drawPlayer();
 
@@ -506,6 +536,9 @@ function drawWorld() {
   ctx.fillStyle = "#111";
   ctx.font = "8px monospace";
   ctx.fillText(`ACORNS ${collected}/10`, 8, 14);
+
+  const livingSlimes = slimes.filter(s => s.alive).length;
+  ctx.fillText(`SLIMES ${livingSlimes}`, 8, 24);
 
   if (collected === 10) {
     r(72, 62, 112, 18, "rgba(255,255,255,0.75)");
