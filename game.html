@@ -36,14 +36,13 @@ window.addEventListener("resize", resize);
 
 const GAME_W = 256;
 const GAME_H = 144;
-
 const WORLD_W = 1600;
 const WORLD_H = 2400;
 const TILE = 16;
 
 const camera = { x: 0, y: 0 };
 
-// ---------------- INPUT ----------------
+// INPUT
 let joystickTouchId = null;
 let attackTouchId = null;
 let joystickActive = false;
@@ -134,7 +133,7 @@ canvas.addEventListener("touchcancel", e => {
   for (const t of e.changedTouches) handleTouchEnd(t);
 }, { passive: false });
 
-// ---------------- PLAYER ----------------
+// PLAYER
 const player = {
   x: 120,
   y: 120,
@@ -149,7 +148,7 @@ const player = {
   invuln: 0
 };
 
-// ---------------- WORLD ----------------
+// WORLD
 const blocked = [];
 
 const trees = [
@@ -180,17 +179,20 @@ const acorns = [
   {x: 472, y: 648, collected: false}
 ];
 
+// ENEMIES
 const slimes = [
-  { x: 300, y: 200, alive: true, vx: 0.4, vy: 0.2, timer: 0 },
-  { x: 500, y: 400, alive: true, vx: -0.35, vy: 0.3, timer: 0 },
-  { x: 700, y: 300, alive: true, vx: 0.25, vy: -0.4, timer: 0 }
+  { x: 300, y: 200, alive: true, vx: 0.4, vy: 0.2, timer: 0, hitFlash: 0, deadTimer: 0 },
+  { x: 500, y: 400, alive: true, vx: -0.35, vy: 0.3, timer: 0, hitFlash: 0, deadTimer: 0 },
+  { x: 700, y: 300, alive: true, vx: 0.25, vy: -0.4, timer: 0, hitFlash: 0, deadTimer: 0 }
 ];
 
+// MAGIC + EFFECTS
 const projectiles = [];
+const hitEffects = [];
 
 let gameOver = false;
 
-// ---------------- GAME HELPERS ----------------
+// RESET
 function restartGame() {
   player.x = 120;
   player.y = 120;
@@ -202,12 +204,13 @@ function restartGame() {
   player.invuln = 0;
 
   projectiles.length = 0;
+  hitEffects.length = 0;
 
   slimes.length = 0;
   slimes.push(
-    { x: 300, y: 200, alive: true, vx: 0.4, vy: 0.2, timer: 0 },
-    { x: 500, y: 400, alive: true, vx: -0.35, vy: 0.3, timer: 0 },
-    { x: 700, y: 300, alive: true, vx: 0.25, vy: -0.4, timer: 0 }
+    { x: 300, y: 200, alive: true, vx: 0.4, vy: 0.2, timer: 0, hitFlash: 0, deadTimer: 0 },
+    { x: 500, y: 400, alive: true, vx: -0.35, vy: 0.3, timer: 0, hitFlash: 0, deadTimer: 0 },
+    { x: 700, y: 300, alive: true, vx: 0.25, vy: -0.4, timer: 0, hitFlash: 0, deadTimer: 0 }
   );
 
   for (const a of acorns) a.collected = false;
@@ -244,6 +247,7 @@ function castSpell() {
   player.castCooldown = 20;
 }
 
+// HELPERS
 function rectsOverlap(ax, ay, aw, ah, bx, by, bw, bh) {
   return ax < bx + bw && ax + aw > bx && ay < by + bh && ay + ah > by;
 }
@@ -268,6 +272,25 @@ function canMoveTo(nx, ny) {
   return true;
 }
 
+function r(x, y, w, h, c) {
+  ctx.fillStyle = c;
+  ctx.fillRect(Math.floor(x), Math.floor(y), Math.floor(w), Math.floor(h));
+}
+
+function spawnHitEffect(x, y, color1 = "#bff7ff", color2 = "#36cfff") {
+  for (let i = 0; i < 8; i++) {
+    hitEffects.push({
+      x,
+      y,
+      vx: (Math.random() - 0.5) * 2.4,
+      vy: (Math.random() - 0.5) * 2.4,
+      life: 14 + Math.floor(Math.random() * 8),
+      color: i % 2 === 0 ? color1 : color2
+    });
+  }
+}
+
+// UPDATE
 function updateProjectiles() {
   for (let i = projectiles.length - 1; i >= 0; i--) {
     const p = projectiles[i];
@@ -281,7 +304,10 @@ function updateProjectiles() {
       const d = Math.hypot(p.x - s.x, p.y - s.y);
       if (d < 10) {
         s.alive = false;
+        s.hitFlash = 10;
+        s.deadTimer = 10;
         p.life = 0;
+        spawnHitEffect(s.x, s.y, "#d8ffd8", "#58d66d");
       }
     }
 
@@ -293,7 +319,12 @@ function updateProjectiles() {
 
 function updateSlimes() {
   for (const s of slimes) {
-    if (!s.alive) continue;
+    if (s.hitFlash > 0) s.hitFlash--;
+
+    if (!s.alive) {
+      if (s.deadTimer > 0) s.deadTimer--;
+      continue;
+    }
 
     s.timer--;
     if (s.timer <= 0) {
@@ -323,6 +354,7 @@ function updateSlimes() {
     if (d < 14 && player.invuln <= 0) {
       player.hp--;
       player.invuln = 60;
+      spawnHitEffect(player.x, player.y, "#ffd1d9", "#ff4d6d");
 
       const knockX = player.x - s.x;
       const knockY = player.y - s.y;
@@ -339,7 +371,21 @@ function updateSlimes() {
   }
 }
 
-// ---------------- UPDATE ----------------
+function updateHitEffects() {
+  for (let i = hitEffects.length - 1; i >= 0; i--) {
+    const e = hitEffects[i];
+    e.x += e.vx;
+    e.y += e.vy;
+    e.life--;
+    e.vx *= 0.94;
+    e.vy *= 0.94;
+
+    if (e.life <= 0) {
+      hitEffects.splice(i, 1);
+    }
+  }
+}
+
 function update() {
   if (!gameOver) {
     let dx = 0;
@@ -388,18 +434,16 @@ function update() {
 
     updateProjectiles();
     updateSlimes();
+    updateHitEffects();
+  } else {
+    updateHitEffects();
   }
 
   camera.x = Math.max(0, Math.min(WORLD_W - GAME_W, player.x - GAME_W / 2));
   camera.y = Math.max(0, Math.min(WORLD_H - GAME_H, player.y - GAME_H / 2));
 }
 
-// ---------------- DRAW HELPERS ----------------
-function r(x, y, w, h, c) {
-  ctx.fillStyle = c;
-  ctx.fillRect(Math.floor(x), Math.floor(y), Math.floor(w), Math.floor(h));
-}
-
+// DRAW
 function drawGround() {
   const startX = Math.floor(camera.x / TILE) * TILE;
   const startY = Math.floor(camera.y / TILE) * TILE;
@@ -520,14 +564,24 @@ function drawProjectile(p) {
   }
 }
 
+function drawHitEffect(e) {
+  const sx = Math.floor(e.x - camera.x);
+  const sy = Math.floor(e.y - camera.y);
+  r(sx, sy, 2, 2, e.color);
+}
+
 function drawSlime(s) {
-  if (!s.alive) return;
+  if (!s.alive && s.deadTimer <= 0) return;
 
   const sx = Math.floor(s.x - camera.x);
   const sy = Math.floor(s.y - camera.y);
 
-  r(sx - 6, sy - 4, 12, 8, "#4caf50");
-  r(sx - 5, sy + 2, 10, 3, "#388e3c");
+  const flash = s.hitFlash > 0;
+  const body = flash ? "#ffffff" : "#4caf50";
+  const base = flash ? "#d8ffd8" : "#388e3c";
+
+  r(sx - 6, sy - 4, 12, 8, body);
+  r(sx - 5, sy + 2, 10, 3, base);
   r(sx - 3, sy - 1, 2, 2, "#111");
   r(sx + 1, sy - 1, 2, 2, "#111");
 }
@@ -677,6 +731,7 @@ function drawWorld() {
     if (!a.collected) drawAcorn(a);
   }
 
+  for (const e of hitEffects) drawHitEffect(e);
   for (const p of projectiles) drawProjectile(p);
   for (const s of slimes) drawSlime(s);
 
