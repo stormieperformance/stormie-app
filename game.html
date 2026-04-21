@@ -163,6 +163,7 @@ const bushes = [
   {x: 400, y: 400}, {x: 416, y: 400}, {x: 432, y: 400},
   {x: 160, y: 608}, {x: 176, y: 608}, {x: 192, y: 608}
 ];
+
 const rocks = [
   { x: 154, y: 138, w: 10, h: 8 },
   { x: 214, y: 186, w: 12, h: 9 },
@@ -202,13 +203,14 @@ const pond = {
 };
 
 const reeds = [
-  { x: 642, y: 178 },
-  { x: 650, y: 198 },
-  { x: 654, y: 220 },
+  { x: 682, y: 178 },
+  { x: 690, y: 198 },
+  { x: 694, y: 220 },
   { x: 816, y: 176 },
   { x: 822, y: 198 },
   { x: 814, y: 220 }
 ];
+
 const cabin = { x: 520, y: 560, w: 96, h: 80 };
 
 const acorns = [
@@ -330,6 +332,10 @@ function addBlockedRect(x, y, w, h) {
 
 for (const t of trees) addBlockedRect(t.x - 6, t.y + 10, 12, 10);
 for (const b of bushes) addBlockedRect(b.x - 8, b.y - 4, 16, 10);
+for (const rock of rocks) addBlockedRect(rock.x - rock.w / 2, rock.y - rock.h / 2, rock.w, rock.h);
+for (const stump of stumps) addBlockedRect(stump.x - 6, stump.y - 4, 12, 10);
+for (const f of fences) addBlockedRect(f.x, f.y, f.w, f.h);
+addBlockedRect(pond.x + 8, pond.y + 8, pond.w - 16, pond.h - 16);
 addBlockedRect(cabin.x + 8, cabin.y + 36, cabin.w - 16, cabin.h - 36);
 
 function canMoveTo(nx, ny) {
@@ -596,17 +602,22 @@ function drawGround() {
       const sx = x - camera.x;
       const sy = y - camera.y;
 
-      r(
-        sx,
-        sy,
-        TILE,
-        TILE,
-        ((Math.floor(x / TILE) + Math.floor(y / TILE)) % 2 === 0) ? "#71c95b" : "#68b852"
-      );
+      const checker = (Math.floor(x / TILE) + Math.floor(y / TILE)) % 2 === 0;
+      const patch = ((Math.floor(x / 48) + Math.floor(y / 48)) % 3 === 0);
+
+      let grass = checker ? "#71c95b" : "#68b852";
+      if (patch) grass = checker ? "#6bbc57" : "#62ad4f";
+
+      r(sx, sy, TILE, TILE, grass);
 
       r(sx + 3, sy + 5, 1, 1, "#97d77b");
       r(sx + 11, sy + 9, 1, 1, "#97d77b");
       r(sx + 7, sy + 13, 1, 1, "#5aa848");
+
+      if ((Math.floor(x / 16) * 7 + Math.floor(y / 16) * 13) % 11 === 0) {
+        r(sx + 5, sy + 7, 2, 1, "#4d9440");
+        r(sx + 8, sy + 10, 1, 2, "#4d9440");
+      }
     }
   }
 
@@ -625,6 +636,19 @@ function drawGround() {
         r(p.x - camera.x + i + 2, p.y - camera.y + j + 2, 2, 2, "#b79656");
       }
     }
+  }
+
+  const dirtPatches = [
+    { x: 118, y: 150, w: 34, h: 18 },
+    { x: 302, y: 168, w: 28, h: 16 },
+    { x: 468, y: 176, w: 26, h: 16 },
+    { x: 222, y: 520, w: 36, h: 18 },
+    { x: 454, y: 616, w: 28, h: 16 }
+  ];
+
+  for (const d of dirtPatches) {
+    r(d.x - camera.x, d.y - camera.y, d.w, d.h, "#b8955b");
+    r(d.x - camera.x + 4, d.y - camera.y + 3, d.w - 8, d.h - 6, "#c7a56b");
   }
 }
 
@@ -655,6 +679,78 @@ function drawBush(b) {
   const sy = b.y - camera.y;
   r(sx - 8, sy - 6, 16, 10, "#2b7a34");
   r(sx - 6, sy - 8, 12, 4, "#419744");
+}
+
+function drawRock(rock) {
+  const sx = Math.floor(rock.x - camera.x);
+  const sy = Math.floor(rock.y - camera.y);
+
+  r(sx - 6, sy - 4, 12, 8, "#7d8b8f");
+  r(sx - 4, sy - 6, 8, 4, "#97a6aa");
+  r(sx - 2, sy - 2, 2, 2, "#c8d2d4");
+}
+
+function drawStump(stump) {
+  const sx = Math.floor(stump.x - camera.x);
+  const sy = Math.floor(stump.y - camera.y);
+
+  r(sx - 6, sy - 4, 12, 8, "#8a5a2f");
+  r(sx - 4, sy - 2, 8, 4, "#a9703d");
+  r(sx - 1, sy - 1, 2, 2, "#d6b07a");
+}
+
+function drawFlower(f) {
+  const sx = Math.floor(f.x - camera.x);
+  const sy = Math.floor(f.y - camera.y);
+
+  r(sx, sy - 2, 1, 4, "#4d9440");
+  r(sx - 1, sy - 3, 1, 1, f.c);
+  r(sx + 1, sy - 3, 1, 1, f.c);
+  r(sx, sy - 4, 1, 1, f.c);
+  r(sx, sy - 2, 1, 1, "#fff");
+}
+
+function drawFence(f) {
+  const sx = Math.floor(f.x - camera.x);
+  const sy = Math.floor(f.y - camera.y);
+
+  r(sx, sy, f.w, f.h, "#8a5a2f");
+
+  if (f.w > f.h) {
+    for (let i = 0; i < f.w; i += 12) {
+      r(sx + i, sy - 4, 3, 10, "#6f451f");
+    }
+  } else {
+    for (let i = 0; i < f.h; i += 12) {
+      r(sx - 1, sy + i, 6, 3, "#6f451f");
+    }
+  }
+}
+
+function drawReed(reed) {
+  const sx = Math.floor(reed.x - camera.x);
+  const sy = Math.floor(reed.y - camera.y);
+
+  r(sx, sy - 6, 1, 6, "#4f8f3c");
+  r(sx + 2, sy - 8, 1, 8, "#5ea847");
+  r(sx + 4, sy - 5, 1, 5, "#4f8f3c");
+}
+
+function drawPond() {
+  const sx = pond.x - camera.x;
+  const sy = pond.y - camera.y;
+
+  r(sx - 4, sy - 4, pond.w + 8, pond.h + 8, "#d2b777");
+  r(sx, sy, pond.w, pond.h, "#4ca6d8");
+  r(sx + 6, sy + 6, pond.w - 12, pond.h - 12, "#66c3ef");
+
+  r(sx + 18, sy + 16, 22, 4, "#bdefff");
+  r(sx + 58, sy + 28, 18, 3, "#bdefff");
+  r(sx + 82, sy + 56, 24, 4, "#bdefff");
+  r(sx + 36, sy + 62, 14, 3, "#bdefff");
+
+  r(sx + 10, sy + pond.h - 14, 18, 6, "#7bcf63");
+  r(sx + pond.w - 30, sy + 10, 16, 6, "#7bcf63");
 }
 
 function drawCabinBase() {
@@ -902,7 +998,7 @@ function drawToast() {
 
   const w = toastText.length * 6 + 18;
   const x = Math.floor((GAME_W - w) / 2);
-  const y = 32;
+  const y = 34;
 
   r(x, y, w, 14, "rgba(255,255,255,0.65)");
   ctx.fillStyle = "#111";
@@ -913,7 +1009,15 @@ function drawToast() {
 function drawWorld() {
   drawGround();
 
+  drawPond();
+
+  for (const reed of reeds) drawReed(reed);
+  for (const fence of fences) drawFence(fence);
   for (const b of bushes) drawBush(b);
+  for (const rock of rocks) drawRock(rock);
+  for (const stump of stumps) drawStump(stump);
+  for (const flower of flowers) drawFlower(flower);
+
   for (const t of trees) drawTreeBase(t);
   drawCabinBase();
 
@@ -946,12 +1050,10 @@ function drawWorld() {
   );
   drawCabinRoof(nearCabin ? 0.45 : 1);
 
-  drawToast();
-
   const collected = acorns.filter(a => a.collected).length;
   const livingSlimes = slimes.filter(s => s.alive).length;
 
-  const hudX = 4;
+  const hudX = 0;
   const hudY = 0;
 
   r(hudX, hudY, 118, 30, "rgba(255,255,255,0.55)");
@@ -964,6 +1066,8 @@ function drawWorld() {
   for (let i = 0; i < 3; i++) {
     drawHeart(hudX + 82 + i * 10, hudY + 4, i < player.hp);
   }
+
+  drawToast();
 
   if (gameOver) {
     r(52, 54, 152, 34, "rgba(0,0,0,0.7)");
