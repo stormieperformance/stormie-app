@@ -12,6 +12,7 @@
     background: #000;
     touch-action: none;
   }
+
   canvas {
     display: block;
     image-rendering: pixelated;
@@ -42,20 +43,53 @@ const TILE = 16;
 
 const camera = { x: 0, y: 0 };
 
-let touch = null;
+// INPUT
+let moveTouch = null;
+let attackPressed = false;
+
+function getAttackButtonScreen() {
+  return {
+    x: canvas.width - 70,
+    y: canvas.height - 70,
+    r: 42
+  };
+}
+
+function isInsideAttackButton(x, y) {
+  const b = getAttackButtonScreen();
+  return Math.hypot(x - b.x, y - b.y) <= b.r;
+}
+
 canvas.addEventListener("touchstart", e => {
-  touch = e.touches[0];
+  const touches = [...e.touches];
+  const attackTouch = touches.find(t => isInsideAttackButton(t.clientX, t.clientY));
+  const moveCandidate = touches.find(t => !isInsideAttackButton(t.clientX, t.clientY));
+
+  if (attackTouch) {
+    attackPressed = true;
+    castSpell();
+  }
+
+  moveTouch = moveCandidate || null;
 }, { passive: false });
 
 canvas.addEventListener("touchmove", e => {
-  touch = e.touches[0];
+  const touches = [...e.touches];
+  const moveCandidate = touches.find(t => !isInsideAttackButton(t.clientX, t.clientY));
+  moveTouch = moveCandidate || null;
   e.preventDefault();
 }, { passive: false });
 
-canvas.addEventListener("touchend", () => {
-  touch = null;
-});
+canvas.addEventListener("touchend", e => {
+  const touches = [...e.touches];
+  const stillAttack = touches.some(t => isInsideAttackButton(t.clientX, t.clientY));
+  const moveCandidate = touches.find(t => !isInsideAttackButton(t.clientX, t.clientY));
 
+  attackPressed = stillAttack;
+  moveTouch = moveCandidate || null;
+}, { passive: false });
+
+// PLAYER
 const player = {
   x: 120,
   y: 120,
@@ -64,9 +98,11 @@ const player = {
   speed: 1.8,
   dir: "down",
   step: 0,
-  moving: false
+  moving: false,
+  castCooldown: 0
 };
 
+// WORLD DATA
 const blocked = [];
 
 const trees = [
@@ -97,6 +133,45 @@ const acorns = [
   {x: 472, y: 648, collected: false}
 ];
 
+// MAGIC PROJECTILES
+const projectiles = [];
+
+function castSpell() {
+  if (player.castCooldown > 0) return;
+
+  let vx = 0;
+  let vy = 0;
+
+  if (player.dir === "down") vy = 3.5;
+  if (player.dir === "up") vy = -3.5;
+  if (player.dir === "left") vx = -3.5;
+  if (player.dir === "right") vx = 3.5;
+
+  projectiles.push({
+    x: player.x,
+    y: player.y - 2,
+    vx,
+    vy,
+    life: 70
+  });
+
+  player.castCooldown = 20;
+}
+
+function updateProjectiles() {
+  for (let i = projectiles.length - 1; i >= 0; i--) {
+    const p = projectiles[i];
+    p.x += p.vx;
+    p.y += p.vy;
+    p.life--;
+
+    if (p.x < 0 || p.y < 0 || p.x > WORLD_W || p.y > WORLD_H || p.life <= 0) {
+      projectiles.splice(i, 1);
+    }
+  }
+}
+
+// HELPERS
 function rectsOverlap(ax, ay, aw, ah, bx, by, bw, bh) {
   return ax < bx + bw && ax + aw > bx && ay < by + bh && ay + ah > by;
 }
@@ -121,13 +196,20 @@ function canMoveTo(nx, ny) {
   return true;
 }
 
+function r(x, y, w, h, c) {
+  ctx.fillStyle = c;
+  ctx.fillRect(Math.floor(x), Math.floor(y), Math.floor(w), Math.floor(h));
+}
+
+// UPDATE
 function update() {
   let dx = 0;
   let dy = 0;
 
-  if (touch) {
-    const tx = touch.clientX / canvas.width * GAME_W;
-    const ty = touch.clientY / canvas.height * GAME_H;
+  if (moveTouch) {
+    const tx = moveTouch.clientX / canvas.width * GAME_W;
+    const ty = moveTouch.clientY / canvas.height * GAME_H;
+
     dx = tx - GAME_W / 2;
     dy = ty - GAME_H / 2;
 
@@ -156,6 +238,7 @@ function update() {
   if (canMoveTo(player.x, player.y + my)) player.y += my;
 
   if (mx !== 0 || my !== 0) player.step += 0.18;
+  if (player.castCooldown > 0) player.castCooldown--;
 
   for (const a of acorns) {
     if (!a.collected) {
@@ -164,15 +247,13 @@ function update() {
     }
   }
 
+  updateProjectiles();
+
   camera.x = Math.max(0, Math.min(WORLD_W - GAME_W, player.x - GAME_W / 2));
   camera.y = Math.max(0, Math.min(WORLD_H - GAME_H, player.y - GAME_H / 2));
 }
 
-function r(x, y, w, h, c) {
-  ctx.fillStyle = c;
-  ctx.fillRect(Math.floor(x), Math.floor(y), Math.floor(w), Math.floor(h));
-}
-
+// DRAW
 function drawGround() {
   const startX = Math.floor(camera.x / TILE) * TILE;
   const startY = Math.floor(camera.y / TILE) * TILE;
@@ -278,6 +359,21 @@ function drawAcorn(a) {
   r(sx + 1, sy - 6, 1, 2, "#6e4214");
 }
 
+function drawProjectile(p) {
+  const sx = Math.floor(p.x - camera.x);
+  const sy = Math.floor(p.y - camera.y);
+
+  r(sx - 3, sy - 3, 6, 6, "#36cfff");
+  r(sx - 2, sy - 2, 4, 4, "#bff7ff");
+
+  if (Math.abs(p.vx) > 0) {
+    r(sx - (p.vx > 0 ? 7 : -1), sy - 1, 4, 2, "rgba(54,207,255,0.6)");
+  }
+  if (Math.abs(p.vy) > 0) {
+    r(sx - 1, sy - (p.vy > 0 ? 7 : -1), 2, 4, "rgba(54,207,255,0.6)");
+  }
+}
+
 function drawPlayer() {
   const sx = Math.floor(player.x - camera.x);
   const sy = Math.floor(player.y - camera.y);
@@ -354,17 +450,41 @@ function drawPlayer() {
   r(sx + 2, sy + 16 + bob + stepB, 3, 1, "#3b2412");
 }
 
+function drawAttackButton() {
+  const b = getAttackButtonScreen();
+
+  ctx.save();
+  ctx.globalAlpha = 0.9;
+
+  ctx.beginPath();
+  ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+  ctx.fillStyle = attackPressed ? "rgba(90,120,255,0.65)" : "rgba(255,255,255,0.18)";
+  ctx.fill();
+
+  ctx.beginPath();
+  ctx.arc(b.x, b.y, b.r - 8, 0, Math.PI * 2);
+  ctx.fillStyle = attackPressed ? "rgba(76,201,255,0.85)" : "rgba(76,201,255,0.35)";
+  ctx.fill();
+
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "12px monospace";
+  ctx.fillText("MAGIC", b.x - 18, b.y + 4);
+
+  ctx.restore();
+}
+
 function drawWorld() {
   drawGround();
 
   for (const b of bushes) drawBush(b);
-
   for (const t of trees) drawTreeBase(t);
   drawCabinBase();
 
   for (const a of acorns) {
     if (!a.collected) drawAcorn(a);
   }
+
+  for (const p of projectiles) drawProjectile(p);
 
   drawPlayer();
 
@@ -412,6 +532,8 @@ function render() {
   ctx.scale(scale, scale);
   drawWorld();
   ctx.restore();
+
+  drawAttackButton();
 
   requestAnimationFrame(render);
 }
