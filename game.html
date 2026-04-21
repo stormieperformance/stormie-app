@@ -1,54 +1,119 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <title>Forest Gathering</title>
 <style>
-  body {
+  html, body {
     margin: 0;
+    width: 100%;
+    height: 100%;
     background: #111;
+    overflow: hidden;
+    touch-action: none;
+  }
+
+  body {
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 100vh;
   }
 
   canvas {
     image-rendering: pixelated;
-    border: 2px solid #222;
+    image-rendering: crisp-edges;
+    display: block;
+    background: #6bbf59;
   }
 </style>
 </head>
 <body>
-
-<canvas id="game" width="512" height="288"></canvas>
+<canvas id="game"></canvas>
 
 <script>
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 
+const WORLD_W = 512;
+const WORLD_H = 288;
+
+canvas.width = WORLD_W;
+canvas.height = WORLD_H;
+
+function resizeCanvas() {
+  const scale = Math.min(window.innerWidth / WORLD_W, window.innerHeight / WORLD_H);
+  canvas.style.width = `${WORLD_W * scale}px`;
+  canvas.style.height = `${WORLD_H * scale}px`;
+}
+window.addEventListener("resize", resizeCanvas);
+resizeCanvas();
+
 const keys = {};
+window.addEventListener("keydown", e => keys[e.key.toLowerCase()] = true);
+window.addEventListener("keyup", e => keys[e.key.toLowerCase()] = false);
 
-document.addEventListener("keydown", e => keys[e.key.toLowerCase()] = true);
-document.addEventListener("keyup", e => keys[e.key.toLowerCase()] = false);
+// fixed world objects, not random every frame
+const trees = [
+  { x: 60, y: 60, r: 22 },
+  { x: 120, y: 210, r: 20 },
+  { x: 200, y: 70, r: 24 },
+  { x: 290, y: 230, r: 22 },
+  { x: 380, y: 90, r: 21 },
+  { x: 440, y: 200, r: 24 },
+  { x: 70, y: 150, r: 18 },
+  { x: 500, y: 160, r: 18 }
+];
 
-// PLAYER
+const acorns = [
+  { x: 110, y: 95, collected: false },
+  { x: 160, y: 140, collected: false },
+  { x: 210, y: 110, collected: false },
+  { x: 260, y: 180, collected: false },
+  { x: 320, y: 120, collected: false },
+  { x: 360, y: 160, collected: false },
+  { x: 410, y: 100, collected: false },
+  { x: 440, y: 140, collected: false },
+  { x: 180, y: 220, collected: false },
+  { x: 300, y: 220, collected: false }
+];
+
 const player = {
-  x: 250,
-  y: 140,
-  size: 12,
-  speed: 2
+  x: 256,
+  y: 144,
+  w: 12,
+  h: 12,
+  speed: 2.2
 };
 
-// ACORNS
-const acorns = [];
-for (let i = 0; i < 10; i++) {
-  acorns.push({
-    x: Math.random() * 480 + 16,
-    y: Math.random() * 250 + 16,
-    collected: false
-  });
+function circleRectColliding(cx, cy, radius, rx, ry, rw, rh) {
+  const testX = Math.max(rx, Math.min(cx, rx + rw));
+  const testY = Math.max(ry, Math.min(cy, ry + rh));
+  const distX = cx - testX;
+  const distY = cy - testY;
+  return distX * distX + distY * distY <= radius * radius;
+}
+
+function tryMove(dx, dy) {
+  const nextX = player.x + dx;
+  const nextY = player.y + dy;
+
+  const rx = nextX - player.w / 2;
+  const ry = nextY - player.h / 2;
+
+  let blocked = false;
+  for (const t of trees) {
+    if (circleRectColliding(t.x, t.y, t.r - 6, rx, ry, player.w, player.h)) {
+      blocked = true;
+      break;
+    }
+  }
+
+  if (!blocked) {
+    player.x = Math.max(player.w / 2, Math.min(WORLD_W - player.w / 2, nextX));
+    player.y = Math.max(player.h / 2, Math.min(WORLD_H - player.h / 2, nextY));
+  }
 }
 
 function update() {
@@ -60,65 +125,75 @@ function update() {
   if (keys["a"] || keys["arrowleft"]) dx -= 1;
   if (keys["d"] || keys["arrowright"]) dx += 1;
 
-  // normalize diagonal
   if (dx !== 0 && dy !== 0) {
-    dx *= 0.7;
-    dy *= 0.7;
+    dx *= 0.7071;
+    dy *= 0.7071;
   }
 
-  player.x += dx * player.speed;
-  player.y += dy * player.speed;
+  tryMove(dx * player.speed, dy * player.speed);
 
-  // bounds
-  player.x = Math.max(0, Math.min(canvas.width, player.x));
-  player.y = Math.max(0, Math.min(canvas.height, player.y));
-
-  // collect
-  acorns.forEach(a => {
+  for (const a of acorns) {
     if (!a.collected) {
       const dist = Math.hypot(player.x - a.x, player.y - a.y);
-      if (dist < 12) {
-        a.collected = true;
-      }
+      if (dist < 12) a.collected = true;
     }
-  });
+  }
+}
+
+function drawGround() {
+  ctx.fillStyle = "#6bbf59";
+  ctx.fillRect(0, 0, WORLD_W, WORLD_H);
+
+  ctx.fillStyle = "#7bcc67";
+  for (let i = 0; i < WORLD_W; i += 32) {
+    for (let j = 0; j < WORLD_H; j += 32) {
+      ctx.fillRect(i + 6, j + 10, 2, 2);
+      ctx.fillRect(i + 20, j + 18, 2, 2);
+    }
+  }
+}
+
+function drawTree(t) {
+  ctx.fillStyle = "#6b3f1d";
+  ctx.fillRect(t.x - 6, t.y + 8, 12, 18);
+
+  ctx.fillStyle = "#2e7d32";
+  ctx.beginPath();
+  ctx.arc(t.x, t.y, t.r, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function drawAcorn(a) {
+  ctx.fillStyle = "#c6922b";
+  ctx.beginPath();
+  ctx.arc(a.x, a.y + 2, 5, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = "#8b5a1e";
+  ctx.fillRect(a.x - 4, a.y - 4, 8, 4);
+}
+
+function drawPlayer() {
+  ctx.fillStyle = "#4fc3f7";
+  ctx.fillRect(player.x - 5, player.y - 6, 10, 12);
 }
 
 function draw() {
-  // ground
-  ctx.fillStyle = "#6bbf59";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  drawGround();
 
-  // trees (simple blobs)
-  ctx.fillStyle = "#2e7d32";
-  for (let i = 0; i < 20; i++) {
-    ctx.beginPath();
-    ctx.arc(Math.random()*512, Math.random()*288, 20, 0, Math.PI*2);
-    ctx.fill();
-  }
+  for (const t of trees) drawTree(t);
+  for (const a of acorns) if (!a.collected) drawAcorn(a);
+  drawPlayer();
 
-  // acorns
-  acorns.forEach(a => {
-    if (!a.collected) {
-      ctx.fillStyle = "#c49a2c";
-      ctx.beginPath();
-      ctx.arc(a.x, a.y, 6, 0, Math.PI * 2);
-      ctx.fill();
-    }
-  });
-
-  // player
-  ctx.fillStyle = "#4fc3f7";
-  ctx.fillRect(player.x - 6, player.y - 6, 12, 12);
-
-  // UI
   const collected = acorns.filter(a => a.collected).length;
-  ctx.fillStyle = "#000";
+  ctx.fillStyle = "#111";
   ctx.font = "14px monospace";
-  ctx.fillText("Acorns: " + collected + "/10", 10, 20);
+  ctx.fillText(`Acorns: ${collected}/10`, 10, 18);
 
   if (collected === 10) {
-    ctx.fillText("All collected!", 200, 140);
+    ctx.fillStyle = "#111";
+    ctx.font = "20px monospace";
+    ctx.fillText("All collected!", 170, 145);
   }
 }
 
@@ -127,9 +202,7 @@ function loop() {
   draw();
   requestAnimationFrame(loop);
 }
-
 loop();
 </script>
-
 </body>
 </html>
