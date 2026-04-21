@@ -939,7 +939,7 @@ function render() {
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  const scale = Math.min(canvas.width / GAME_W, canvas.height / GAME_H);
+  const scale = Math.max(canvas.width / GAME_W, canvas.height / GAME_H);
   const drawW = GAME_W * scale;
   const drawH = GAME_H * scale;
   const offsetX = (canvas.width - drawW) / 2;
