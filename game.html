@@ -33,19 +33,15 @@ function resize() {
 resize();
 window.addEventListener("resize", resize);
 
-// Internal low-res game surface for SNES look
 const GAME_W = 256;
 const GAME_H = 144;
 
-// World
 const WORLD_W = 1600;
 const WORLD_H = 2400;
 const TILE = 16;
 
-// Camera
 const camera = { x: 0, y: 0 };
 
-// Touch input
 let touch = null;
 canvas.addEventListener("touchstart", e => {
   touch = e.touches[0];
@@ -60,7 +56,6 @@ canvas.addEventListener("touchend", () => {
   touch = null;
 });
 
-// Player
 const player = {
   x: 120,
   y: 120,
@@ -68,13 +63,12 @@ const player = {
   h: 14,
   speed: 1.8,
   dir: "down",
-  step: 0
+  step: 0,
+  moving: false
 };
 
-// Simple map data
 const blocked = [];
 
-// Trees and bushes
 const trees = [
   {x: 96, y: 96}, {x: 176, y: 80}, {x: 320, y: 112}, {x: 448, y: 96},
   {x: 560, y: 128}, {x: 656, y: 96}, {x: 112, y: 256}, {x: 208, y: 304},
@@ -88,10 +82,8 @@ const bushes = [
   {x: 160, y: 608}, {x: 176, y: 608}, {x: 192, y: 608}
 ];
 
-// Cabin
 const cabin = { x: 520, y: 560, w: 96, h: 80 };
 
-// Acorns
 const acorns = [
   {x: 136, y: 168, collected: false},
   {x: 216, y: 120, collected: false},
@@ -113,13 +105,8 @@ function addBlockedRect(x, y, w, h) {
   blocked.push({x, y, w, h});
 }
 
-// Tree trunks block movement
 for (const t of trees) addBlockedRect(t.x - 6, t.y + 10, 12, 10);
-
-// Bushes block movement
 for (const b of bushes) addBlockedRect(b.x - 8, b.y - 4, 16, 10);
-
-// Cabin walls block movement
 addBlockedRect(cabin.x + 8, cabin.y + 36, cabin.w - 16, cabin.h - 36);
 
 function canMoveTo(nx, ny) {
@@ -153,7 +140,10 @@ function update() {
       dy = 0;
     }
   }
-    
+
+  player.moving = dx !== 0 || dy !== 0;
+
+  if (Math.abs(dx) > Math.abs(dy)) {
     player.dir = dx > 0 ? "right" : dx < 0 ? "left" : player.dir;
   } else if (Math.abs(dy) > 0) {
     player.dir = dy > 0 ? "down" : "up";
@@ -178,7 +168,6 @@ function update() {
   camera.y = Math.max(0, Math.min(WORLD_H - GAME_H, player.y - GAME_H / 2));
 }
 
-// Drawing helpers
 function r(x, y, w, h, c) {
   ctx.fillStyle = c;
   ctx.fillRect(Math.floor(x), Math.floor(y), Math.floor(w), Math.floor(h));
@@ -294,10 +283,8 @@ function drawPlayer() {
   const sy = Math.floor(player.y - camera.y);
   const bob = player.moving ? (Math.sin(player.step * 2) > 0 ? 1 : 0) : 0;
 
-  // shadow
   r(sx - 5, sy + 7, 10, 2, "rgba(0,0,0,0.22)");
 
-  // STAFF
   if (player.dir === "left") {
     r(sx - 8, sy - 6 + bob, 2, 18, "#5a381e");
     r(sx - 9, sy - 8 + bob, 4, 4, "#4cc9ff");
@@ -308,7 +295,6 @@ function drawPlayer() {
     r(sx + 6, sy - 7 + bob, 2, 2, "#bdf1ff");
   }
 
-  // HAT
   if (player.dir === "up") {
     r(sx - 6, sy - 9 + bob, 12, 4, "#1b3f8b");
     r(sx - 5, sy - 13 + bob, 10, 4, "#2452b0");
@@ -319,30 +305,25 @@ function drawPlayer() {
     r(sx - 2, sy - 15 + bob, 6, 4, "#2e63cf");
   }
 
-  // FACE / HEAD
   if (player.dir === "up") {
     r(sx - 4, sy - 4 + bob, 8, 5, "#8a5a3a");
   } else {
     r(sx - 4, sy - 4 + bob, 8, 6, "#f0c79a");
   }
 
-  // BEARD
   if (player.dir !== "up") {
     r(sx - 4, sy - 1 + bob, 8, 6, "#e9edf2");
     r(sx - 3, sy + 4 + bob, 6, 3, "#d8dde5");
     r(sx - 1, sy + 6 + bob, 2, 2, "#cfd5de");
   }
 
-  // ROBE BODY
   r(sx - 6, sy + 1 + bob, 12, 9, "#1f4fa8");
   r(sx - 5, sy + 2 + bob, 10, 7, "#275fc2");
   r(sx - 2, sy + 3 + bob, 4, 3, "#4b7fe0");
 
-  // BELT
   r(sx - 6, sy + 7 + bob, 12, 2, "#6b431f");
   r(sx - 1, sy + 7 + bob, 2, 2, "#d8a13a");
 
-  // ARMS
   if (player.dir === "left") {
     r(sx - 8, sy + 2 + bob, 3, 5, "#275fc2");
     r(sx + 5, sy + 2 + bob, 2, 5, "#275fc2");
@@ -354,14 +335,12 @@ function drawPlayer() {
     r(sx + 5, sy + 2 + bob, 2, 5, "#275fc2");
   }
 
-  // HANDS
   if (player.dir === "left") {
     r(sx - 9, sy + 5 + bob, 2, 2, "#f0c79a");
   } else {
     r(sx + 7, sy + 5 + bob, 2, 2, "#f0c79a");
   }
 
-  // LEGS / ROBE HEM
   const stepA = player.moving && Math.sin(player.step * 2) > 0 ? 1 : 0;
   const stepB = player.moving && Math.sin(player.step * 2) <= 0 ? 1 : 0;
 
@@ -371,7 +350,6 @@ function drawPlayer() {
   r(sx - 4, sy + 13 + bob + stepA, 2, 4, "#6b431f");
   r(sx + 2, sy + 13 + bob + stepB, 2, 4, "#6b431f");
 
-  // FEET
   r(sx - 5, sy + 16 + bob + stepA, 3, 1, "#3b2412");
   r(sx + 2, sy + 16 + bob + stepB, 3, 1, "#3b2412");
 }
