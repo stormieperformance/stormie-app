@@ -180,17 +180,47 @@ function r(x, y, w, h, c) {
 }
 
 function drawGround() {
-  r(0, 0, GAME_W, GAME_H, "#6dbf57");
+  const startX = Math.floor(camera.x / TILE) * TILE;
+  const startY = Math.floor(camera.y / TILE) * TILE;
+  const endX = startX + GAME_W + TILE;
+  const endY = startY + GAME_H + TILE;
 
-  for (let y = 0; y < GAME_H; y += TILE) {
-    for (let x = 0; x < GAME_W; x += TILE) {
-      r(x, y, TILE, TILE, ((x + y) / TILE) % 2 === 0 ? "#71c95b" : "#68b852");
+  for (let y = startY; y < endY; y += TILE) {
+    for (let x = startX; x < endX; x += TILE) {
+      const sx = x - camera.x;
+      const sy = y - camera.y;
 
-      r(x + 3, y + 5, 1, 1, "#97d77b");
-      r(x + 11, y + 9, 1, 1, "#97d77b");
-      r(x + 7, y + 13, 1, 1, "#5aa848");
+      r(
+        sx,
+        sy,
+        TILE,
+        TILE,
+        ((Math.floor(x / TILE) + Math.floor(y / TILE)) % 2 === 0) ? "#71c95b" : "#68b852"
+      );
+
+      r(sx + 3, sy + 5, 1, 1, "#97d77b");
+      r(sx + 11, sy + 9, 1, 1, "#97d77b");
+      r(sx + 7, sy + 13, 1, 1, "#5aa848");
     }
   }
+
+  const paths = [
+    {x: 90, y: 110, w: 110, h: 14},
+    {x: 180, y: 110, w: 14, h: 110},
+    {x: 180, y: 206, w: 180, h: 14},
+    {x: 350, y: 206, w: 14, h: 180},
+    {x: 350, y: 372, w: 190, h: 14}
+  ];
+
+  for (const p of paths) {
+    r(p.x - camera.x, p.y - camera.y, p.w, p.h, "#c9ad67");
+    for (let i = 0; i < p.w; i += 8) {
+      for (let j = 0; j < p.h; j += 8) {
+        r(p.x - camera.x + i + 2, p.y - camera.y + j + 2, 2, 2, "#b79656");
+      }
+    }
+  }
+}
 
   // Dirt paths
   const paths = [
