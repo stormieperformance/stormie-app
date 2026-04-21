@@ -50,10 +50,12 @@ let touch = null;
 canvas.addEventListener("touchstart", e => {
   touch = e.touches[0];
 }, { passive: false });
+
 canvas.addEventListener("touchmove", e => {
   touch = e.touches[0];
   e.preventDefault();
 }, { passive: false });
+
 canvas.addEventListener("touchend", () => {
   touch = null;
 });
@@ -72,7 +74,7 @@ const player = {
 // Simple map data
 const blocked = [];
 
-// Add some trees and bushes in fixed positions
+// Trees and bushes
 const trees = [
   {x: 96, y: 96}, {x: 176, y: 80}, {x: 320, y: 112}, {x: 448, y: 96},
   {x: 560, y: 128}, {x: 656, y: 96}, {x: 112, y: 256}, {x: 208, y: 304},
@@ -113,17 +115,21 @@ function addBlockedRect(x, y, w, h) {
 
 // Tree trunks block movement
 for (const t of trees) addBlockedRect(t.x - 6, t.y + 10, 12, 10);
+
 // Bushes block movement
 for (const b of bushes) addBlockedRect(b.x - 8, b.y - 4, 16, 10);
+
 // Cabin walls block movement
 addBlockedRect(cabin.x + 8, cabin.y + 36, cabin.w - 16, cabin.h - 36);
 
 function canMoveTo(nx, ny) {
   const px = nx - player.w / 2;
   const py = ny - player.h / 2;
+
   for (const r of blocked) {
     if (rectsOverlap(px, py, player.w, player.h, r.x, r.y, r.w, r.h)) return false;
   }
+
   if (px < 0 || py < 0 || px + player.w > WORLD_W || py + player.h > WORLD_H) return false;
   return true;
 }
@@ -222,25 +228,6 @@ function drawGround() {
   }
 }
 
-  // Dirt paths
-  const paths = [
-    {x: 90, y: 110, w: 110, h: 14},
-    {x: 180, y: 110, w: 14, h: 110},
-    {x: 180, y: 206, w: 180, h: 14},
-    {x: 350, y: 206, w: 14, h: 180},
-    {x: 350, y: 372, w: 190, h: 14}
-  ];
-
-  for (const p of paths) {
-    r(p.x - camera.x, p.y - camera.y, p.w, p.h, "#c9ad67");
-    for (let i = 0; i < p.w; i += 8) {
-      for (let j = 0; j < p.h; j += 8) {
-        r(p.x - camera.x + i + 2, p.y - camera.y + j + 2, 2, 2, "#b79656");
-      }
-    }
-  }
-}
-
 function drawTreeBase(t) {
   const sx = t.x - camera.x;
   const sy = t.y - camera.y;
@@ -308,19 +295,12 @@ function drawPlayer() {
   const sy = Math.floor(player.y - camera.y);
   const bob = Math.sin(player.step * 2) > 0 ? 1 : 0;
 
-  // shadow
   r(sx - 4, sy + 6, 8, 2, "rgba(0,0,0,0.25)");
-
-  // hat / hair
   r(sx - 4, sy - 7 + bob, 8, 3, "#c58b39");
-  // face
   r(sx - 3, sy - 4 + bob, 6, 4, "#f2c48d");
-  // tunic
   r(sx - 5, sy + bob, 10, 7, "#45b84f");
   r(sx - 2, sy + 2 + bob, 4, 2, "#d1e87f");
-  // belt
   r(sx - 5, sy + 4 + bob, 10, 1, "#6e4214");
-  // legs
   r(sx - 3, sy + 7 + bob, 2, 4, "#8b5a2b");
   r(sx + 1, sy + 7 + bob, 2, 4, "#8b5a2b");
 
@@ -334,7 +314,6 @@ function drawWorld() {
 
   for (const b of bushes) drawBush(b);
 
-  // bases first
   for (const t of trees) drawTreeBase(t);
   drawCabinBase();
 
@@ -344,7 +323,6 @@ function drawWorld() {
 
   drawPlayer();
 
-  // tops after player for depth
   for (const t of trees) {
     const fade = (Math.abs(player.x - t.x) < 20 && Math.abs(player.y - (t.y + 4)) < 20) ? 0.45 : 1;
     drawTreeTop(t, fade);
@@ -358,7 +336,6 @@ function drawWorld() {
   );
   drawCabinRoof(nearCabin ? 0.45 : 1);
 
-  // ui
   const collected = acorns.filter(a => a.collected).length;
   r(4, 4, 78, 14, "rgba(255,255,255,0.55)");
   ctx.fillStyle = "#111";
@@ -379,7 +356,6 @@ function render() {
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  // scale game surface to full screen
   const scale = Math.min(canvas.width / GAME_W, canvas.height / GAME_H);
   const drawW = GAME_W * scale;
   const drawH = GAME_H * scale;
