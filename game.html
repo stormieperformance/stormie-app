@@ -153,12 +153,6 @@ function update() {
       dy = 0;
     }
   }
-// 👇 ADD THIS ON LINE 156
-
-156 player.moving = dx !== 0 || dy !== 0;
-
-157 if (Math.abs(dx) > Math.abs(dy)) {
-  if (Math.abs(dx) > Math.abs(dy)) {
     
     player.dir = dx > 0 ? "right" : dx < 0 ? "left" : player.dir;
   } else if (Math.abs(dy) > 0) {
