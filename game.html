@@ -857,7 +857,7 @@ function drawToast() {
 
   const w = toastText.length * 6 + 18;
   const x = Math.floor((GAME_W - w) / 2);
-  const y = 36;
+  const y = 32;
 
   r(x, y, w, 14, "rgba(255,255,255,0.65)");
   ctx.fillStyle = "#111";
@@ -906,15 +906,18 @@ function drawWorld() {
   const collected = acorns.filter(a => a.collected).length;
   const livingSlimes = slimes.filter(s => s.alive).length;
 
-  r(4, 4, 118, 30, "rgba(255,255,255,0.55)");
+  const hudX = 4;
+  const hudY = 0;
+
+  r(hudX, hudY, 118, 30, "rgba(255,255,255,0.55)");
   ctx.fillStyle = "#111";
   ctx.font = "8px monospace";
-  ctx.fillText(`ACORNS ${collected}/10`, 8, 14);
-  ctx.fillText(`SLIMES ${livingSlimes}`, 8, 22);
-  ctx.fillText(`DIAMONDS ${diamondCount}`, 8, 30);
+  ctx.fillText(`ACORNS ${collected}/10`, hudX + 4, hudY + 10);
+  ctx.fillText(`SLIMES ${livingSlimes}`, hudX + 4, hudY + 18);
+  ctx.fillText(`DIAMONDS ${diamondCount}`, hudX + 4, hudY + 26);
 
   for (let i = 0; i < 3; i++) {
-    drawHeart(86 + i * 10, 8, i < player.hp);
+    drawHeart(hudX + 82 + i * 10, hudY + 4, i < player.hp);
   }
 
   if (gameOver) {
@@ -937,7 +940,7 @@ function render() {
   update();
 
   ctx.setTransform(1, 0, 0, 1, 0, 0);
-  ctx.fillStyle = "#68b852"; // matchar din grass
+  ctx.fillStyle = "#68b852";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   const scale = Math.min(canvas.width / GAME_W, canvas.height / GAME_H);
