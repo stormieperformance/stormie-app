@@ -203,6 +203,8 @@ const projectiles = [];
 const hitEffects = [];
 
 let gameOver = false;
+let toastText = "";
+let toastTimer = 0;
 
 // RESET
 function restartGame() {
@@ -239,7 +241,15 @@ function restartGame() {
   joystickDY = 0;
   attackPressed = false;
 
+  toastText = "";
+  toastTimer = 0;
+
   gameOver = false;
+}
+
+function showToast(text, duration = 70) {
+  toastText = text;
+  toastTimer = duration;
 }
 
 function castSpell() {
@@ -311,14 +321,19 @@ function openChest() {
   if (chest.opened) return;
 
   chest.opened = true;
+  showToast("CHEST OPENED!", 65);
 
   if (!chest.diamondSpawned) {
     diamonds.push({
       x: chest.x,
-      y: chest.y - 10,
+      y: chest.y - 6,
+      vx: 1.25,
+      vy: -1.8,
+      floatPhase: Math.random() * Math.PI * 2,
       collected: false,
-      bob: 0
+      settling: true
     });
+
     chest.diamondSpawned = true;
     spawnHitEffect(chest.x, chest.y - 2, "#ffe6a7", "#ffd166");
     spawnHitEffect(chest.x, chest.y - 10, "#d9f3ff", "#62d6ff");
@@ -365,13 +380,28 @@ function updateProjectiles() {
 function updateDiamonds() {
   for (let i = diamonds.length - 1; i >= 0; i--) {
     const d = diamonds[i];
-    d.bob += 0.12;
+
+    if (d.settling) {
+      d.x += d.vx;
+      d.y += d.vy;
+      d.vy += 0.14;
+      d.vx *= 0.94;
+
+      if (d.vy > 1.5) {
+        d.vy = 0;
+        d.vx = 0;
+        d.settling = false;
+      }
+    }
+
+    d.floatPhase += 0.12;
 
     if (!d.collected) {
       const dist = Math.hypot(player.x - d.x, player.y - d.y);
       if (dist < 12) {
         d.collected = true;
         diamondCount++;
+        showToast("DIAMOND FOUND!", 70);
         spawnHitEffect(d.x, d.y, "#d9f3ff", "#62d6ff");
         diamonds.splice(i, 1);
       }
@@ -487,6 +517,8 @@ function update() {
     if (player.castCooldown > 0) player.castCooldown--;
     if (player.invuln > 0) player.invuln--;
 
+    if (toastTimer > 0) toastTimer--;
+
     for (const a of acorns) {
       if (!a.collected) {
         const d = Math.hypot(player.x - a.x, player.y - a.y);
@@ -499,6 +531,7 @@ function update() {
     updateSlimes();
     updateHitEffects();
   } else {
+    if (toastTimer > 0) toastTimer--;
     updateHitEffects();
   }
 
@@ -634,7 +667,8 @@ function drawChest() {
 
 function drawDiamond(d) {
   const sx = Math.floor(d.x - camera.x);
-  const sy = Math.floor(d.y - camera.y + Math.sin(d.bob) * 2);
+  const floatOffset = d.settling ? 0 : Math.sin(d.floatPhase) * 2;
+  const sy = Math.floor(d.y - camera.y + floatOffset);
 
   r(sx, sy - 6, 2, 2, "#9ee8ff");
   r(sx - 2, sy - 4, 6, 2, "#7fdcff");
@@ -818,6 +852,20 @@ function drawAttackButton() {
   ctx.restore();
 }
 
+function drawToast() {
+  if (toastTimer <= 0 || !toastText) return;
+
+  const w = toastText.length * 6 + 18;
+  const x = Math.floor((GAME_W - w) / 2);
+  const y = 12;
+
+  r(x, y, w, 14, "rgba(0,0,0,0.55)");
+  r(x + 1, y + 1, w - 2, 12, "rgba(255,255,255,0.75)");
+  ctx.fillStyle = "#111";
+  ctx.font = "8px monospace";
+  ctx.fillText(toastText, x + 9, y + 9);
+}
+
 function drawWorld() {
   drawGround();
 
@@ -853,6 +901,8 @@ function drawWorld() {
     player.y < cabin.y + 42
   );
   drawCabinRoof(nearCabin ? 0.45 : 1);
+
+  drawToast();
 
   const collected = acorns.filter(a => a.collected).length;
   const livingSlimes = slimes.filter(s => s.alive).length;
