@@ -278,7 +278,9 @@ let diamondCount = 0;
 const slimes = [
   { x: 300, y: 200, alive: true, vx: 0.4, vy: 0.2, timer: 0, hitFlash: 0, deadTimer: 0 },
   { x: 500, y: 400, alive: true, vx: -0.35, vy: 0.3, timer: 0, hitFlash: 0, deadTimer: 0 },
-  { x: 700, y: 300, alive: true, vx: 0.25, vy: -0.4, timer: 0, hitFlash: 0, deadTimer: 0 }
+  { x: 700, y: 300, alive: true, vx: 0.25, vy: -0.4, timer: 0, hitFlash: 0, deadTimer: 0 },
+  { x: 420, y: 520, alive: true, vx: 0.3, vy: 0.35, timer: 0, hitFlash: 0, deadTimer: 0 },
+  { x: 610, y: 220, alive: true, vx: -0.25, vy: 0.45, timer: 0, hitFlash: 0, deadTimer: 0 }
 ];
 
 // MAGIC + EFFECTS
@@ -314,7 +316,9 @@ function restartGame() {
   slimes.push(
     { x: 300, y: 200, alive: true, vx: 0.4, vy: 0.2, timer: 0, hitFlash: 0, deadTimer: 0 },
     { x: 500, y: 400, alive: true, vx: -0.35, vy: 0.3, timer: 0, hitFlash: 0, deadTimer: 0 },
-    { x: 700, y: 300, alive: true, vx: 0.25, vy: -0.4, timer: 0, hitFlash: 0, deadTimer: 0 }
+    { x: 700, y: 300, alive: true, vx: 0.25, vy: -0.4, timer: 0, hitFlash: 0, deadTimer: 0 },
+    { x: 420, y: 520, alive: true, vx: 0.3, vy: 0.35, timer: 0, hitFlash: 0, deadTimer: 0 },
+    { x: 610, y: 220, alive: true, vx: -0.25, vy: 0.45, timer: 0, hitFlash: 0, deadTimer: 0 }
   );
 
   for (const a of acorns) a.collected = false;
@@ -1181,6 +1185,62 @@ function drawWorldHint() {
   ctx.fillText(text, sx + 4, sy + 7);
 }
 
+function drawHeartUI(x, y, filled = true) {
+  const c1 = filled ? "#ff4d6d" : "#777";
+  const c2 = filled ? "#c9184a" : "#555";
+
+  ctx.fillStyle = c1;
+  ctx.fillRect(x + 1, y, 2, 2);
+  ctx.fillRect(x + 5, y, 2, 2);
+  ctx.fillRect(x, y + 2, 8, 2);
+
+  ctx.fillStyle = c2;
+  ctx.fillRect(x + 1, y + 4, 6, 2);
+  ctx.fillRect(x + 2, y + 6, 4, 2);
+  ctx.fillRect(x + 3, y + 8, 2, 2);
+}
+
+function drawManaPipUI(x, y, filled = true) {
+  const c1 = filled ? "#4cc9ff" : "#55707d";
+  const c2 = filled ? "#c9f6ff" : "#425660";
+
+  ctx.fillStyle = c1;
+  ctx.fillRect(x + 1, y, 4, 2);
+  ctx.fillRect(x, y + 2, 6, 4);
+
+  ctx.fillStyle = c2;
+  ctx.fillRect(x + 1, y + 6, 4, 2);
+
+  ctx.fillStyle = "#e8fcff";
+  ctx.fillRect(x + 2, y + 1, 2, 6);
+}
+
+function drawHUDScreen() {
+  const collected = getCollectedAcorns();
+  const livingSlimes = getLivingSlimes();
+
+  const hudX = 12;
+  const hudY = 86;
+
+  ctx.fillStyle = "rgba(255,255,255,0.55)";
+  ctx.fillRect(hudX, hudY, 148, 42);
+
+  ctx.fillStyle = "#111";
+  ctx.font = "8px monospace";
+  ctx.fillText(`ACORNS ${collected}/10`, hudX + 4, hudY + 10);
+  ctx.fillText(`SLIMES ${livingSlimes}`, hudX + 4, hudY + 18);
+  ctx.fillText(`DIAMONDS ${diamondCount}`, hudX + 4, hudY + 26);
+  ctx.fillText(`GOAL ${goalComplete() ? "CABIN" : "EXPLORE"}`, hudX + 4, hudY + 34);
+
+  for (let i = 0; i < 3; i++) {
+    drawHeartUI(hudX + 82 + i * 10, hudY + 4, i < player.hp);
+  }
+
+  for (let i = 0; i < player.maxMana; i++) {
+    drawManaPipUI(hudX + 82 + i * 8, hudY + 18, i < player.mana);
+  }
+}
+
 function drawWorld() {
   drawGround();
 
@@ -1230,28 +1290,6 @@ function drawWorld() {
   );
   drawCabinRoof(nearCabin ? 0.45 : 1);
 
-  const collected = getCollectedAcorns();
-  const livingSlimes = getLivingSlimes();
-
-  const hudX = 0;
-  const hudY = 0;
-
-  r(hudX, hudY, 148, 42, "rgba(255,255,255,0.55)");
-  ctx.fillStyle = "#111";
-  ctx.font = "8px monospace";
-  ctx.fillText(`ACORNS ${collected}/10`, hudX + 4, hudY + 10);
-  ctx.fillText(`SLIMES ${livingSlimes}`, hudX + 4, hudY + 18);
-  ctx.fillText(`DIAMONDS ${diamondCount}`, hudX + 4, hudY + 26);
-  ctx.fillText(`GOAL ${goalComplete() ? "CABIN" : "EXPLORE"}`, hudX + 4, hudY + 34);
-
-  for (let i = 0; i < 3; i++) {
-    drawHeart(hudX + 82 + i * 10, hudY + 4, i < player.hp);
-  }
-
-  for (let i = 0; i < player.maxMana; i++) {
-    drawManaPip(hudX + 82 + i * 8, hudY + 18, i < player.mana);
-  }
-
   drawToast();
 
   if (gameOver) {
@@ -1292,6 +1330,7 @@ function render() {
   drawWorld();
   ctx.restore();
 
+  drawHUDScreen();
   drawJoystick();
   drawUseButton();
   drawAttackButton();
