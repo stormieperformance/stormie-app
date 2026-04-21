@@ -293,20 +293,88 @@ function drawAcorn(a) {
 function drawPlayer() {
   const sx = Math.floor(player.x - camera.x);
   const sy = Math.floor(player.y - camera.y);
-  const bob = Math.sin(player.step * 2) > 0 ? 1 : 0;
+  const bob = player.moving ? (Math.sin(player.step * 2) > 0 ? 1 : 0) : 0;
 
-  r(sx - 4, sy + 6, 8, 2, "rgba(0,0,0,0.25)");
-  r(sx - 4, sy - 7 + bob, 8, 3, "#c58b39");
-  r(sx - 3, sy - 4 + bob, 6, 4, "#f2c48d");
-  r(sx - 5, sy + bob, 10, 7, "#45b84f");
-  r(sx - 2, sy + 2 + bob, 4, 2, "#d1e87f");
-  r(sx - 5, sy + 4 + bob, 10, 1, "#6e4214");
-  r(sx - 3, sy + 7 + bob, 2, 4, "#8b5a2b");
-  r(sx + 1, sy + 7 + bob, 2, 4, "#8b5a2b");
+  // shadow
+  r(sx - 5, sy + 7, 10, 2, "rgba(0,0,0,0.22)");
 
-  if (player.dir === "left") r(sx - 7, sy + 1 + bob, 2, 5, "#45b84f");
-  if (player.dir === "right") r(sx + 5, sy + 1 + bob, 2, 5, "#45b84f");
-  if (player.dir === "up") r(sx - 4, sy - 7 + bob, 8, 8, "#45b84f");
+  // STAFF
+  if (player.dir === "left") {
+    r(sx - 8, sy - 6 + bob, 2, 18, "#5a381e");
+    r(sx - 9, sy - 8 + bob, 4, 4, "#4cc9ff");
+    r(sx - 8, sy - 7 + bob, 2, 2, "#bdf1ff");
+  } else {
+    r(sx + 6, sy - 6 + bob, 2, 18, "#5a381e");
+    r(sx + 5, sy - 8 + bob, 4, 4, "#4cc9ff");
+    r(sx + 6, sy - 7 + bob, 2, 2, "#bdf1ff");
+  }
+
+  // HAT
+  if (player.dir === "up") {
+    r(sx - 6, sy - 9 + bob, 12, 4, "#1b3f8b");
+    r(sx - 5, sy - 13 + bob, 10, 4, "#2452b0");
+    r(sx - 3, sy - 16 + bob, 6, 3, "#2e63cf");
+  } else {
+    r(sx - 7, sy - 7 + bob, 14, 3, "#1b3f8b");
+    r(sx - 5, sy - 11 + bob, 10, 4, "#2452b0");
+    r(sx - 2, sy - 15 + bob, 6, 4, "#2e63cf");
+  }
+
+  // FACE / HEAD
+  if (player.dir === "up") {
+    r(sx - 4, sy - 4 + bob, 8, 5, "#8a5a3a");
+  } else {
+    r(sx - 4, sy - 4 + bob, 8, 6, "#f0c79a");
+  }
+
+  // BEARD
+  if (player.dir !== "up") {
+    r(sx - 4, sy - 1 + bob, 8, 6, "#e9edf2");
+    r(sx - 3, sy + 4 + bob, 6, 3, "#d8dde5");
+    r(sx - 1, sy + 6 + bob, 2, 2, "#cfd5de");
+  }
+
+  // ROBE BODY
+  r(sx - 6, sy + 1 + bob, 12, 9, "#1f4fa8");
+  r(sx - 5, sy + 2 + bob, 10, 7, "#275fc2");
+  r(sx - 2, sy + 3 + bob, 4, 3, "#4b7fe0");
+
+  // BELT
+  r(sx - 6, sy + 7 + bob, 12, 2, "#6b431f");
+  r(sx - 1, sy + 7 + bob, 2, 2, "#d8a13a");
+
+  // ARMS
+  if (player.dir === "left") {
+    r(sx - 8, sy + 2 + bob, 3, 5, "#275fc2");
+    r(sx + 5, sy + 2 + bob, 2, 5, "#275fc2");
+  } else if (player.dir === "right") {
+    r(sx - 7, sy + 2 + bob, 2, 5, "#275fc2");
+    r(sx + 5, sy + 2 + bob, 3, 5, "#275fc2");
+  } else {
+    r(sx - 7, sy + 2 + bob, 2, 5, "#275fc2");
+    r(sx + 5, sy + 2 + bob, 2, 5, "#275fc2");
+  }
+
+  // HANDS
+  if (player.dir === "left") {
+    r(sx - 9, sy + 5 + bob, 2, 2, "#f0c79a");
+  } else {
+    r(sx + 7, sy + 5 + bob, 2, 2, "#f0c79a");
+  }
+
+  // LEGS / ROBE HEM
+  const stepA = player.moving && Math.sin(player.step * 2) > 0 ? 1 : 0;
+  const stepB = player.moving && Math.sin(player.step * 2) <= 0 ? 1 : 0;
+
+  r(sx - 5, sy + 10 + bob, 4, 3, "#1b3f8b");
+  r(sx + 1, sy + 10 + bob, 4, 3, "#1b3f8b");
+
+  r(sx - 4, sy + 13 + bob + stepA, 2, 4, "#6b431f");
+  r(sx + 2, sy + 13 + bob + stepB, 2, 4, "#6b431f");
+
+  // FEET
+  r(sx - 5, sy + 16 + bob + stepA, 3, 1, "#3b2412");
+  r(sx + 2, sy + 16 + bob + stepB, 3, 1, "#3b2412");
 }
 
 function drawWorld() {
