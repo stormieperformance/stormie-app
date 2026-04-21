@@ -179,6 +179,18 @@ const acorns = [
   {x: 472, y: 648, collected: false}
 ];
 
+const chest = {
+  x: 420,
+  y: 230,
+  w: 16,
+  h: 14,
+  opened: false,
+  diamondSpawned: false
+};
+
+const diamonds = [];
+let diamondCount = 0;
+
 // ENEMIES
 const slimes = [
   { x: 300, y: 200, alive: true, vx: 0.4, vy: 0.2, timer: 0, hitFlash: 0, deadTimer: 0 },
@@ -205,6 +217,11 @@ function restartGame() {
 
   projectiles.length = 0;
   hitEffects.length = 0;
+  diamonds.length = 0;
+  diamondCount = 0;
+
+  chest.opened = false;
+  chest.diamondSpawned = false;
 
   slimes.length = 0;
   slimes.push(
@@ -290,6 +307,24 @@ function spawnHitEffect(x, y, color1 = "#bff7ff", color2 = "#36cfff") {
   }
 }
 
+function openChest() {
+  if (chest.opened) return;
+
+  chest.opened = true;
+
+  if (!chest.diamondSpawned) {
+    diamonds.push({
+      x: chest.x,
+      y: chest.y - 10,
+      collected: false,
+      bob: 0
+    });
+    chest.diamondSpawned = true;
+    spawnHitEffect(chest.x, chest.y - 2, "#ffe6a7", "#ffd166");
+    spawnHitEffect(chest.x, chest.y - 10, "#d9f3ff", "#62d6ff");
+  }
+}
+
 // UPDATE
 function updateProjectiles() {
   for (let i = projectiles.length - 1; i >= 0; i--) {
@@ -297,6 +332,16 @@ function updateProjectiles() {
     p.x += p.vx;
     p.y += p.vy;
     p.life--;
+
+    if (!chest.opened) {
+      if (rectsOverlap(
+        p.x - 3, p.y - 3, 6, 6,
+        chest.x - chest.w / 2, chest.y - chest.h / 2, chest.w, chest.h
+      )) {
+        openChest();
+        p.life = 0;
+      }
+    }
 
     for (const s of slimes) {
       if (!s.alive) continue;
@@ -313,6 +358,23 @@ function updateProjectiles() {
 
     if (p.x < 0 || p.y < 0 || p.x > WORLD_W || p.y > WORLD_H || p.life <= 0) {
       projectiles.splice(i, 1);
+    }
+  }
+}
+
+function updateDiamonds() {
+  for (let i = diamonds.length - 1; i >= 0; i--) {
+    const d = diamonds[i];
+    d.bob += 0.12;
+
+    if (!d.collected) {
+      const dist = Math.hypot(player.x - d.x, player.y - d.y);
+      if (dist < 12) {
+        d.collected = true;
+        diamondCount++;
+        spawnHitEffect(d.x, d.y, "#d9f3ff", "#62d6ff");
+        diamonds.splice(i, 1);
+      }
     }
   }
 }
@@ -433,6 +495,7 @@ function update() {
     }
 
     updateProjectiles();
+    updateDiamonds();
     updateSlimes();
     updateHitEffects();
   } else {
@@ -547,6 +610,41 @@ function drawAcorn(a) {
   r(sx - 4, sy - 1, 8, 7, "#c78f2f");
   r(sx - 3, sy - 4, 6, 4, "#9b6a20");
   r(sx + 1, sy - 6, 1, 2, "#6e4214");
+}
+
+function drawChest() {
+  const sx = Math.floor(chest.x - camera.x);
+  const sy = Math.floor(chest.y - camera.y);
+
+  if (chest.opened) {
+    r(sx - 8, sy + 1, 16, 5, "#7a4a21");
+    r(sx - 6, sy + 2, 12, 3, "#915726");
+    r(sx - 8, sy - 4, 16, 4, "#c58b2d");
+    r(sx - 7, sy - 5, 14, 2, "#e1a93e");
+    r(sx - 1, sy - 2, 2, 6, "#f5d26b");
+  } else {
+    r(sx - 8, sy - 3, 16, 10, "#8a5525");
+    r(sx - 6, sy - 1, 12, 6, "#9e622b");
+    r(sx - 8, sy - 5, 16, 4, "#c58b2d");
+    r(sx - 7, sy - 6, 14, 2, "#e1a93e");
+    r(sx - 1, sy - 2, 2, 6, "#f5d26b");
+    r(sx - 2, sy, 4, 2, "#6b431f");
+  }
+}
+
+function drawDiamond(d) {
+  const sx = Math.floor(d.x - camera.x);
+  const sy = Math.floor(d.y - camera.y + Math.sin(d.bob) * 2);
+
+  r(sx, sy - 6, 2, 2, "#9ee8ff");
+  r(sx - 2, sy - 4, 6, 2, "#7fdcff");
+  r(sx - 4, sy - 2, 10, 4, "#55cfff");
+  r(sx - 2, sy + 2, 6, 2, "#3cb8f0");
+  r(sx, sy + 4, 2, 2, "#269ad6");
+
+  r(sx, sy - 4, 1, 8, "#dff8ff");
+  r(sx - 2, sy - 2, 1, 4, "#dff8ff");
+  r(sx + 2, sy - 2, 1, 4, "#dff8ff");
 }
 
 function drawProjectile(p) {
@@ -731,6 +829,12 @@ function drawWorld() {
     if (!a.collected) drawAcorn(a);
   }
 
+  drawChest();
+
+  for (const d of diamonds) {
+    if (!d.collected) drawDiamond(d);
+  }
+
   for (const e of hitEffects) drawHitEffect(e);
   for (const p of projectiles) drawProjectile(p);
   for (const s of slimes) drawSlime(s);
@@ -753,14 +857,15 @@ function drawWorld() {
   const collected = acorns.filter(a => a.collected).length;
   const livingSlimes = slimes.filter(s => s.alive).length;
 
-  r(4, 4, 96, 22, "rgba(255,255,255,0.55)");
+  r(4, 4, 118, 30, "rgba(255,255,255,0.55)");
   ctx.fillStyle = "#111";
   ctx.font = "8px monospace";
   ctx.fillText(`ACORNS ${collected}/10`, 8, 14);
   ctx.fillText(`SLIMES ${livingSlimes}`, 8, 22);
+  ctx.fillText(`DIAMONDS ${diamondCount}`, 8, 30);
 
   for (let i = 0; i < 3; i++) {
-    drawHeart(68 + i * 10, 8, i < player.hp);
+    drawHeart(86 + i * 10, 8, i < player.hp);
   }
 
   if (gameOver) {
