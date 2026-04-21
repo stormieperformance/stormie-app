@@ -45,12 +45,14 @@ const camera = { x: 0, y: 0 };
 // INPUT
 let joystickTouchId = null;
 let attackTouchId = null;
+let useTouchId = null;
 let joystickActive = false;
 let joystickStartX = 0;
 let joystickStartY = 0;
 let joystickDX = 0;
 let joystickDY = 0;
 let attackPressed = false;
+let usePressed = false;
 
 function getAttackButtonScreen() {
   return {
@@ -60,8 +62,21 @@ function getAttackButtonScreen() {
   };
 }
 
+function getUseButtonScreen() {
+  return {
+    x: canvas.width - 92,
+    y: canvas.height - 146,
+    r: 28
+  };
+}
+
 function isInsideAttackButton(x, y) {
   const b = getAttackButtonScreen();
+  return Math.hypot(x - b.x, y - b.y) <= b.r;
+}
+
+function isInsideUseButton(x, y) {
+  const b = getUseButtonScreen();
   return Math.hypot(x - b.x, y - b.y) <= b.r;
 }
 
@@ -69,7 +84,14 @@ function handleTouchStart(t) {
   if (isInsideAttackButton(t.clientX, t.clientY)) {
     attackTouchId = t.identifier;
     attackPressed = true;
-    if (!gameOver) castSpell();
+    if (!gameOver && !gameWon) castSpell();
+    return;
+  }
+
+  if (isInsideUseButton(t.clientX, t.clientY)) {
+    useTouchId = t.identifier;
+    usePressed = true;
+    if (!gameOver && !gameWon) handleUse();
     return;
   }
 
@@ -109,10 +131,15 @@ function handleTouchEnd(t) {
     attackTouchId = null;
     attackPressed = false;
   }
+
+  if (t.identifier === useTouchId) {
+    useTouchId = null;
+    usePressed = false;
+  }
 }
 
 canvas.addEventListener("touchstart", e => {
-  if (gameOver) {
+  if (gameOver || gameWon) {
     restartGame();
     return;
   }
@@ -145,7 +172,9 @@ const player = {
   moving: false,
   castCooldown: 0,
   hp: 3,
-  invuln: 0
+  invuln: 0,
+  mana: 6,
+  maxMana: 6
 };
 
 // WORLD
@@ -226,6 +255,13 @@ const acorns = [
   {x: 472, y: 648, collected: false}
 ];
 
+const manaBottles = [
+  { x: 286, y: 188, collected: false },
+  { x: 736, y: 132, collected: false },
+  { x: 206, y: 526, collected: false },
+  { x: 606, y: 468, collected: false }
+];
+
 const chest = {
   x: 420,
   y: 230,
@@ -250,6 +286,7 @@ const projectiles = [];
 const hitEffects = [];
 
 let gameOver = false;
+let gameWon = false;
 let toastText = "";
 let toastTimer = 0;
 
@@ -263,6 +300,7 @@ function restartGame() {
   player.castCooldown = 0;
   player.hp = 3;
   player.invuln = 0;
+  player.mana = player.maxMana;
 
   projectiles.length = 0;
   hitEffects.length = 0;
@@ -280,18 +318,22 @@ function restartGame() {
   );
 
   for (const a of acorns) a.collected = false;
+  for (const b of manaBottles) b.collected = false;
 
   joystickTouchId = null;
   attackTouchId = null;
+  useTouchId = null;
   joystickActive = false;
   joystickDX = 0;
   joystickDY = 0;
   attackPressed = false;
+  usePressed = false;
 
   toastText = "";
   toastTimer = 0;
 
   gameOver = false;
+  gameWon = false;
 }
 
 function showToast(text, duration = 70) {
@@ -300,7 +342,11 @@ function showToast(text, duration = 70) {
 }
 
 function castSpell() {
-  if (player.castCooldown > 0 || gameOver) return;
+  if (player.castCooldown > 0 || gameOver || gameWon) return;
+  if (player.mana <= 0) {
+    showToast("NO MANA", 40);
+    return;
+  }
 
   let vx = 0;
   let vy = 0;
@@ -318,7 +364,72 @@ function castSpell() {
     life: 70
   });
 
+  player.mana--;
   player.castCooldown = 20;
+}
+
+function getCollectedAcorns() {
+  return acorns.filter(a => a.collected).length;
+}
+
+function getLivingSlimes() {
+  return slimes.filter(s => s.alive).length;
+}
+
+function goalComplete() {
+  return getCollectedAcorns() === 10 && diamondCount >= 1 && getLivingSlimes() === 0;
+}
+
+function nearChest() {
+  return Math.hypot(player.x - chest.x, player.y - chest.y) < 18;
+}
+
+function nearCabinDoor() {
+  const doorX = cabin.x + 46;
+  const doorY = cabin.y + 70;
+  return Math.hypot(player.x - doorX, player.y - doorY) < 20;
+}
+
+function nearestManaBottle() {
+  let closest = null;
+  let bestDist = 9999;
+
+  for (const b of manaBottles) {
+    if (b.collected) continue;
+    const d = Math.hypot(player.x - b.x, player.y - b.y);
+    if (d < 18 && d < bestDist) {
+      bestDist = d;
+      closest = b;
+    }
+  }
+
+  return closest;
+}
+
+function handleUse() {
+  const bottle = nearestManaBottle();
+
+  if (bottle) {
+    bottle.collected = true;
+    player.mana = Math.min(player.maxMana, player.mana + 3);
+    showToast("MANA +3", 55);
+    spawnHitEffect(bottle.x, bottle.y, "#c8f3ff", "#4cc9ff");
+    return;
+  }
+
+  if (!chest.opened && nearChest()) {
+    openChest();
+    return;
+  }
+
+  if (nearCabinDoor()) {
+    if (goalComplete()) {
+      gameWon = true;
+      showToast("CABIN REACHED!", 120);
+    } else {
+      showToast("CABIN LOCKED", 50);
+    }
+  }
 }
 
 // HELPERS
@@ -399,16 +510,6 @@ function updateProjectiles() {
     p.y += p.vy;
     p.life--;
 
-    if (!chest.opened) {
-      if (rectsOverlap(
-        p.x - 3, p.y - 3, 6, 6,
-        chest.x - chest.w / 2, chest.y - chest.h / 2, chest.w, chest.h
-      )) {
-        openChest();
-        p.life = 0;
-      }
-    }
-
     for (const s of slimes) {
       if (!s.alive) continue;
 
@@ -418,7 +519,7 @@ function updateProjectiles() {
         s.hitFlash = 10;
         s.deadTimer = 10;
         p.life = 0;
-        spawnHitEffect(s.x, s.y, "#d8ffd8", "#58d66d");
+        spawnHitEffect(s.x, s.y, "#ead8ff", "#9b5cff");
       }
     }
 
@@ -530,7 +631,7 @@ function updateHitEffects() {
 }
 
 function update() {
-  if (!gameOver) {
+  if (!gameOver && !gameWon) {
     let dx = 0;
     let dy = 0;
 
@@ -567,7 +668,6 @@ function update() {
     if (mx !== 0 || my !== 0) player.step += 0.18;
     if (player.castCooldown > 0) player.castCooldown--;
     if (player.invuln > 0) player.invuln--;
-
     if (toastTimer > 0) toastTimer--;
 
     for (const a of acorns) {
@@ -786,6 +886,16 @@ function drawAcorn(a) {
   r(sx + 1, sy - 6, 1, 2, "#6e4214");
 }
 
+function drawManaBottle(b) {
+  const sx = Math.floor(b.x - camera.x);
+  const sy = Math.floor(b.y - camera.y);
+
+  r(sx - 3, sy - 6, 6, 8, "#57d4ff");
+  r(sx - 2, sy - 5, 4, 6, "#c9f6ff");
+  r(sx - 1, sy - 8, 2, 2, "#7b4d26");
+  r(sx - 2, sy + 2, 4, 1, "#1e8ec2");
+}
+
 function drawChest() {
   const sx = Math.floor(chest.x - camera.x);
   const sy = Math.floor(chest.y - camera.y);
@@ -869,6 +979,16 @@ function drawHeart(x, y, filled = true) {
   r(x + 1, y + 4, 6, 2, c2);
   r(x + 2, y + 6, 4, 2, c2);
   r(x + 3, y + 8, 2, 2, c2);
+}
+
+function drawManaPip(x, y, filled = true) {
+  const c1 = filled ? "#4cc9ff" : "#55707d";
+  const c2 = filled ? "#c9f6ff" : "#425660";
+
+  r(x + 1, y, 4, 2, c1);
+  r(x, y + 2, 6, 4, c1);
+  r(x + 1, y + 6, 4, 2, c2);
+  r(x + 2, y + 1, 2, 6, "#e8fcff");
 }
 
 function drawPlayer() {
@@ -969,7 +1089,7 @@ function drawJoystick() {
 }
 
 function drawAttackButton() {
-  if (gameOver) return;
+  if (gameOver || gameWon) return;
 
   const b = getAttackButtonScreen();
 
@@ -993,17 +1113,72 @@ function drawAttackButton() {
   ctx.restore();
 }
 
+function drawUseButton() {
+  if (gameOver || gameWon) return;
+
+  const b = getUseButtonScreen();
+
+  ctx.save();
+  ctx.globalAlpha = 0.9;
+
+  ctx.beginPath();
+  ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+  ctx.fillStyle = usePressed ? "rgba(181,134,255,0.75)" : "rgba(255,255,255,0.18)";
+  ctx.fill();
+
+  ctx.beginPath();
+  ctx.arc(b.x, b.y, b.r - 6, 0, Math.PI * 2);
+  ctx.fillStyle = usePressed ? "rgba(220,198,255,0.9)" : "rgba(181,134,255,0.45)";
+  ctx.fill();
+
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "11px monospace";
+  ctx.fillText("USE", b.x - 12, b.y + 4);
+
+  ctx.restore();
+}
+
 function drawToast() {
   if (toastTimer <= 0 || !toastText) return;
 
   const w = toastText.length * 6 + 18;
   const x = Math.floor((GAME_W - w) / 2);
-  const y = 34;
+  const y = 42;
 
-  r(x, y, w, 14, "rgba(255,255,255,0.65)");
+  r(x, y, w, 14, "rgba(255,255,255,0.68)");
   ctx.fillStyle = "#111";
   ctx.font = "8px monospace";
   ctx.fillText(toastText, x + 9, y + 9);
+}
+
+function drawWorldHint() {
+  if (gameOver || gameWon) return;
+
+  let targetX = null;
+  let targetY = null;
+  let text = "USE";
+
+  const bottle = nearestManaBottle();
+  if (bottle) {
+    targetX = bottle.x;
+    targetY = bottle.y - 12;
+  } else if (!chest.opened && nearChest()) {
+    targetX = chest.x;
+    targetY = chest.y - 16;
+  } else if (nearCabinDoor()) {
+    targetX = cabin.x + 48;
+    targetY = cabin.y + 48;
+  }
+
+  if (targetX === null) return;
+
+  const sx = Math.floor(targetX - camera.x - 10);
+  const sy = Math.floor(targetY - camera.y);
+
+  r(sx, sy, 22, 10, "rgba(255,255,255,0.75)");
+  ctx.fillStyle = "#111";
+  ctx.font = "6px monospace";
+  ctx.fillText(text, sx + 4, sy + 7);
 }
 
 function drawWorld() {
@@ -1025,6 +1200,10 @@ function drawWorld() {
     if (!a.collected) drawAcorn(a);
   }
 
+  for (const b of manaBottles) {
+    if (!b.collected) drawManaBottle(b);
+  }
+
   drawChest();
 
   for (const d of diamonds) {
@@ -1036,6 +1215,7 @@ function drawWorld() {
   for (const s of slimes) drawSlime(s);
 
   drawPlayer();
+  drawWorldHint();
 
   for (const t of trees) {
     const fade = (Math.abs(player.x - t.x) < 20 && Math.abs(player.y - (t.y + 4)) < 20) ? 0.45 : 1;
@@ -1050,21 +1230,26 @@ function drawWorld() {
   );
   drawCabinRoof(nearCabin ? 0.45 : 1);
 
-  const collected = acorns.filter(a => a.collected).length;
-  const livingSlimes = slimes.filter(s => s.alive).length;
+  const collected = getCollectedAcorns();
+  const livingSlimes = getLivingSlimes();
 
   const hudX = 0;
   const hudY = 0;
 
-  r(hudX, hudY, 118, 30, "rgba(255,255,255,0.55)");
+  r(hudX, hudY, 148, 42, "rgba(255,255,255,0.55)");
   ctx.fillStyle = "#111";
   ctx.font = "8px monospace";
   ctx.fillText(`ACORNS ${collected}/10`, hudX + 4, hudY + 10);
   ctx.fillText(`SLIMES ${livingSlimes}`, hudX + 4, hudY + 18);
   ctx.fillText(`DIAMONDS ${diamondCount}`, hudX + 4, hudY + 26);
+  ctx.fillText(`GOAL ${goalComplete() ? "CABIN" : "EXPLORE"}`, hudX + 4, hudY + 34);
 
   for (let i = 0; i < 3; i++) {
     drawHeart(hudX + 82 + i * 10, hudY + 4, i < player.hp);
+  }
+
+  for (let i = 0; i < player.maxMana; i++) {
+    drawManaPip(hudX + 82 + i * 8, hudY + 18, i < player.mana);
   }
 
   drawToast();
@@ -1077,11 +1262,14 @@ function drawWorld() {
     ctx.fillText("GAME OVER", 91, 68);
     ctx.font = "8px monospace";
     ctx.fillText("TAP TO RESTART", 88, 80);
-  } else if (collected === 10) {
-    r(72, 62, 112, 18, "rgba(255,255,255,0.75)");
+  } else if (gameWon) {
+    r(46, 50, 164, 40, "rgba(0,0,0,0.7)");
+    r(48, 52, 160, 36, "rgba(255,255,255,0.82)");
     ctx.fillStyle = "#111";
-    ctx.font = "10px monospace";
-    ctx.fillText("ALL ACORNS FOUND", 82, 74);
+    ctx.font = "12px monospace";
+    ctx.fillText("YOU MADE IT", 88, 66);
+    ctx.font = "8px monospace";
+    ctx.fillText("FOREST CLEARED", 84, 78);
   }
 }
 
@@ -1105,6 +1293,7 @@ function render() {
   ctx.restore();
 
   drawJoystick();
+  drawUseButton();
   drawAttackButton();
 
   requestAnimationFrame(render);
