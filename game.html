@@ -937,7 +937,8 @@ function render() {
   update();
 
   ctx.setTransform(1, 0, 0, 1, 0, 0);
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = "#68b852"; // matchar din grass
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   const scale = Math.min(canvas.width / GAME_W, canvas.height / GAME_H);
   const drawW = GAME_W * scale;
