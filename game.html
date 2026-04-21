@@ -536,7 +536,7 @@ function update() {
   }
 
   camera.x = Math.max(0, Math.min(WORLD_W - GAME_W, player.x - GAME_W / 2));
-  camera.y = Math.max(0, Math.min(WORLD_H - GAME_H, player.y - GAME_H / 2));
+  camera.y = Math.max(0, Math.min(WORLD_H - GAME_H, player.y - GAME_H * 0.35));
 }
 
 // DRAW
