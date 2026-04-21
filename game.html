@@ -1,68 +1,135 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Forest Gathering — Stormie</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Forest Gathering</title>
+<style>
+  body {
+    margin: 0;
+    background: #111;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+  }
 
-  <style>
-    body {
-      margin: 0;
-      background: #0a0a0a;
-      color: #fff;
-      font-family: Arial, sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-      text-align: center;
-    }
-
-    img {
-      width: 100%;
-      max-width: 700px;
-      border-radius: 12px;
-      margin-bottom: 30px;
-    }
-
-    h1 {
-      font-size: 42px;
-      margin-bottom: 10px;
-    }
-
-    p {
-      opacity: 0.6;
-      margin-bottom: 30px;
-    }
-
-    a {
-      padding: 16px 32px;
-      background: #111;
-      border: 1px solid #333;
-      border-radius: 12px;
-      color: #fff;
-      text-decoration: none;
-      font-size: 16px;
-    }
-
-    a:hover {
-      background: #222;
-    }
-  </style>
+  canvas {
+    image-rendering: pixelated;
+    border: 2px solid #222;
+  }
+</style>
 </head>
-
 <body>
 
-  <!-- ADD YOUR SCREENSHOT HERE -->
-  <img src="your-screenshot.jpg" alt="Forest Gathering preview" />
+<canvas id="game" width="512" height="288"></canvas>
 
-  <h1>Forest Gathering</h1>
-  <p>A cozy playable game prototype</p>
+<script>
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
 
-  <a href="https://rosebud.ai/p/forest-gathering" target="_blank">
-    ▶ Play Game
-  </a>
+const keys = {};
+
+document.addEventListener("keydown", e => keys[e.key.toLowerCase()] = true);
+document.addEventListener("keyup", e => keys[e.key.toLowerCase()] = false);
+
+// PLAYER
+const player = {
+  x: 250,
+  y: 140,
+  size: 12,
+  speed: 2
+};
+
+// ACORNS
+const acorns = [];
+for (let i = 0; i < 10; i++) {
+  acorns.push({
+    x: Math.random() * 480 + 16,
+    y: Math.random() * 250 + 16,
+    collected: false
+  });
+}
+
+function update() {
+  let dx = 0;
+  let dy = 0;
+
+  if (keys["w"] || keys["arrowup"]) dy -= 1;
+  if (keys["s"] || keys["arrowdown"]) dy += 1;
+  if (keys["a"] || keys["arrowleft"]) dx -= 1;
+  if (keys["d"] || keys["arrowright"]) dx += 1;
+
+  // normalize diagonal
+  if (dx !== 0 && dy !== 0) {
+    dx *= 0.7;
+    dy *= 0.7;
+  }
+
+  player.x += dx * player.speed;
+  player.y += dy * player.speed;
+
+  // bounds
+  player.x = Math.max(0, Math.min(canvas.width, player.x));
+  player.y = Math.max(0, Math.min(canvas.height, player.y));
+
+  // collect
+  acorns.forEach(a => {
+    if (!a.collected) {
+      const dist = Math.hypot(player.x - a.x, player.y - a.y);
+      if (dist < 12) {
+        a.collected = true;
+      }
+    }
+  });
+}
+
+function draw() {
+  // ground
+  ctx.fillStyle = "#6bbf59";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // trees (simple blobs)
+  ctx.fillStyle = "#2e7d32";
+  for (let i = 0; i < 20; i++) {
+    ctx.beginPath();
+    ctx.arc(Math.random()*512, Math.random()*288, 20, 0, Math.PI*2);
+    ctx.fill();
+  }
+
+  // acorns
+  acorns.forEach(a => {
+    if (!a.collected) {
+      ctx.fillStyle = "#c49a2c";
+      ctx.beginPath();
+      ctx.arc(a.x, a.y, 6, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  });
+
+  // player
+  ctx.fillStyle = "#4fc3f7";
+  ctx.fillRect(player.x - 6, player.y - 6, 12, 12);
+
+  // UI
+  const collected = acorns.filter(a => a.collected).length;
+  ctx.fillStyle = "#000";
+  ctx.font = "14px monospace";
+  ctx.fillText("Acorns: " + collected + "/10", 10, 20);
+
+  if (collected === 10) {
+    ctx.fillText("All collected!", 200, 140);
+  }
+}
+
+function loop() {
+  update();
+  draw();
+  requestAnimationFrame(loop);
+}
+
+loop();
+</script>
 
 </body>
 </html>
