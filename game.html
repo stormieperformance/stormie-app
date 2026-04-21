@@ -8,23 +8,26 @@
   <style>
     body {
       margin: 0;
-      font-family: Arial, sans-serif;
       background: #0a0a0a;
       color: #fff;
+      font-family: Arial, sans-serif;
       display: flex;
-      justify-content: center;
+      flex-direction: column;
       align-items: center;
+      justify-content: center;
       height: 100vh;
       text-align: center;
     }
 
-    .container {
-      max-width: 800px;
-      padding: 20px;
+    img {
+      width: 100%;
+      max-width: 700px;
+      border-radius: 12px;
+      margin-bottom: 30px;
     }
 
     h1 {
-      font-size: 40px;
+      font-size: 42px;
       margin-bottom: 10px;
     }
 
@@ -33,31 +36,33 @@
       margin-bottom: 30px;
     }
 
-    a.button {
-      display: inline-block;
+    a {
       padding: 16px 32px;
       background: #111;
+      border: 1px solid #333;
+      border-radius: 12px;
       color: #fff;
       text-decoration: none;
-      border-radius: 12px;
-      border: 1px solid #333;
-      transition: 0.2s;
+      font-size: 16px;
     }
 
-    a.button:hover {
+    a:hover {
       background: #222;
     }
   </style>
 </head>
 
 <body>
-  <div class="container">
-    <h1>Forest Gathering</h1>
-    <p>A cozy playable game prototype</p>
 
-    <a class="button" href="https://rosebud.ai/p/forest-gathering" target="_blank">
-      ▶ Play Game
-    </a>
-  </div>
+  <!-- ADD YOUR SCREENSHOT HERE -->
+  <img src="your-screenshot.jpg" alt="Forest Gathering preview" />
+
+  <h1>Forest Gathering</h1>
+  <p>A cozy playable game prototype</p>
+
+  <a href="https://rosebud.ai/p/forest-gathering" target="_blank">
+    ▶ Play Game
+  </a>
+
 </body>
 </html>
