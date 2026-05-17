@@ -11,10 +11,59 @@ canvas{display:block;width:100vw;height:100vh;background:#8fd6ff}
 .ui{position:fixed;top:14px;left:14px;right:14px;z-index:10;display:flex;justify-content:space-between;align-items:start;pointer-events:none}
 .title{font-weight:900;letter-spacing:2px;font-size:14px;text-shadow:0 2px 0 rgba(0,0,0,.18)}
 .score{font-weight:800;font-size:14px;background:rgba(255,255,255,.25);padding:8px 12px;border-radius:999px;backdrop-filter:blur(8px)}
-.controls{position:fixed;bottom:18px;left:18px;right:18px;display:flex;justify-content:space-between;z-index:20}
-.left-controls{display:flex;gap:12px}
-button{width:64px;height:64px;border-radius:999px;border:2px solid rgba(255,255,255,.7);background:rgba(255,255,255,.28);color:white;font-size:24px;font-weight:900;backdrop-filter:blur(8px);touch-action:none}
-.jump{width:78px;height:78px;font-size:15px;letter-spacing:1px}
+.controls{
+  position:fixed;
+  inset:0;
+  pointer-events:none;
+  z-index:20;
+}
+
+#joystickBase{
+  position:absolute;
+  left:24px;
+  bottom:24px;
+  width:120px;
+  height:120px;
+  border-radius:999px;
+  background:rgba(255,255,255,0.10);
+  border:2px solid rgba(255,255,255,0.18);
+  backdrop-filter:blur(8px);
+  pointer-events:auto;
+  touch-action:none;
+}
+
+#joystickStick{
+  position:absolute;
+  left:35px;
+  top:35px;
+  width:50px;
+  height:50px;
+  border-radius:999px;
+  background:rgba(255,255,255,0.35);
+  border:2px solid rgba(255,255,255,0.3);
+}
+
+button{
+  border:none;
+}
+
+.jump{
+  position:absolute;
+  right:24px;
+  bottom:24px;
+  width:82px;
+  height:82px;
+  border-radius:999px;
+  border:2px solid rgba(255,255,255,.7);
+  background:rgba(255,255,255,.25);
+  color:white;
+  font-size:15px;
+  font-weight:900;
+  letter-spacing:1px;
+  backdrop-filter:blur(8px);
+  pointer-events:auto;
+  touch-action:none;
+}
 .message{position:fixed;bottom:105px;left:20px;right:20px;text-align:center;font-size:13px;opacity:.92;pointer-events:none;text-shadow:0 2px 0 rgba(0,0,0,.18)}
 </style>
 </head>
