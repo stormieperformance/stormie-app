@@ -132,23 +132,7 @@ const sfx={
   win:()=>{[523,659,784,1046].forEach((f,i)=>setTimeout(()=>tone(f,0.22,"sine",0.06),i*140));}
 };
 function startAmbient(){
-  if(!audioCtx||ambientNodes)return;
-  try{
-    const t=audioCtx.currentTime;
-    const out=audioCtx.createGain();out.gain.value=0;out.connect(masterGain);
-    out.gain.linearRampToValueAtTime(0.04,t+3);
-    const o1=audioCtx.createOscillator();o1.type="sine";o1.frequency.value=110;
-    const o2=audioCtx.createOscillator();o2.type="sine";o2.frequency.value=164.81;
-    const o3=audioCtx.createOscillator();o3.type="triangle";o3.frequency.value=220;
-    const lfo=audioCtx.createOscillator();lfo.frequency.value=0.08;
-    const lfoG=audioCtx.createGain();lfoG.gain.value=0.015;
-    lfo.connect(lfoG);lfoG.connect(out.gain);
-    const filt=audioCtx.createBiquadFilter();filt.type="lowpass";filt.frequency.value=900;
-    o1.connect(filt);o2.connect(filt);o3.connect(filt);filt.connect(out);
-    o1.start();o2.start();o3.start();lfo.start();
-    ambientNodes={o1,o2,o3,lfo,out};
-  }catch(e){}
-}
+  
 function setMuted(m){
   muted=m;
   if(masterGain)masterGain.gain.value=muted?0:0.7;
