@@ -303,6 +303,7 @@ function update(dt){
       b.taken=true;
       addParticles(b.x,b.y,14);
       messageEl.textContent=b.x>3400&&b.x<4100?"Crystal berry found in the hidden cave.":"Berry collected.";
+      berrySound();
     }
   }
 
