@@ -143,15 +143,20 @@ jumpBtn.addEventListener("pointerdown",e=>{
 jumpBtn.addEventListener("pointerup",()=>{
   keys.jump=false;
 });
-
+```js
 let joystickActive=false;
+let joystickPointerId=null;
+
 let joystickCenterX=0;
 let joystickCenterY=0;
 let joystickX=0;
 let joystickY=0;
 
 window.addEventListener("pointerdown",e=>{
+
   if(e.target.id==="jump") return;
+
+  joystickPointerId=e.pointerId;
 
   joystickActive=true;
 
@@ -159,10 +164,13 @@ window.addEventListener("pointerdown",e=>{
   joystickCenterY=e.clientY;
   joystickX=e.clientX;
   joystickY=e.clientY;
+
 });
 
 window.addEventListener("pointermove",e=>{
+
   if(!joystickActive)return;
+  if(e.pointerId!==joystickPointerId)return;
 
   let dx=e.clientX-joystickCenterX;
   let dy=e.clientY-joystickCenterY;
@@ -180,14 +188,19 @@ window.addEventListener("pointermove",e=>{
 
   keys.left=dx<-10;
   keys.right=dx>10;
+
 });
 
 window.addEventListener("pointerup",e=>{
+
+  if(e.pointerId!==joystickPointerId)return;
 
   joystickActive=false;
 
   keys.left=false;
   keys.right=false;
+
+  joystickPointerId=null;
 
 });
 
