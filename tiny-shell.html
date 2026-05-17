@@ -279,8 +279,8 @@ function update(dt){
     player.grounded=false;
     player.squash=1;
     addParticles(player.x+player.w/2,player.y+player.h,5);
+    jumpSound();
   }
-jumpSound();
 
   player.vy+=world.gravity*dt;
   player.x+=player.vx*dt;
