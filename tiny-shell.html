@@ -11,10 +11,9 @@ canvas{display:block;width:100vw;height:100vh;background:#8fd6ff}
 .ui{position:fixed;top:14px;left:14px;right:14px;z-index:10;display:flex;justify-content:space-between;align-items:start;pointer-events:none}
 .title{font-weight:900;letter-spacing:2px;font-size:14px;text-shadow:0 2px 0 rgba(0,0,0,.18)}
 .score{font-weight:800;font-size:14px;background:rgba(255,255,255,.25);padding:8px 12px;border-radius:999px;backdrop-filter:blur(8px)}
-.controls{position:fixed;bottom:18px;left:18px;right:18px;display:flex;justify-content:space-between;z-index:20}
-.left-controls{display:flex;gap:12px}
-button{width:64px;height:64px;border-radius:999px;border:2px solid rgba(255,255,255,.7);background:rgba(255,255,255,.28);color:white;font-size:24px;font-weight:900;backdrop-filter:blur(8px);touch-action:none}
-.jump{width:78px;height:78px;font-size:15px;letter-spacing:1px}
+.controls{position:fixed;inset:0;z-index:20;pointer-events:none}
+button{border-radius:999px;border:2px solid rgba(255,255,255,.7);background:rgba(255,255,255,.28);color:white;font-weight:900;backdrop-filter:blur(8px);touch-action:none}
+.jump{position:absolute;right:24px;bottom:24px;width:82px;height:82px;font-size:15px;letter-spacing:1px;pointer-events:auto}
 .message{position:fixed;bottom:105px;left:20px;right:20px;text-align:center;font-size:13px;opacity:.92;pointer-events:none;text-shadow:0 2px 0 rgba(0,0,0,.18)}
 </style>
 </head>
@@ -32,10 +31,6 @@ button{width:64px;height:64px;border-radius:999px;border:2px solid rgba(255,255,
 <div class="message" id="message">Move, jump, collect berries, stomp grumpy mushrooms.</div>
 
 <div class="controls">
-  <div class="left-controls">
-    <button id="left">‹</button>
-    <button id="right">›</button>
-  </div>
   <button class="jump" id="jump">JUMP</button>
 </div>
 
@@ -55,13 +50,61 @@ function resize(){
 addEventListener("resize",resize);resize();
 
 const keys={left:false,right:false,jump:false};
-function bindButton(id,key){
-  const b=document.getElementById(id);
-  b.addEventListener("pointerdown",e=>{e.preventDefault();keys[key]=true});
-  b.addEventListener("pointerup",e=>{e.preventDefault();keys[key]=false});
-  b.addEventListener("pointerleave",()=>keys[key]=false);
-}
-bindButton("left","left");bindButton("right","right");bindButton("jump","jump");
+
+const jumpBtn=document.getElementById("jump");
+
+jumpBtn.addEventListener("pointerdown",e=>{
+  e.preventDefault();
+  keys.jump=true;
+});
+
+jumpBtn.addEventListener("pointerup",()=>{
+  keys.jump=false;
+});
+
+let joystickActive=false;
+let joystickCenterX=0;
+let joystickCenterY=0;
+let joystickX=0;
+let joystickY=0;
+
+window.addEventListener("pointerdown",e=>{
+  if(e.target.id==="jump") return;
+
+  joystickActive=true;
+
+  joystickCenterX=e.clientX;
+  joystickCenterY=e.clientY;
+  joystickX=e.clientX;
+  joystickY=e.clientY;
+});
+
+window.addEventListener("pointermove",e=>{
+  if(!joystickActive)return;
+
+  let dx=e.clientX-joystickCenterX;
+  let dy=e.clientY-joystickCenterY;
+
+  const dist=Math.hypot(dx,dy);
+  const max=40;
+
+  if(dist>max){
+    dx=dx/dist*max;
+    dy=dy/dist*max;
+  }
+
+  joystickX=joystickCenterX+dx;
+  joystickY=joystickCenterY+dy;
+
+  keys.left=dx<-10;
+  keys.right=dx>10;
+});
+
+window.addEventListener("pointerup",()=>{
+  joystickActive=false;
+  keys.left=false;
+  keys.right=false;
+});
 
 addEventListener("keydown",e=>{
   if(e.key==="ArrowLeft"||e.key==="a")keys.left=true;
@@ -373,9 +416,28 @@ function drawGate(){
   ctx.font="12px system-ui";ctx.textAlign="center";ctx.fillText("GATE",x+35,y-10);
 }
 
+function drawJoystick(){
+  if(!joystickActive)return;
+
+  ctx.save();
+  ctx.globalAlpha=0.35;
+  ctx.fillStyle="white";
+  ctx.beginPath();
+  ctx.arc(joystickCenterX,joystickCenterY,42,0,Math.PI*2);
+  ctx.fill();
+
+  ctx.globalAlpha=0.6;
+  ctx.beginPath();
+  ctx.arc(joystickX,joystickY,22,0,Math.PI*2);
+  ctx.fill();
+
+  ctx.restore();
+  ctx.globalAlpha=1;
+}
+
 function render(t){
   drawSky(t);drawForest();drawCaveOverlay();drawPlatforms();drawGate();drawFireflies(t);
-  drawBerries(t);drawEnemies();drawPlayer();drawParticles();
+  drawBerries(t);drawEnemies();drawPlayer();drawParticles();drawJoystick();
 
   if(player.won){
     ctx.fillStyle="rgba(0,0,0,.35)";ctx.fillRect(0,0,W,H);
@@ -395,5 +457,3 @@ requestAnimationFrame(loop);
 </script>
 </body>
 </html>
-
-
