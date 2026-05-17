@@ -82,29 +82,6 @@ function initAudio(){
 }
 function unlockAudio(){
   initAudio();
-  if(!audioCtx)return;
-  if(audioCtx.state==="suspended"){
-    audioCtx.resume().then(()=>{audioReady=true;startAmbient();}).catch(()=>{});
-  }else{
-    audioReady=true;startAmbient();
-  }
-}
-["pointerdown","touchstart","keydown","click"].forEach(ev=>{
-  window.addEventListener(ev,unlockAudio,{passive:true});
-});
-function tone(freq,duration,type="sine",volume=0.05,attack=0.005){
-  if(!audioCtx||!audioReady)return;
-  try{
-    const t=audioCtx.currentTime;
-    const osc=audioCtx.createOscillator();
-    const g=audioCtx.createGain();
-    osc.type=type;osc.frequency.setValueAtTime(freq,t);
-    g.gain.setValueAtTime(0.0001,t);
-    g.gain.exponentialRampToValueAtTime(volume,t+attack);
-    g.gain.exponentialRampToValueAtTime(0.0001,t+duration);
-    osc.connect(g);g.connect(masterGain);
-    osc.start(t);osc.stop(t+duration+0.02);
-  }catch(e){}
 }
 function noiseBurst(duration=0.15,volume=0.05,filterFreq=800){
   if(!audioCtx||!audioReady)return;
