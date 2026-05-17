@@ -55,6 +55,12 @@ window.addEventListener("touchstart",unlockAudio);
 
 function playTone(freq,duration,type="sine",volume=0.05){
 
+if(audioCtx.state==="suspended"){
+  audioCtx.resume();
+}
+
+
+
   const osc = audioCtx.createOscillator();
   const gain = audioCtx.createGain();
 
