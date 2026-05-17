@@ -182,7 +182,14 @@ window.addEventListener("pointermove",e=>{
   keys.right=dx>10;
 });
 
+window.addEventListener("pointerup",e=>{
 
+  joystickActive=false;
+
+  keys.left=false;
+  keys.right=false;
+
+});
 
 addEventListener("keydown",e=>{
   if(e.key==="ArrowLeft"||e.key==="a")keys.left=true;
