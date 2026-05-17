@@ -42,6 +42,17 @@ const messageEl=document.getElementById("message");
 
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
+function unlockAudio(){
+
+  if(audioCtx.state==="suspended"){
+    audioCtx.resume();
+  }
+
+}
+
+window.addEventListener("pointerdown",unlockAudio);
+window.addEventListener("touchstart",unlockAudio);
+
 function playTone(freq,duration,type="sine",volume=0.05){
 
   const osc = audioCtx.createOscillator();
