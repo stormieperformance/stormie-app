@@ -100,10 +100,58 @@ window.addEventListener("pointermove",e=>{
   keys.right=dx>10;
 });
 
-window.addEventListener("pointerup",()=>{
+let joystickPointerId=null;
+
+window.addEventListener("pointerdown",e=>{
+
+  if(e.target.id==="jump") return;
+
+  joystickPointerId=e.pointerId;
+
+  joystickActive=true;
+
+  joystickCenterX=e.clientX;
+  joystickCenterY=e.clientY;
+  joystickX=e.clientX;
+  joystickY=e.clientY;
+
+});
+
+window.addEventListener("pointermove",e=>{
+
+  if(!joystickActive)return;
+  if(e.pointerId!==joystickPointerId)return;
+
+  let dx=e.clientX-joystickCenterX;
+  let dy=e.clientY-joystickCenterY;
+
+  const dist=Math.hypot(dx,dy);
+  const max=40;
+
+  if(dist>max){
+    dx=dx/distmax;
+    dy=dy/distmax;
+  }
+
+  joystickX=joystickCenterX+dx;
+  joystickY=joystickCenterY+dy;
+
+  keys.left=dx<-10;
+  keys.right=dx>10;
+
+});
+
+window.addEventListener("pointerup",e=>{
+
+  if(e.pointerId!==joystickPointerId)return;
+
   joystickActive=false;
+
   keys.left=false;
   keys.right=false;
+
+  joystickPointerId=null;
+
 });
 
 addEventListener("keydown",e=>{
