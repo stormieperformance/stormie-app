@@ -280,6 +280,7 @@ function update(dt){
     player.squash=1;
     addParticles(player.x+player.w/2,player.y+player.h,5);
   }
+jumpSound();
 
   player.vy+=world.gravity*dt;
   player.x+=player.vx*dt;
