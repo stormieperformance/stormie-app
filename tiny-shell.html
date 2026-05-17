@@ -79,6 +79,50 @@ function berrySound(){
 
 function stompSound(){
   playTone(140,0.12,"sawtooth",0.06);
+  ```js
+function enemyDefeatSound(){
+
+  playTone(180,0.08,"square",0.06);
+
+  setTimeout(()=>{
+    playTone(120,0.12,"square",0.05);
+  },50);
+
+}
+
+function fallSound(){
+
+  playTone(220,0.08,"sawtooth",0.05);
+
+  setTimeout(()=>{
+    playTone(140,0.18,"sawtooth",0.05);
+  },60);
+
+  setTimeout(()=>{
+    playTone(80,0.3,"sawtooth",0.04);
+  },140);
+
+}
+
+function winSound(){
+
+  playTone(523,0.12,"sine",0.05);
+
+  setTimeout(()=>{
+    playTone(659,0.12,"sine",0.05);
+  },120);
+
+  setTimeout(()=>{
+    playTone(784,0.18,"sine",0.06);
+  },240);
+
+  setTimeout(()=>{
+    playTone(1046,0.28,"sine",0.06);
+  },420);
+
+}
+```
+
 }  
 
 let W,H,dpr;
