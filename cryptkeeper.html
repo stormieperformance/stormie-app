@@ -1,16 +1,17 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Cryptkeeper</title>
+<title>The Cemetery Medium</title>
 
 <style>
 
 html,body{
 margin:0;
 overflow:hidden;
-background:#08110d;
+background:#06070b;
 font-family:Verdana,sans-serif;
 }
 
@@ -19,7 +20,6 @@ display:block;
 width:100vw;
 height:100vh;
 image-rendering:pixelated;
-image-rendering:crisp-edges;
 }
 
 </style>
@@ -51,65 +51,88 @@ keys[e.key.toLowerCase()] = false;
 });
 
 const player = {
-x:235,
-y:150,
-speed:1.5,
-frame:0
+x:240,
+y:170,
+speed:1.6,
+dir:0
 };
 
-let spiritMode = false;
 let rain = 0;
+let spiritMode = false;
+let pulse = 0;
+
+const spirits = [
+{
+x:320,
+y:118,
+msg:"I still wait for my wife beneath the cedar tree."
+},
+{
+x:110,
+y:195,
+msg:"The bells rang for me, but nobody came."
+},
+{
+x:390,
+y:155,
+msg:"Please don't let them forget my name."
+}
+];
+
+let activeMessage = "The cemetery breathes softly in the rain.";
 
 function rect(x,y,w,h,c){
-ctx.fillStyle=c;
+ctx.fillStyle = c;
 ctx.fillRect(x,y,w,h);
 }
 
 function pixel(x,y,c){
-ctx.fillStyle=c;
+ctx.fillStyle = c;
 ctx.fillRect(x,y,1,1);
+}
+
+function glow(x,y,r,c){
+
+const g = ctx.createRadialGradient(x,y,0,x,y,r);
+
+g.addColorStop(0,c);
+g.addColorStop(1,"rgba(0,0,0,0)");
+
+ctx.fillStyle = g;
+
+ctx.beginPath();
+ctx.arc(x,y,r,0,Math.PI*2);
+ctx.fill();
+
 }
 
 function drawSky(){
 
 const g = ctx.createLinearGradient(0,0,0,HEIGHT);
 
-g.addColorStop(0,"#08131d");
-g.addColorStop(1,"#102117");
+g.addColorStop(0,"#08111c");
+g.addColorStop(1,"#102018");
 
 ctx.fillStyle = g;
 ctx.fillRect(0,0,WIDTH,HEIGHT);
 
-}
-
-function drawGrass(){
-
-rect(0,0,WIDTH,HEIGHT,"#2f4f2f");
-
-for(let i=0;i<1400;i++){
-
-const x = (i*47)%WIDTH;
-const y = (i*91)%HEIGHT;
-
-pixel(x,y,i%3 ? "#486f42" : "#3b5c37");
-
-}
+glow(380,45,80,"rgba(180,210,255,0.08)");
 
 }
 
 function drawRain(){
 
-ctx.strokeStyle="rgba(255,255,255,0.07)";
-ctx.lineWidth=1;
+ctx.strokeStyle = "rgba(255,255,255,0.06)";
+ctx.lineWidth = 1;
 
-for(let i=0;i<150;i++){
+for(let i=0;i<170;i++){
 
-const x = (i*37)%WIDTH;
+const x = (i*41)%WIDTH;
 const y = ((i*29)+rain)%HEIGHT;
 
 ctx.beginPath();
 ctx.moveTo(x,y);
-ctx.lineTo(x+2,y+7);
+ctx.lineTo(x+2,y+8);
 ctx.stroke();
 
 }
@@ -118,29 +141,37 @@ rain += 2;
 
 }
 
-function drawPath(){
+function drawGround(){
 
-rect(210,0,60,HEIGHT,"#8e7a59");
-rect(0,120,WIDTH,34,"#8e7a59");
+rect(0,0,WIDTH,HEIGHT,"#29432a");
 
-for(let i=0;i<300;i++){
+for(let i=0;i<1800;i++){
+
+const x = (i*53)%WIDTH;
+const y = (i*97)%HEIGHT;
 
 pixel(
-210 + ((i*7)%60),
-(i*17)%HEIGHT,
-i%2 ? "#a08c69" : "#7d6b4e"
+x,
+y,
+i%2 ? "#3e5f3c" : "#355334"
 );
 
 }
 
 }
 
-function drawFence(){
+function drawPaths(){
 
-for(let i=0;i<WIDTH;i+=14){
+rect(208,0,64,HEIGHT,"#8a795a");
+rect(0,122,WIDTH,36,"#8a795a");
 
-rect(i,198,10,3,"#9d875c");
-rect(i+3,198,3,22,"#7b6640");
+for(let i=0;i<700;i++){
+
+pixel(
+208 + ((i*7)%64),
+(i*13)%HEIGHT,
+i%2 ? "#a58f69" : "#776548"
+);
 
 }
 
@@ -148,54 +179,59 @@ rect(i+3,198,3,22,"#7b6640");
 
 function drawChurch(){
 
-rect(175,35,130,90,"#5f6070");
+rect(175,38,130,92,"#595968");
 
-ctx.fillStyle="#72529a";
-
-ctx.beginPath();
-ctx.moveTo(162,52);
-ctx.lineTo(240,0);
-ctx.lineTo(318,52);
-ctx.fill();
-
-rect(223,78,34,47,"#14131a");
-
-ctx.fillStyle="#d9d9e4";
-
-ctx.fillRect(236,14,8,30);
-ctx.fillRect(221,25,38,8);
-
-rect(217,76,10,18,"#f3d68a");
-rect(253,76,10,18,"#f3d68a");
-
-ctx.fillStyle="rgba(243,214,138,0.15)";
-ctx.beginPath();
-ctx.arc(222,85,18,0,Math.PI*2);
-ctx.fill();
+ctx.fillStyle="#6d4f96";
 
 ctx.beginPath();
-ctx.arc(258,85,18,0,Math.PI*2);
+ctx.moveTo(160,56);
+ctx.lineTo(240,2);
+ctx.lineTo(320,56);
 ctx.fill();
+
+rect(223,82,34,48,"#101018");
+
+ctx.fillStyle="#ddd";
+
+ctx.fillRect(236,16,8,32);
+ctx.fillRect(220,28,40,8);
+
+rect(217,80,10,20,"#f2d68b");
+rect(253,80,10,20,"#f2d68b");
+
+glow(222,90,22,"rgba(242,214,139,0.18)");
+glow(258,90,22,"rgba(242,214,139,0.18)");
 
 }
 
-function drawTree(x,y,size=1){
+function drawTree(x,y,s=1){
 
-ctx.fillStyle="#1d371f";
-
-ctx.beginPath();
-ctx.arc(x,y,20*size,0,Math.PI*2);
-ctx.fill();
-
-ctx.fillStyle="#274727";
+ctx.fillStyle="#162d17";
 
 ctx.beginPath();
-ctx.arc(x-8,y-8,10*size,0,Math.PI*2);
+ctx.arc(x,y,24*s,0,Math.PI*2);
 ctx.fill();
 
-ctx.fillStyle="#5d4023";
+ctx.fillStyle="#244625";
 
-rect(x-3,y+16,6,20,"#5d4023");
+ctx.beginPath();
+ctx.arc(x-8,y-10,12*s,0,Math.PI*2);
+ctx.fill();
+
+ctx.fillStyle="#573b22";
+
+rect(x-3,y+18,6,20,"#573b22");
+
+}
+
+function drawFence(){
+
+for(let i=0;i<WIDTH;i+=13){
+
+rect(i,198,10,3,"#9f875c");
+rect(i+4,198,2,22,"#7d6840");
+
+}
 
 }
 
@@ -203,23 +239,23 @@ function drawGrave(x,y,big=false){
 
 if(big){
 
-rect(x,y,22,36,"#777887");
-rect(x+4,y-6,14,8,"#9ea0ad");
-
-ctx.fillStyle="#45454f";
-
-rect(x+10,y+10,2,16,"#45454f");
-rect(x+6,y+16,10,2,"#45454f");
-
-}else{
-
-rect(x,y,12,20,"#9a9aa5");
-rect(x+3,y-4,6,5,"#b7b7c2");
+rect(x,y,22,38,"#767785");
+rect(x+4,y-6,14,8,"#a0a1af");
 
 ctx.fillStyle="#444";
 
-rect(x+5,y+5,2,10,"#444");
-rect(x+2,y+9,8,2,"#444");
+rect(x+10,y+12,2,16,"#444");
+rect(x+6,y+18,10,2,"#444");
+
+}else{
+
+rect(x,y,12,22,"#9d9daa");
+rect(x+3,y-4,6,5,"#bcbcca");
+
+ctx.fillStyle="#444";
+
+rect(x+5,y+6,2,10,"#444");
+rect(x+2,y+10,8,2,"#444");
 
 }
 
@@ -228,17 +264,17 @@ rect(x+2,y+9,8,2,"#444");
 function drawFlowers(x,y){
 
 const colors = [
-"#c86be3",
-"#ffe07a",
-"#6ed37a",
-"#ff8ea1"
+"#d07cff",
+"#ffe27a",
+"#8ee28f",
+"#ff9ab1"
 ];
 
-for(let i=0;i<10;i++){
+for(let i=0;i<12;i++){
 
 pixel(
-x+((i*3)%10),
-y+((i*7)%8),
+x+((i*3)%12),
+y+((i*5)%8),
 colors[i%colors.length]
 );
 
@@ -250,35 +286,27 @@ function drawLantern(x,y){
 
 rect(x,y,3,12,"#444");
 
-rect(x-2,y-5,7,7,"#f3d68a");
+rect(x-2,y-5,7,7,"#f2d68b");
 
-ctx.fillStyle="rgba(243,214,138,0.12)";
-
-ctx.beginPath();
-ctx.arc(x+1,y-2,22,0,Math.PI*2);
-ctx.fill();
+glow(x+1,y-2,26,"rgba(242,214,139,0.18)");
 
 }
 
-function drawSpirit(){
+function drawSpirit(s){
 
 if(!spiritMode) return;
 
-ctx.globalAlpha = 0.65;
+ctx.globalAlpha = 0.45 + Math.sin(pulse*0.05)*0.15;
 
 ctx.fillStyle="#9edfff";
 
 ctx.beginPath();
-ctx.arc(320,128,12,0,Math.PI*2);
+ctx.arc(s.x,s.y,10,0,Math.PI*2);
 ctx.fill();
 
-rect(314,140,12,16,"#9edfff");
+rect(s.x-5,s.y+8,10,14,"#9edfff");
 
-ctx.globalAlpha = 0.15;
-
-ctx.beginPath();
-ctx.arc(320,136,34,0,Math.PI*2);
-ctx.fill();
+glow(s.x,s.y+8,34,"rgba(158,223,255,0.14)");
 
 ctx.globalAlpha = 1;
 
@@ -286,51 +314,46 @@ ctx.globalAlpha = 1;
 
 function drawPlayer(){
 
-rect(player.x,player.y+8,14,16,"#31293d");
+rect(player.x,player.y+8,14,16,"#31273f");
 
-rect(player.x+3,player.y,8,10,"#f3c8b2");
+rect(player.x+3,player.y,8,10,"#f2c7b2");
 
-ctx.fillStyle="#1a1118";
+ctx.fillStyle="#171018";
 
-rect(player.x+1,player.y-1,12,4,"#1a1118");
+rect(player.x+1,player.y-1,12,4,"#171018");
 
-rect(player.x+4,player.y+24,2,5,"#1a1118");
-rect(player.x+8,player.y+24,2,5,"#1a1118");
+rect(player.x+4,player.y+24,2,5,"#171018");
+rect(player.x+8,player.y+24,2,5,"#171018");
+
+glow(player.x+7,player.y+16,20,"rgba(255,255,255,0.03)");
 
 }
 
 function drawUI(){
 
-ctx.fillStyle="rgba(0,0,0,0.83)";
+ctx.fillStyle="rgba(0,0,0,0.82)";
 ctx.fillRect(10,210,460,50);
 
-ctx.strokeStyle="#c59d5f";
+ctx.strokeStyle="#c79d5f";
 ctx.lineWidth=2;
 ctx.strokeRect(10,210,460,50);
 
 ctx.fillStyle="#fff";
 ctx.font="10px Verdana";
 
-ctx.fillText("CRYPTKEEPER",22,226);
+ctx.fillText("THE CEMETERY MEDIUM",22,226);
 
 ctx.fillStyle="#8edbff";
-ctx.fillText("SPIRIT SENSE",22,240);
+ctx.fillText("SPIRIT SENSE ACTIVE",22,240);
 
 ctx.fillStyle="#ddd";
-
-if(spiritMode){
-
-ctx.fillText('"The roses behind the chapel were mine..."',22,253);
-
-}else{
-
-ctx.fillText("Press SPACE to reveal wandering spirits.",22,253);
-
-}
+ctx.fillText(activeMessage,22,254);
 
 }
 
 function update(){
+
+pulse++;
 
 if(keys["arrowleft"] || keys["a"]){
 player.x -= player.speed;
@@ -350,6 +373,25 @@ player.y += player.speed;
 
 spiritMode = keys[" "];
 
+activeMessage = spiritMode
+? "The dead drift closer when the veil opens."
+: "The cemetery breathes softly in the rain.";
+
+if(spiritMode){
+
+spirits.forEach(s=>{
+
+const dx = player.x - s.x;
+const dy = player.y - s.y;
+
+if(Math.sqrt(dx*dx+dy*dy) < 40){
+activeMessage = s.msg;
+}
+
+});
+
+}
+
 player.x = Math.max(0,Math.min(WIDTH-14,player.x));
 player.y = Math.max(0,Math.min(HEIGHT-16,player.y));
 
@@ -359,39 +401,39 @@ function render(){
 
 drawSky();
 
-drawGrass();
+drawGround();
 
 drawRain();
 
-drawPath();
+drawPaths();
 
-drawTree(40,40,1.1);
-drawTree(72,230,1.3);
-drawTree(425,42,1.1);
-drawTree(450,215,1.2);
+drawTree(42,42,1.1);
+drawTree(78,228,1.2);
+drawTree(425,45,1.1);
+drawTree(448,220,1.25);
 
 drawChurch();
 
 drawFence();
 
-drawGrave(90,85);
-drawGrave(118,155);
+drawGrave(90,88);
+drawGrave(118,160);
 
 drawGrave(355,92);
-drawGrave(392,145,true);
+drawGrave(395,145,true);
 
-drawGrave(305,178);
-drawGrave(170,172);
+drawGrave(300,182);
+drawGrave(168,176);
 
-drawFlowers(104,104);
-drawFlowers(188,188);
-drawFlowers(314,110);
-drawFlowers(410,165);
+drawFlowers(105,105);
+drawFlowers(185,188);
+drawFlowers(312,112);
+drawFlowers(410,168);
 
 drawLantern(205,198);
 drawLantern(276,198);
 
-drawSpirit();
+spirits.forEach(drawSpirit);
 
 drawPlayer();
 
