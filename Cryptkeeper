@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Gravekeeper</title>
+
+<style>
+
+html,body{
+margin:0;
+overflow:hidden;
+background:#111;
+font-family:Verdana,sans-serif;
+}
+
+canvas{
+display:block;
+width:100vw;
+height:100vh;
+image-rendering:pixelated;
+}
+
+</style>
+</head>
+
+<body>
+
+<canvas id="game"></canvas>
+
+<script>
+
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+const WIDTH = 320;
+const HEIGHT = 180;
+
+canvas.width = WIDTH;
+canvas.height = HEIGHT;
+
+const keys = {};
+
+window.addEventListener("keydown", e=>{
+keys[e.key.toLowerCase()] = true;
+});
+
+window.addEventListener("keyup", e=>{
+keys[e.key.toLowerCase()] = false;
+});
+
+const player = {
+x:150,
+y:100,
+w:10,
+h:14,
+speed:1.2
+};
+
+let spiritVisible = false;
+let timer = 0;
+
+function rect(x,y,w,h,c){
+ctx.fillStyle = c;
+ctx.fillRect(x,y,w,h);
+}
+
+function drawGround(){
+
+rect(0,0,WIDTH,HEIGHT,"#355534");
+
+for(let i=0;i<180;i++){
+
+ctx.fillStyle = i%2 ? "#3f633d" : "#315031";
+
+ctx.fillRect(
+Math.random()*WIDTH,
+Math.random()*HEIGHT,
+2,
+2
+);
+
+}
+
+}
+
+function drawPaths(){
+
+rect(135,0,28,HEIGHT,"#8f7b5d");
+
+rect(0,80,WIDTH,20,"#8f7b5d");
+
+}
+
+function drawChurch(){
+
+rect(112,18,95,62,"#5d5d6c");
+
+ctx.fillStyle = "#6f4d8c";
+
+ctx.beginPath();
+ctx.moveTo(102,28);
+ctx.lineTo(160,-5);
+ctx.lineTo(217,28);
+ctx.fill();
+
+rect(148,48,22,32,"#18181f");
+
+ctx.fillStyle="#ddd";
+
+ctx.fillRect(157,8,4,18);
+ctx.fillRect(150,15,18,4);
+
+}
+
+function drawGrave(x,y){
+
+rect(x,y,10,14,"#999");
+
+rect(x+2,y-3,6,3,"#aaa");
+
+ctx.fillStyle="#444";
+
+ctx.fillRect(x+4,y+3,2,7);
+ctx.fillRect(x+2,y+5,6,2);
+
+}
+
+function drawTrees(){
+
+const trees = [
+[22,20],
+[42,140],
+[270,25],
+[280,145],
+[18,100],
+[240,150]
+];
+
+trees.forEach(t=>{
+
+ctx.fillStyle="#244824";
+
+ctx.beginPath();
+ctx.arc(t[0],t[1],16,0,Math.PI*2);
+ctx.fill();
+
+ctx.fillStyle="#5b4126";
+
+ctx.fillRect(t[0]-2,t[1]+10,4,10);
+
+});
+
+}
+
+function drawPlayer(){
+
+rect(player.x,player.y+4,10,10,"#3a3047");
+
+rect(player.x+2,player.y,6,6,"#f2cab7");
+
+ctx.fillStyle="#22151f";
+
+ctx.fillRect(player.x+1,player.y-1,8,3);
+
+}
+
+function drawSpirit(){
+
+if(!spiritVisible) return;
+
+ctx.globalAlpha = 0.7 + Math.sin(timer*0.05)*0.2;
+
+ctx.fillStyle="#8fd8ff";
+
+ctx.beginPath();
+ctx.arc(210,90,8,0,Math.PI*2);
+ctx.fill();
+
+ctx.fillRect(207,96,6,10);
+
+ctx.globalAlpha = 1;
+
+}
+
+function drawUI(){
+
+ctx.fillStyle="rgba(0,0,0,0.75)";
+ctx.fillRect(5,130,310,45);
+
+ctx.strokeStyle="#c79d58";
+ctx.strokeRect(5,130,310,45);
+
+ctx.fillStyle="#fff";
+ctx.font="6px Verdana";
+
+ctx.fillText("GRAVEKEEPER",12,142);
+
+ctx.fillStyle="#9fd8ff";
+
+ctx.fillText("SPACE = spirit sight",12,152);
+
+ctx.fillStyle="#ddd";
+
+if(spiritVisible){
+
+ctx.fillText('"Would you water the roses for me?"',12,165);
+
+}else{
+
+ctx.fillText("The cemetery grows quiet at dusk.",12,165);
+
+}
+
+}
+
+function update(){
+
+timer++;
+
+if(keys["arrowleft"] || keys["a"]){
+player.x -= player.speed;
+}
+
+if(keys["arrowright"] || keys["d"]){
+player.x += player.speed;
+}
+
+if(keys["arrowup"] || keys["w"]){
+player.y -= player.speed;
+}
+
+if(keys["arrowdown"] || keys["s"]){
+player.y += player.speed;
+}
+
+spiritVisible = keys[" "];
+
+player.x = Math.max(0,Math.min(WIDTH-player.w,player.x));
+
+player.y = Math.max(0,Math.min(HEIGHT-player.h,player.y));
+
+}
+
+function render(){
+
+ctx.fillStyle="#0d1824";
+ctx.fillRect(0,0,WIDTH,HEIGHT);
+
+drawGround();
+drawPaths();
+drawTrees();
+
+drawGrave(70,60);
+drawGrave(95,112);
+drawGrave(228,68);
+drawGrave(250,110);
+drawGrave(185,120);
+
+drawChurch();
+
+drawSpirit();
+
+drawPlayer();
+
+drawUI();
+
+}
+
+function loop(){
+
+update();
+
+render();
+
+requestAnimationFrame(loop);
+
+}
+
+loop();
+
+</script>
+
+</body>
+</html>
