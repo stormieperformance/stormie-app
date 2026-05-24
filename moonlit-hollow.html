@@ -224,9 +224,9 @@ function startHalloweenMusic(volume = 0.18) {
     gainNode.connect(master);
     gainNode.gain.linearRampToValueAtTime(volume, c.currentTime + 2.0);
 
-    // Reverb (convolver with synthetic impulse)
+    // Reverb — use a SHORT IR (0.6s) to keep generation fast and non-blocking
     const convolver = c.createConvolver();
-    const irLen = c.sampleRate * 1.8;
+    const irLen = Math.floor(c.sampleRate * 0.6);
     const ir = c.createBuffer(2, irLen, c.sampleRate);
     for (let ch = 0; ch < 2; ch++) {
         const d = ir.getChannelData(ch);
@@ -449,7 +449,7 @@ function startChapelMusic(volume = 0.10) {
     gainNode.gain.linearRampToValueAtTime(volume, c.currentTime + 3.0);
 
     // Reverb
-    const irLen = c.sampleRate * 3.2;
+    const irLen = Math.floor(c.sampleRate * 0.8);
     const ir = c.createBuffer(2, irLen, c.sampleRate);
     for (let ch = 0; ch < 2; ch++) {
         const d = ir.getChannelData(ch);
@@ -3714,11 +3714,12 @@ class MainScene extends Phaser.Scene {
     startChapelAmbience() {
         // distant storm + occasional bone-chime whispers. very low volume so
         // it sits beneath dialogue without competing with it.
-        this.rainAmb = startRain(0.04);
+        // rain removed — chapel music only
         // Eerie theremin melody — starts softly after a moment
-        this.time.delayedCall(1200, () => {
+        // Defer music so IR buffer generation doesn't block create() frame
+        setTimeout(() => {
             if (!this.chapelMusic) this.chapelMusic = startChapelMusic(0.08);
-        });
+        }, 600);
         const scheduleChime = () => {
             const delay = 9000 + Math.random() * 11000;
             this.chimeTimer = this.time.delayedCall(delay, () => {
@@ -3732,8 +3733,6 @@ class MainScene extends Phaser.Scene {
         scheduleChime();
         // stop on shutdown
         this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
-            this.rainAmb?.stop();
-            this.rainAmb = undefined;
             this.chapelMusic?.stop();
             this.chapelMusic = undefined;
             this.chimeTimer?.remove(false);
@@ -4855,15 +4854,14 @@ class FlightScene extends Phaser.Scene {
             callback: () => this.spawnShootingStar(),
         });
         // --- ambience (wind via low rain layer) ---
-        this.ambient = startRain(0.025);
+        // rain removed — Halloween music only
         // Halloween carousel music — starts after a short intro delay
-        this.time.delayedCall(800, () => {
-            this.flightMusic = startHalloweenMusic(0.16);
-        });
+        // Defer music start so it doesn't block Phaser's create() frame
+        setTimeout(() => {
+            if (!this.flightMusic) this.flightMusic = startHalloweenMusic(0.16);
+        }, 400);
         this.scale.on("resize", () => this.onResize());
         this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
-            this.ambient?.stop();
-            this.ambient = undefined;
             this.flightMusic?.stop();
             this.flightMusic = undefined;
         });
@@ -5313,7 +5311,6 @@ class FlightScene extends Phaser.Scene {
         });
         this.time.delayedCall(3800, () => {
             ui.events.emit("hud_show", false);
-            this.ambient?.stop();
             this.scene.start("tower");
         });
     }
@@ -5598,11 +5595,13 @@ class TowerScene extends Phaser.Scene {
         const ui = this.scene.get("ui");
         // Small delay so any outgoing hud_show fade-tween from FlightScene finishes
         // before we reset layout and HP — prevents the bar staying invisible.
-        this.time.delayedCall(50, () => {
-            ui.events.emit("hud_layout", "split");
-            ui.events.emit("hud_show", true);
-            ui.events.emit("mana_show", true);
-            ui.events.emit("inventory_show", false);
+        // Step 1: set layout immediately
+        ui.events.emit("hud_layout", "split");
+        ui.events.emit("hud_show", true);
+        ui.events.emit("mana_show", true);
+        ui.events.emit("inventory_show", false);
+        // Step 2: emit actual hp/mana values after layout has settled (2 frames later)
+        this.time.delayedCall(80, () => {
             ui.events.emit("hp", this.hp);
             ui.events.emit("mana", this.mana);
         });
@@ -5613,11 +5612,18 @@ class TowerScene extends Phaser.Scene {
         this.time.delayedCall(1600, () => {
             ui.events.emit("cine_line", "Cold stone. Webs. Somewhere above — a heartbeat that is not yours.");
         });
-        this.time.delayedCall(800, () => {
-            // Re-emit HP/mana after UIScene tweens have definitely settled
+        this.time.delayedCall(500, () => {
+            // Re-emit after UIScene has definitely settled
             ui.events.emit("hp", this.hp);
             ui.events.emit("mana", this.mana);
         });
+        // Heartbeat: keep HP bar in sync every 2s in case of any missed emit
+        this.time.addEvent({ delay: 2000, loop: true, callback: () => {
+            if (this.stage !== "won") {
+                this.scene.get("ui").events.emit("hp", this.hp);
+                this.scene.get("ui").events.emit("mana", this.mana);
+            }
+        }});
         this.time.delayedCall(4600, () => {
             ui.events.emit("cine_fadeout");
             this.beginSpiders();
@@ -6630,7 +6636,9 @@ class TowerScene extends Phaser.Scene {
 
     // ─── UPDATE ──────────────────────────────────────────────────────────────
     update(_t, dt) {
-        if (this.stage === "intro" || this.stage === "won" || this.stage === "wolfIntro" || this.stage === "vampireDead") return;
+        if (this.stage === "won" || this.stage === "wolfIntro" || this.stage === "vampireDead") return;
+        // "intro" only blocks combat — movement and stair access still work
+        const combatActive = (this.stage !== "intro" && this.stage !== "cleared");
         this.damageCd = Math.max(0, this.damageCd - dt);
         this.castCd = Math.max(0, this.castCd - dt);
         this.mana = Math.min(100, this.mana + dt * 0.012);
@@ -6696,7 +6704,7 @@ class TowerScene extends Phaser.Scene {
             const d = Math.hypot(dx, dy) || 1;
             s.spr.x += (dx / d) * 1.2; s.spr.y += (dy / d) * 1.2;
             s.spr.setFlipX(dx < 0);
-            if (d < 22 && this.stage !== "intro" && this.stage !== "vampireDead") this.hurtPlayer(8);
+            if (d < 22 && combatActive) this.hurtPlayer(8);
             this.bullets.forEach(b => {
                 if (!b.alive || !s.alive) return;
                 if (Phaser.Math.Distance.Between(b.spr.x, b.spr.y, s.spr.x, s.spr.y) < 18) {
@@ -6708,13 +6716,13 @@ class TowerScene extends Phaser.Scene {
             });
         });
         const spidersLeft = this.spiders.filter(s => s.alive).length;
-        if (this.stage === "spiders" && spidersLeft === 0) {
+        if (combatActive && this.stage === "spiders" && spidersLeft === 0) {
             this.spiders = []; this.stage = "intro";
             this.time.delayedCall(700, () => this.beginVampire());
         }
 
         // Vampire
-        if (this.vampire && this.stage === "vampire" && this.vampire.alpha > 0.5) {
+        if (combatActive && this.vampire && this.stage === "vampire" && this.vampire.alpha > 0.5) {
             if (Math.random() < 0.003) {
                 const tx = this.arena.x + 40 + Math.random() * (this.arena.w - 80);
                 const ty = this.arena.y + 30 + Math.random() * (this.arena.h - 100);
@@ -6737,7 +6745,7 @@ class TowerScene extends Phaser.Scene {
                         this.bullets.forEach(bl => { bl.alive = false; try { bl.spr.destroy(); } catch {} }); this.bullets = [];
                         if (this.bossMusic) { this.bossMusic.stop(); this.bossMusic = null; }
                         this.scene.get("ui").events.emit("cine_line", "Lord Vyrin dissolves into shadow. The staircase groans open.");
-                        this.time.delayedCall(1400, () => { this.stage = "intro"; this.unlockStairDown(); });
+                        this.time.delayedCall(1400, () => { this.stage = "cleared"; this.unlockStairDown(); });
                     }
                 }
             });
@@ -6749,7 +6757,7 @@ class TowerScene extends Phaser.Scene {
             const dx = this.player.x - b.spr.x, dy = this.player.y - 16 - b.spr.y;
             const d = Math.hypot(dx, dy) || 1;
             b.spr.x += (dx / d) * 1.8; b.spr.y += (dy / d) * 1.8;
-            if (d < 22 && this.stage !== "intro" && this.stage !== "vampireDead") { this.hurtPlayer(6); b.alive = false; b.spr.destroy(); }
+            if (d < 22 && combatActive) { this.hurtPlayer(6); b.alive = false; b.spr.destroy(); }
             this.bullets.forEach(bl => {
                 if (!bl.alive || !b.alive) return;
                 if (Phaser.Math.Distance.Between(bl.spr.x, bl.spr.y, b.spr.x, b.spr.y) < 16) {
@@ -6760,7 +6768,7 @@ class TowerScene extends Phaser.Scene {
         this.bats = this.bats.filter(b => b.alive);
 
         // Werewolf
-        if (this.werewolf && this.stage === "wolf") {
+        if (combatActive && this.werewolf && this.stage === "wolf") {
             const wf = this.werewolf;
             if (this.wolfPhase === 1) {
                 if (Math.random() < 0.006) this.spawnBat(wf.x, wf.y + 30);
