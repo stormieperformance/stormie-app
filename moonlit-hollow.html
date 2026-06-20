@@ -1659,6 +1659,7 @@ class TitleScene extends Phaser.Scene {
             { key: "main", label: "2 · Chapel" },
             { key: "flight", label: "3 · Flight" },
             { key: "tower", label: "4 · Tower" },
+            { key: "bloodmoon", label: "5 · Blood Moon" },
         ];
         const chipW = 88, gap = 8;
         const totalW = levels.length * chipW + (levels.length - 1) * gap;
@@ -6562,9 +6563,12 @@ class TowerScene extends Phaser.Scene {
         this.stage = "won";
         if (this.bossMusic) { this.bossMusic.stop(); this.bossMusic = null; }
         const ui = this.scene.get("ui");
-        ui.events.emit("cine_line", "The wolf falls. Moonlight dims. The tower is yours, hearthwitch.");
+        ui.events.emit("cine_line", "The wolf falls. Something shifts in the sky above the tower...");
         this.cameras.main.fadeOut(2400, 0, 0, 0);
-        this.time.delayedCall(2500, () => this.showCredits());
+        this.time.delayedCall(2500, () => {
+            ui.events.emit("hud_show", false);
+            this.scene.start("bloodmoon");
+        });
     }
 
     showCredits() {
@@ -7844,6 +7848,752 @@ class SpellbookScene extends Phaser.Scene {
         });
     }
 }
+
+// ===== BloodMoonFlightScene =====
+// Epilogue flight — the witch escapes the tower under a blood moon.
+// Keeps bats + souls from FlightScene, replaces ghouls with 6 new creatures.
+class BloodMoonFlightScene extends Phaser.Scene {
+    constructor() {
+        super("bloodmoon");
+        this.bats = []; this.souls = []; this.creatures = []; this.mana = [];
+        this.manaPouches = []; this.hp = 100; this.manaPool = 100;
+        this.score = 0; this.distance = 0; this.goalDistance = 6000;
+        this.ended = false; this.towerSpawned = false; this.introPlayed = false;
+        this.joyActive = false; this.joyPointerId = -1;
+        this.joyVec = {x:0,y:0}; this.joyOrigin = {x:0,y:0};
+        this.damageCooldown = 0; this.castCooldown = 0;
+        this.moonPhase = 0; // 0=white, animates to blood red
+    }
+    preload() { buildTextures(this); }
+
+    create() {
+        const w = this.scale.width, h = this.scale.height;
+
+        // ── Sky background — darker, redder than normal flight ──
+        const sky = this.add.graphics().setDepth(0).setScrollFactor(0);
+        sky.fillGradientStyle(0x08020f, 0x08020f, 0x1a0818, 0x1a0818, 1);
+        sky.fillRect(0, 0, w, h);
+
+        // Stars
+        this.starsFar = this.add.graphics().setDepth(1).setScrollFactor(0);
+        this.starsNear = this.add.graphics().setDepth(2).setScrollFactor(0);
+        this.drawStars(w, h);
+
+        // Blood moon — starts pale, turns red during intro
+        this.moonG = this.add.graphics().setDepth(3).setScrollFactor(0);
+        this.moonR = 0; // 0=white, 1=blood red, animated
+        this.drawMoon(w * 0.78, h * 0.22, 0);
+
+        // Red moon glow (grows during transformation)
+        this.moonGlow = this.add.image(w*0.78, h*0.22, "glow")
+            .setBlendMode(Phaser.BlendModes.ADD).setTint(0xff2222)
+            .setScale(3).setAlpha(0).setDepth(3.5).setScrollFactor(0);
+
+        // Blood-red sky tint (fades in during transformation)
+        this.bloodTint = this.add.rectangle(0, 0, w, h, 0x440008, 0)
+            .setOrigin(0).setDepth(4).setScrollFactor(0)
+            .setBlendMode(Phaser.BlendModes.ADD);
+
+        // Clouds (darker purple-red)
+        this.makeCloudTexture();
+        this.cloudsA = this.add.tileSprite(0, h*0.38, w, 100, "flight_cloud")
+            .setOrigin(0).setAlpha(0.28).setDepth(5).setScrollFactor(0).setTint(0x3a1020);
+
+        // Mountain silhouette
+        this.makeMountainTexture();
+        this.add.tileSprite(0, h-80, w, 80, "flight_mountains")
+            .setOrigin(0).setAlpha(0.7).setDepth(6).setScrollFactor(0)
+            .setTint(0x1a0810).setName("bmountains");
+
+        // Particles — blood-red sparkles instead of gold
+        if (this.textures.exists("glow")) {
+            this.add.particles(0, 0, "glow", {
+                x:{min:0,max:w}, y:{min:0,max:h*0.75},
+                scale:{start:0.08,end:0}, alpha:{start:0.8,end:0},
+                lifespan:2400, speedX:{min:-30,max:-10},
+                tint:[0xff2244,0x9fe6df,0xaa2266,0xff4422],
+                frequency:100, blendMode:Phaser.BlendModes.ADD,
+            }).setDepth(7).setScrollFactor(0);
+        }
+
+        // ── Player ──
+        if (!this.anims.exists("witch_fly")) {
+            this.anims.create({key:"witch_fly",frames:[{key:"player_0"},{key:"player_1"}],frameRate:4,repeat:-1});
+        }
+        this.player = this.add.container(w*0.25, h*0.5).setDepth(50);
+        const broomImg = this.add.image(0, 16, "broom_item").setOrigin(0.5).setScale(1.0);
+        this.witchSpr = this.add.sprite(2, 4, "player_0").setOrigin(0.5,1).setScale(2.0);
+        this.witchSpr.play("witch_fly");
+        this.wandSpr = this.add.image(10,-6,"wand_item").setOrigin(0.15,0.5).setAngle(-30).setScale(1.0);
+        this.player.add([broomImg, this.witchSpr, this.wandSpr]);
+        this.tweens.add({targets:this.witchSpr, y:this.witchSpr.y-4, duration:900, yoyo:true, repeat:-1, ease:"sine.inOut"});
+
+        // Broom trail
+        if (this.textures.exists("glow")) {
+            this.add.particles(0,0,"glow",{
+                follow:this.player, followOffset:{x:-28,y:14},
+                scale:{start:0.18,end:0}, alpha:{start:0.55,end:0},
+                lifespan:700, speedX:{min:-40,max:-20},
+                tint:[0x9fe6df,0xff4422], frequency:60,
+                blendMode:Phaser.BlendModes.ADD,
+            }).setDepth(49);
+        }
+
+        // ── Input ──
+        this.cursors = this.input.keyboard.createCursorKeys();
+        this.keys = this.input.keyboard.addKeys("W,A,S,D,E,SPACE");
+        this.keys.E.on("down", () => this.castMana());
+        this.keys.SPACE.on("down", () => this.castMana());
+        this.buildTouchControls(w, h);
+
+        // ── HUD ──
+        this.scoreText = this.add.text(w/2, 44, "Score: 0", {
+            fontFamily:"Georgia, serif", fontStyle:"italic", fontSize:"13px",
+            color:"#ff8888", stroke:"#000", strokeThickness:3,
+        }).setOrigin(0.5).setDepth(1000).setScrollFactor(0);
+
+        this.hint = this.add.text(w/2, 70, "The sky tears open — defend yourself!", {
+            fontFamily:"Georgia, serif", fontStyle:"italic", fontSize:"12px",
+            color:"#cc4444", stroke:"#000", strokeThickness:3,
+        }).setOrigin(0.5).setDepth(1000).setScrollFactor(0).setAlpha(1);
+        this.tweens.add({targets:this.hint, alpha:0, delay:5000, duration:1200});
+
+        // UI scene
+        const ui = this.scene.get("ui");
+        ui.events.emit("hud_layout","split");
+        ui.events.emit("hud_show",true);
+        ui.events.emit("inventory_show",false);
+        ui.events.emit("mana_show",true);
+        ui.events.emit("hp",this.hp);
+        ui.events.emit("mana",this.manaPool);
+        this.scene.bringToTop("ui");
+
+        // ── Intro cinematic ──
+        this.cameras.main.fadeIn(800, 0, 0, 0);
+        this.time.delayedCall(600, () => {
+            ui.events.emit("cine_line", "You burst from the tower into the night sky.");
+        });
+        this.time.delayedCall(3000, () => {
+            ui.events.emit("cine_line", "Below — a wolf howls at the moon.");
+            this.spawnWolfSilhouette();
+        });
+        this.time.delayedCall(5800, () => {
+            // Moon turns blood red
+            this.tweens.add({targets:this, moonR:1, duration:2200, ease:"sine.inOut",
+                onUpdate:() => {
+                    this.drawMoon(this.scale.width*0.78, this.scale.height*0.22, this.moonR);
+                }
+            });
+            this.tweens.add({targets:this.moonGlow, alpha:{from:0,to:0.6}, duration:2200});
+            this.tweens.add({targets:this.bloodTint, fillAlpha:{from:0,to:0.18}, duration:2200});
+            ui.events.emit("cine_line", "The moon runs red. The sky fills with shapes that should not be.");
+        });
+        this.time.delayedCall(8500, () => {
+            ui.events.emit("cine_fadeout");
+            this.introPlayed = true;
+        });
+
+        // ── Spawn timers ──
+        // Keep old bats + souls
+        this.time.addEvent({delay:1600, loop:true, callback:()=>this.spawnBat()});
+        this.time.addEvent({delay:4200, loop:true, callback:()=>this.spawnSoul()});
+        // New creatures
+        this.time.addEvent({delay:3000, loop:true, callback:()=>this.spawnBanshee()});
+        this.time.addEvent({delay:5500, loop:true, callback:()=>this.spawnHarpy()});
+        this.time.addEvent({delay:9000, loop:true, callback:()=>this.spawnJellyfish()});
+        this.time.addEvent({delay:7000, loop:true, callback:()=>this.spawnMoonSprite()});
+        this.time.addEvent({delay:18000, loop:true, callback:()=>this.spawnLeviathan()});
+        this.time.addEvent({delay:25000, loop:true, callback:()=>this.spawnPhantomRider()});
+        this.time.addEvent({delay:700, loop:true, callback:()=>this.spawnShootingStar()});
+
+        // Music — darker variant
+        setTimeout(() => {
+            if (!this.flightMusic) this.flightMusic = startHalloweenMusic(0.20);
+        }, 400);
+
+        this.scale.on("resize", () => this.onResize());
+        this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+            this.flightMusic?.stop();
+            this.flightMusic = undefined;
+        });
+    }
+
+    drawStars(w, h) {
+        this.starsFar.clear();
+        this.starsFar.fillStyle(0xff9999, 0.4);
+        for(let i=0;i<60;i++){this.starsFar.fillRect((i*97)%w,(i*53)%(h*0.7),1,1);}
+        this.starsFar.fillStyle(0xffffff,0.7);
+        for(let i=0;i<40;i++){this.starsFar.fillRect((i*137+13)%w,(i*71+7)%(h*0.6),2,2);}
+        this.starsNear.clear();
+        this.starsNear.fillStyle(0xff6666,0.5);
+        for(let i=0;i<20;i++){this.starsNear.fillRect((i*211+47)%w,(i*103+13)%(h*0.5),2,2);}
+    }
+
+    drawMoon(x, y, r) {
+        // r=0: pale white, r=1: blood red
+        this.moonG.clear();
+        const white = Phaser.Display.Color.ValueToColor(0xf4ead0);
+        const red   = Phaser.Display.Color.ValueToColor(0xcc1111);
+        const bodyR = Math.round(white.red   + (red.red   - white.red)   * r);
+        const bodyG = Math.round(white.green + (red.green - white.green) * r);
+        const bodyB = Math.round(white.blue  + (red.blue  - white.blue)  * r);
+        const bodyColor = (bodyR<<16)|(bodyG<<8)|bodyB;
+        // halos
+        this.moonG.fillStyle(bodyColor, 0.06); this.moonG.fillCircle(x,y,75);
+        this.moonG.fillStyle(bodyColor, 0.12); this.moonG.fillCircle(x,y,55);
+        this.moonG.fillStyle(bodyColor, 0.22); this.moonG.fillCircle(x,y,40);
+        this.moonG.fillStyle(bodyColor, 0.8);  this.moonG.fillCircle(x,y,30);
+        this.moonG.fillStyle(bodyColor, 1);    this.moonG.fillCircle(x,y,26);
+        // craters
+        const craterC = r > 0.5 ? 0x880000 : 0xc9be9a;
+        this.moonG.fillStyle(craterC, 0.5);
+        this.moonG.fillCircle(x-8,y-5,4); this.moonG.fillCircle(x+6,y+7,3);
+    }
+
+    spawnWolfSilhouette() {
+        const w = this.scale.width, h = this.scale.height;
+        const g = this.add.graphics().setDepth(8).setScrollFactor(0);
+        // Tower silhouette
+        g.fillStyle(0x0a0608,1);
+        g.fillRect(w*0.12-16, h*0.5, 32, h*0.5);
+        g.fillTriangle(w*0.12-20, h*0.5, w*0.12+20, h*0.5, w*0.12, h*0.5-30);
+        // Wolf on tower top
+        g.fillStyle(0x0a0608,1);
+        const wx=w*0.12, wy=h*0.5-30;
+        // body
+        g.fillEllipse(wx,wy-12,28,16);
+        // head
+        g.fillCircle(wx+12,wy-22,10);
+        // ears
+        g.fillTriangle(wx+6,wy-30,wx+9,wy-40,wx+14,wy-30);
+        g.fillTriangle(wx+14,wy-30,wx+17,wy-40,wx+20,wy-30);
+        // howl mouth open (pointing at moon)
+        g.fillStyle(0x0a0608,1);
+        g.fillTriangle(wx+20,wy-25, wx+30,wy-10, wx+18,wy-18);
+        // legs
+        g.fillRect(wx-10,wy-5,5,14); g.fillRect(wx,wy-5,5,14);
+        g.fillRect(wx+8,wy-5,5,12); g.fillRect(wx+16,wy-5,5,12);
+        // red eye
+        g.fillStyle(0xff2222,1); g.fillCircle(wx+16,wy-24,2);
+        // Fade out after a few seconds
+        this.tweens.add({targets:g, alpha:0, delay:4000, duration:1500,
+            onComplete:()=>g.destroy()});
+    }
+
+    makeCloudTexture() {
+        if (this.textures.exists("flight_cloud")) return;
+        const g = this.add.graphics();
+        g.fillStyle(0x2a2350,1);
+        for(let i=0;i<6;i++){g.fillEllipse(i*120+40,50,80,22);g.fillEllipse(i*120+70,56,60,18);}
+        g.generateTexture("flight_cloud",720,100); g.destroy();
+    }
+    makeMountainTexture() {
+        if (this.textures.exists("flight_mountains")) return;
+        const g = this.add.graphics();
+        g.fillStyle(0x0a0a18,1); g.beginPath(); g.moveTo(0,80);
+        let x=0;
+        while(x<800){const peak=25+Math.random()*50,mw=50+Math.random()*80;g.lineTo(x+mw/2,80-peak);g.lineTo(x+mw,80);x+=mw;}
+        g.lineTo(800,80); g.closePath(); g.fillPath();
+        g.generateTexture("flight_mountains",800,80); g.destroy();
+    }
+
+    // ── Creature spawn functions ──────────────────────────────────────────
+
+    spawnBat() {
+        if (this.ended) return;
+        const h = this.scale.height;
+        const spr = this.add.sprite(this.scale.width+30, 60+Math.random()*(h-160), "raven_0")
+            .setScale(1.6).setTint(0x3a2244).setDepth(40);
+        spr.play("fly");
+        this.bats.push({spr, vx:-90-Math.random()*50, vy:(Math.random()-0.5)*30, alive:true});
+    }
+
+    spawnSoul() {
+        if (this.ended) return;
+        const h = this.scale.height;
+        const cy = 80+Math.random()*(h-200);
+        const g = this.add.image(this.scale.width+30, cy, "glow")
+            .setBlendMode(Phaser.BlendModes.ADD).setTint(0xaa2266)
+            .setScale(1.6).setAlpha(0.75).setDepth(35);
+        this.souls.push({g, vx:-60-Math.random()*30, t:0, cy});
+    }
+
+    spawnShootingStar() {
+        if(this.ended||Math.random()>0.3)return;
+        const w=this.scale.width,h=this.scale.height;
+        const sx=Math.random()*w, sy=Math.random()*h*0.5;
+        const star=this.add.image(sx,sy,"glow").setBlendMode(Phaser.BlendModes.ADD)
+            .setTint(0xff4444).setScale(0.4).setDepth(7).setScrollFactor(0);
+        this.tweens.add({targets:star,x:sx-160,y:sy+90,alpha:0,scale:0.1,duration:700,
+            onComplete:()=>star.destroy()});
+    }
+
+    // 1. BANSHEE WRAITH — teal, slow, seeks player, drops mana
+    spawnBanshee() {
+        if(this.ended) return;
+        const h=this.scale.height;
+        const cy=80+Math.random()*(h-200);
+        const c=this.add.container(this.scale.width+60, cy).setDepth(38);
+        const aura=this.add.image(0,0,"glow").setBlendMode(Phaser.BlendModes.ADD)
+            .setTint(0x9fe6df).setScale(2.2).setAlpha(0.5);
+        const body=this.add.graphics();
+        // ellipse body
+        body.fillStyle(0x1a3a38,0.95); body.fillEllipse(0,0,40,50);
+        body.fillStyle(0x2a5a55,0.9); body.fillEllipse(0,-8,28,28);
+        // screaming face
+        body.fillStyle(0x000000,0.9);
+        body.fillEllipse(-8,-12,7,10); body.fillEllipse(8,-12,7,10); // eyes
+        body.fillEllipse(0,-2,10,14); // mouth open
+        // veil tendrils
+        body.lineStyle(1.5,0x9fe6df,0.5);
+        body.lineBetween(-14,16,-18,36); body.lineBetween(0,20,0,42);
+        body.lineBetween(14,16,18,36);
+        c.add([aura,body]);
+        this.tweens.add({targets:aura,alpha:{from:0.3,to:0.7},duration:900,yoyo:true,repeat:-1});
+        this.creatures.push({c,type:"banshee",hp:3,alive:true,vx:-28,vy:0,t:0,cy,aura});
+    }
+
+    // 2. CRIMSON HARPY — dives in arcs, fast
+    spawnHarpy() {
+        if(this.ended) return;
+        const h=this.scale.height;
+        const cy=60+Math.random()*(h*0.5);
+        const c=this.add.container(this.scale.width+50, cy).setDepth(40);
+        const body=this.add.graphics();
+        // wings
+        body.fillStyle(0x6b1a0a,0.95);
+        body.fillTriangle(0,0,-50,-25,-30,10);
+        body.fillStyle(0x8b2a14,0.95);
+        body.fillTriangle(0,0,50,-25,30,10);
+        // body
+        body.fillStyle(0x4a1008,1); body.fillEllipse(0,8,28,36);
+        // head
+        body.fillStyle(0x5a1a08,1); body.fillCircle(0,-14,14);
+        // beak
+        body.fillStyle(0xcc6622,1); body.fillTriangle(-4,-8,4,-8,0,-2);
+        // eyes
+        body.fillStyle(0xff4400,1); body.fillCircle(-5,-16,3); body.fillCircle(5,-16,3);
+        // talons
+        body.fillStyle(0x8b4422,1);
+        body.fillTriangle(-8,26,-14,36,-6,34); body.fillTriangle(8,26,14,36,6,34);
+        c.add([body]);
+        this.creatures.push({c,type:"harpy",hp:1,alive:true,vx:-140,vy:0,t:0,cy,divePhase:0});
+    }
+
+    // 3. VOID JELLYFISH — slow drift, tendrils damage
+    spawnJellyfish() {
+        if(this.ended) return;
+        const h=this.scale.height;
+        const cy=60+Math.random()*(h*0.4);
+        const c=this.add.container(this.scale.width+60, cy).setDepth(36);
+        const body=this.add.graphics();
+        // bell
+        body.fillStyle(0x0a1a2a,0.9);
+        body.fillEllipse(0,-10,80,50);
+        body.fillStyle(0x1a3355,0.7); body.fillEllipse(0,-14,56,32);
+        // bioluminescent spots
+        body.fillStyle(0x44aaff,0.8);
+        body.fillCircle(-16,-14,5); body.fillCircle(0,-18,6); body.fillCircle(16,-14,5);
+        // tendrils
+        body.lineStyle(1.5,0x3388bb,0.65);
+        for(let i=-3;i<=3;i++){
+            body.lineBetween(i*10,14, i*10+Math.sin(i)*8, 60);
+        }
+        const glow=this.add.image(0,-10,"glow").setBlendMode(Phaser.BlendModes.ADD)
+            .setTint(0x44aaff).setScale(1.2).setAlpha(0.35);
+        c.add([body,glow]);
+        this.tweens.add({targets:glow,alpha:{from:0.2,to:0.55},duration:1200,yoyo:true,repeat:-1});
+        this.creatures.push({c,type:"jellyfish",hp:2,alive:true,vx:-35,vy:0,t:0,cy,glow});
+    }
+
+    // 4. MOON SPRITE — tiny, comes in swarms of 5
+    spawnMoonSprite() {
+        if(this.ended) return;
+        const h=this.scale.height;
+        for(let i=0;i<5;i++){
+            const cy=80+Math.random()*(h-200);
+            const c=this.add.container(this.scale.width+40+i*20, cy).setDepth(42);
+            const body=this.add.graphics();
+            body.fillStyle(0xffe080,0.95); body.fillCircle(0,0,9);
+            // wings
+            body.fillStyle(0xfff5b0,0.65);
+            body.fillEllipse(-14,-4,22,9); body.fillEllipse(14,-4,22,9);
+            // face
+            body.fillStyle(0x332200,1);
+            body.fillCircle(-3,1,1.5); body.fillCircle(3,1,1.5);
+            body.lineStyle(1.5,0x332200,1);
+            body.lineBetween(-3,5,3,5);
+            c.add([body]);
+            this.creatures.push({c,type:"sprite",hp:1,alive:true,
+                vx:-90-Math.random()*40, vy:(Math.random()-0.5)*50, t:i*0.5, cy});
+        }
+    }
+
+    // 5. SHADOW LEVIATHAN — huge sky serpent, tanky, rare
+    spawnLeviathan() {
+        if(this.ended) return;
+        const h=this.scale.height;
+        const cy=80+Math.random()*(h*0.4);
+        const c=this.add.container(this.scale.width+160, cy).setDepth(34);
+        const body=this.add.graphics();
+        // body segments
+        body.fillStyle(0x2a1a44,0.95);
+        body.fillEllipse(-100,8,60,28); body.fillEllipse(-50,12,66,32);
+        body.fillStyle(0x3a2255,0.95);
+        body.fillEllipse(10,8,70,36);
+        body.fillStyle(0x2a1a44,0.9);
+        body.fillEllipse(70,4,58,28);
+        // head
+        body.fillStyle(0x4a2a66,1); body.fillEllipse(110,0,50,32);
+        // horns
+        body.fillStyle(0x6a3a88,1);
+        body.fillTriangle(98,-14,104,-28,110,-14);
+        body.fillTriangle(112,-14,118,-28,122,-14);
+        // eyes
+        body.fillStyle(0xaa44ff,1); body.fillCircle(103,-2,5); body.fillCircle(117,-2,5);
+        body.fillStyle(0x220033,1); body.fillCircle(103,-2,2.5); body.fillCircle(117,-2,2.5);
+        // underbelly glow
+        const glow=this.add.image(0,10,"glow").setBlendMode(Phaser.BlendModes.ADD)
+            .setTint(0x6633aa).setScale(3.5).setAlpha(0.3);
+        c.add([body,glow]);
+        this.tweens.add({targets:glow,alpha:{from:0.2,to:0.5},duration:1400,yoyo:true,repeat:-1});
+        this.creatures.push({c,type:"leviathan",hp:6,alive:true,vx:-22,vy:0,t:0,cy,glow});
+    }
+
+    // 6. PHANTOM RIDER — headless horseman, charges
+    spawnPhantomRider() {
+        if(this.ended) return;
+        const h=this.scale.height;
+        const cy=h*0.3+Math.random()*(h*0.35);
+        const c=this.add.container(this.scale.width+80, cy).setDepth(40);
+        const body=this.add.graphics();
+        // horse body
+        body.fillStyle(0x1a1218,1); body.fillEllipse(0,20,90,36);
+        // horse head
+        body.fillEllipse(44,8,36,22); body.fillEllipse(58,4,16,10);
+        // horse legs
+        body.fillStyle(0x141018,1);
+        for(let i=-3;i<=2;i++) body.fillRect(i*14-4,34,6,20);
+        // tail
+        body.fillStyle(0x2a1a28,1);
+        body.fillTriangle(-48,12,-60,2,-44,28);
+        // rider (headless) body
+        body.fillStyle(0x2a1408,1); body.fillRect(-12,-22,24,42);
+        body.fillStyle(0x1a0c04,1);
+        body.fillTriangle(-16,-18,-26,-8,-12,-14);
+        body.fillTriangle(16,-18,26,-8,12,-14);
+        // flame from neck (no head)
+        body.fillStyle(0xff6600,0.8);
+        body.fillTriangle(-6,-22,0,-42,6,-22);
+        body.fillStyle(0xff9900,0.6);
+        body.fillTriangle(-4,-22,0,-36,4,-22);
+        // lantern
+        body.fillStyle(0x664400,1); body.fillRect(18,-10,10,14);
+        body.fillStyle(0xffaa00,0.9); body.fillRect(19,-9,8,12);
+        c.add([body]);
+        // charge animation — speeds up then slows
+        this.creatures.push({c,type:"rider",hp:5,alive:true,vx:-70,vy:0,t:0,cy,charging:false,chargeTimer:0});
+    }
+
+    castMana() {
+        if(this.ended||this.castCooldown>0) return;
+        if(this.manaPool<8){this.tweens.add({targets:this.wandSpr,scale:{from:1,to:1.15},duration:80,yoyo:true});return;}
+        this.manaPool=Math.max(0,this.manaPool-8);
+        this.scene.get("ui").events.emit("mana",this.manaPool);
+        this.castCooldown=260;
+        const m=this.add.image(this.player.x+24,this.player.y-4,"glow")
+            .setBlendMode(Phaser.BlendModes.ADD).setTint(0xff4444)
+            .setScale(0.5).setAlpha(0.95).setDepth(60);
+        m.setData("vx",440);
+        this.mana.push(m);
+        this.tweens.add({targets:this.wandSpr,scale:{from:1.3,to:1.7},duration:100,yoyo:true});
+    }
+
+    takeDamage(amt) {
+        if(this.damageCooldown>0||this.ended) return;
+        this.hp=Math.max(0,this.hp-amt);
+        this.damageCooldown=700;
+        this.scene.get("ui").events.emit("hp",this.hp);
+        this.cameras.main.shake(120,0.005);
+        this.witchSpr.setTint(0xff5555);
+        this.time.delayedCall(180,()=>this.witchSpr.clearTint());
+        if(this.hp<=0){this.hp=60;this.scene.get("ui").events.emit("hp",this.hp);}
+    }
+
+    spawnManaPouch(x,y) {
+        const c=this.add.container(x,y).setDepth(45);
+        const halo=this.add.image(0,0,"glow").setBlendMode(Phaser.BlendModes.ADD)
+            .setTint(0xff6644).setScale(1.4).setAlpha(0.7);
+        const dot=this.add.circle(0,0,5,0xff4422,0.95).setBlendMode(Phaser.BlendModes.ADD);
+        c.add([halo,dot]);
+        this.manaPouches.push({c,vx:-40,t:0,cy:y});
+    }
+
+    buildTouchControls(w,h) {
+        this.joyOrigin={x:80,y:h-80};
+        this.joyBase=this.add.circle(80,h-80,52,0x000000,0.34)
+            .setStrokeStyle(2,0x8a7240,0.6).setDepth(1100).setScrollFactor(0).setAlpha(0.28);
+        this.joyKnob=this.add.circle(80,h-80,24,0xcc3333,0.78)
+            .setStrokeStyle(1,0xf4ead0,0.6).setDepth(1101).setScrollFactor(0).setAlpha(0.46);
+        this.btnCast=this.add.container(w-60,h-80).setDepth(10200).setScrollFactor(0).setAlpha(0.95);
+        const glow=this.add.circle(0,0,52,0xcc3333,0.32).setBlendMode(Phaser.BlendModes.ADD);
+        const bg=this.add.circle(0,0,36,0x1a0f2e,0.95).setStrokeStyle(2,0xcc4444,1);
+        const gi=this.add.text(0,-2,"◆",{fontFamily:"serif",fontSize:"22px",color:"#cc4444"}).setOrigin(0.5);
+        const li=this.add.text(0,18,"Cast",{fontFamily:"Georgia, serif",fontSize:"9px",color:"#cc4444"}).setOrigin(0.5);
+        this.btnCast.add([glow,bg,gi,li]);
+        bg.setInteractive({useHandCursor:true});
+        bg.on("pointerdown",()=>{this.tweens.add({targets:this.btnCast,scale:0.9,duration:80,yoyo:true});this.castMana();});
+        this.input.on("pointerdown",(p)=>{
+            if(this.joyActive||p.x>this.scale.width*0.5) return;
+            this.joyActive=true; this.joyPointerId=p.id;
+            this.joyOrigin={x:p.x,y:p.y};
+            this.joyBase.setPosition(p.x,p.y); this.joyKnob.setPosition(p.x,p.y);
+            this.tweens.add({targets:[this.joyBase,this.joyKnob],alpha:1,duration:150});
+        });
+        this.input.on("pointermove",(p)=>{
+            if(!this.joyActive||p.id!==this.joyPointerId) return;
+            const dx=p.x-this.joyOrigin.x, dy=p.y-this.joyOrigin.y;
+            const d=Math.hypot(dx,dy), max=36, cd=Math.min(d,max), ang=Math.atan2(dy,dx);
+            this.joyKnob.setPosition(this.joyOrigin.x+Math.cos(ang)*cd,this.joyOrigin.y+Math.sin(ang)*cd);
+            this.joyVec={x:Math.cos(ang)*(cd/max),y:Math.sin(ang)*(cd/max)};
+        });
+        const end=(p)=>{
+            if(p.id!==this.joyPointerId){
+                if(this.joyActive&&!this.input.pointer1?.isDown&&!this.input.pointer2?.isDown){this.joyActive=false;this.joyVec={x:0,y:0};}
+                return;
+            }
+            this.joyActive=false; this.joyVec={x:0,y:0};
+            this.tweens.add({targets:this.joyBase,alpha:0.28,duration:200});
+            this.tweens.add({targets:this.joyKnob,alpha:0.46,duration:200});
+        };
+        this.input.on("pointerup",end); this.input.on("pointerupoutside",end);
+    }
+
+    onResize() {
+        const w=this.scale.width, h=this.scale.height;
+        this.drawStars(w,h);
+        this.drawMoon(w*0.78, h*0.22, this.moonR||0);
+        this.btnCast?.setPosition(w-24-36,h-24-36);
+        if(!this.joyActive){
+            this.joyOrigin={x:80,y:h-80};
+            this.joyBase?.setPosition(80,h-80);
+            this.joyKnob?.setPosition(80,h-80);
+        }
+        this.scoreText?.setPosition(w/2,44);
+        this.hint?.setPosition(w/2,70);
+    }
+
+    finishLevel() {
+        if(this.ended) return;
+        this.ended=true;
+        const ui=this.scene.get("ui");
+        ui.events.emit("cine_line","Dawn breaks. The creatures dissolve. The blood moon fades.");
+        this.tweens.add({targets:this.bloodTint,fillAlpha:0,duration:2000});
+        this.tweens.add({targets:this.moonGlow,alpha:0,duration:2000});
+        this.cameras.main.fadeOut(2400,255,200,150);
+        this.time.delayedCall(2500,()=>this.showCredits());
+    }
+
+    showCredits() {
+        const w=this.scale.width, h=this.scale.height;
+        this.scene.get("ui").events.emit("hud_show",false);
+        this.add.rectangle(0,0,w,h,0x000000,1).setOrigin(0).setDepth(30000);
+        const lines=[
+            {text:"✦  THE WITCH OF MOONLIT HOLLOW  ✦",size:"22px",color:"#f4ead0",y:h*0.16},
+            {text:"A Stormie Games Adventure",size:"14px",color:"#c9a25b",y:h*0.25},
+            {text:"The blood moon fades to amber.",size:"13px",color:"#ff8866",y:h*0.35},
+            {text:"Three spirits bound. A wand forged.",size:"13px",color:"#9fe6df",y:h*0.41},
+            {text:"Lord Vyrin, ash. Prof. Lyall, sleeping.",size:"13px",color:"#9fe6df",y:h*0.47},
+            {text:"The creatures of the blood moon",size:"13px",color:"#cc4444",y:h*0.53},
+            {text:"return to whatever dark they came from.",size:"13px",color:"#cc4444",y:h*0.59},
+            {text:"The hearthwitch flies home",size:"13px",color:"#c9a25b",y:h*0.68},
+            {text:"as Moonlit Hollow sleeps at last.",size:"13px",color:"#c9a25b",y:h*0.74},
+            {text:"— Game & Story: Stormie Games —",size:"11px",color:"#8a7240",y:h*0.84},
+            {text:"More adventures coming soon  ✦",size:"11px",color:"#6a5a30",y:h*0.89},
+        ];
+        lines.forEach((l,i)=>{
+            const txt=this.add.text(w/2,l.y+30,l.text,{
+                fontFamily:"Georgia, serif",fontStyle:"italic",fontSize:l.size,
+                color:l.color,align:"center",stroke:"#000",strokeThickness:2
+            }).setOrigin(0.5).setAlpha(0).setDepth(30001);
+            this.tweens.add({targets:txt,alpha:1,duration:1000,delay:i*600});
+        });
+        const stars=this.add.graphics().setDepth(30000);
+        stars.fillStyle(0xff2222,0.4);
+        for(let i=0;i<80;i++) stars.fillRect((i*97+13)%w,(i*53+7)%(h*0.95),1,1);
+        this.time.delayedCall(lines.length*600+800,()=>{
+            const btn=this.add.rectangle(w/2,h*0.95,220,40,0x1a0f2e,0.95)
+                .setStrokeStyle(2,0xcc4444).setDepth(30002).setInteractive({useHandCursor:true});
+            this.add.text(w/2,h*0.95,"⌂  BACK TO TITLE",{
+                fontFamily:"Georgia, serif",fontSize:"14px",color:"#f4ead0"
+            }).setOrigin(0.5).setDepth(30003);
+            this.tweens.add({targets:btn,alpha:{from:0,to:1},duration:600});
+            btn.on("pointerdown",()=>{
+                this.flightMusic?.stop();
+                this.scene.stop();
+                this.scene.manager.start("title");
+            });
+        });
+        [0,600,1200,1800,2400].forEach((d,i)=>{
+            this.time.delayedCall(d+400,()=>playChime([523,440,330,262,196][i],2.2,0.06));
+        });
+    }
+
+    update(time, dt) {
+        if(this.ended) return;
+        if(this.manaPool<100){
+            this.manaPool=Math.min(100,this.manaPool+dt*0.018);
+            if(Math.random()<0.04) this.scene.get("ui").events.emit("mana",this.manaPool);
+        }
+        // Input
+        let vx=0,vy=0;
+        if(this.cursors.left?.isDown||this.keys.A?.isDown) vx-=1;
+        if(this.cursors.right?.isDown||this.keys.D?.isDown) vx+=1;
+        if(this.cursors.up?.isDown||this.keys.W?.isDown) vy-=1;
+        if(this.cursors.down?.isDown||this.keys.S?.isDown) vy+=1;
+        if(this.joyActive){vx+=this.joyVec.x;vy+=this.joyVec.y;}
+        const len=Math.hypot(vx,vy)||1;
+        const f=getFrame(this);
+        const spd=160;
+        this.player.x=Phaser.Math.Clamp(this.player.x+(vx/len)*spd*(dt/1000),f.x+40,f.x+f.w-40);
+        this.player.y=Phaser.Math.Clamp(this.player.y+(vy/len)*spd*(dt/1000),f.y+40,this.scale.height-18);
+        if(vx<0) this.witchSpr.setFlipX(true);
+        else if(vx>0) this.witchSpr.setFlipX(false);
+        this.cloudsA.tilePositionX+=dt/1000*30;
+        if(this.damageCooldown>0) this.damageCooldown-=dt;
+        if(this.castCooldown>0) this.castCooldown-=dt;
+
+        // Mana projectiles
+        this.mana.forEach(m=>{m.x+=m.getData("vx")*(dt/1000);if(m.x>this.scale.width+30)m.destroy();});
+        this.mana=this.mana.filter(m=>m.active);
+
+        // Bats
+        this.bats.forEach(b=>{
+            if(!b.alive) return;
+            b.spr.x+=b.vx*(dt/1000); b.spr.y+=b.vy*(dt/1000);
+            b.vy+=(this.player.y-b.spr.y)*0.001*(dt/1000)*100;
+            b.vy=Phaser.Math.Clamp(b.vy,-60,60);
+            if(Math.abs(b.spr.x-this.player.x)<28&&Math.abs(b.spr.y-this.player.y)<22){
+                this.takeDamage(12); b.alive=false;
+                this.tweens.add({targets:b.spr,alpha:0,scale:0.5,duration:250,onComplete:()=>b.spr.destroy()});
+            }
+            this.mana.forEach(m=>{
+                if(!b.alive) return;
+                if(Math.abs(m.x-b.spr.x)<22&&Math.abs(m.y-b.spr.y)<18){
+                    b.alive=false; this.score+=1;
+                    this.scoreText.setText("Score: "+this.score);
+                    const poof=this.add.image(b.spr.x,b.spr.y,"glow")
+                        .setBlendMode(Phaser.BlendModes.ADD).setTint(0xff4444).setScale(0.8).setDepth(60);
+                    this.tweens.add({targets:poof,alpha:0,scale:1.6,duration:400,onComplete:()=>poof.destroy()});
+                    b.spr.destroy(); m.destroy();
+                }
+            });
+            if(b.spr.x<-40) b.spr.destroy();
+        });
+        this.bats=this.bats.filter(b=>b.alive&&b.spr.active);
+
+        // Souls
+        this.souls.forEach(s=>{
+            s.t+=dt; s.g.x+=s.vx*(dt/1000);
+            s.g.y=s.cy+Math.sin(s.t/400)*20;
+            if(Math.abs(s.g.x-this.player.x)<26&&Math.abs(s.g.y-this.player.y)<26) this.takeDamage(8);
+        });
+        this.souls=this.souls.filter(s=>{if(s.g.x<-40){s.g.destroy();return false;}return true;});
+
+        // New creatures
+        this.creatures.forEach(cr=>{
+            if(!cr.alive) return;
+            cr.t+=dt;
+            switch(cr.type){
+                case "banshee":
+                    cr.c.x+=cr.vx*(dt/1000);
+                    cr.c.y=cr.cy+Math.sin(cr.t/800)*30;
+                    // slowly home toward player
+                    cr.cy+=(this.player.y-cr.c.y)*0.0004*dt;
+                    if(Math.abs(cr.c.x-this.player.x)<30&&Math.abs(cr.c.y-this.player.y)<30) this.takeDamage(10);
+                    break;
+                case "harpy":
+                    cr.divePhase+=dt/1000;
+                    cr.c.x+=cr.vx*(dt/1000);
+                    cr.c.y=cr.cy+Math.sin(cr.divePhase*2.2)*80;
+                    if(Math.abs(cr.c.x-this.player.x)<26&&Math.abs(cr.c.y-this.player.y)<26) this.takeDamage(15);
+                    break;
+                case "jellyfish":
+                    cr.c.x+=cr.vx*(dt/1000);
+                    cr.c.y=cr.cy+Math.sin(cr.t/1200)*25;
+                    // tendrils below — larger hit area vertically
+                    if(Math.abs(cr.c.x-this.player.x)<40&&Math.abs(cr.c.y-this.player.y)<70) this.takeDamage(8);
+                    break;
+                case "sprite":
+                    cr.c.x+=cr.vx*(dt/1000);
+                    cr.c.y+=cr.vy*(dt/1000);
+                    // bounce off edges
+                    if(cr.c.y<40||cr.c.y>this.scale.height-40) cr.vy*=-1;
+                    if(Math.abs(cr.c.x-this.player.x)<18&&Math.abs(cr.c.y-this.player.y)<18) this.takeDamage(5);
+                    break;
+                case "leviathan":
+                    cr.c.x+=cr.vx*(dt/1000);
+                    cr.c.y=cr.cy+Math.sin(cr.t/2000)*20;
+                    if(Math.abs(cr.c.x-this.player.x)<80&&Math.abs(cr.c.y-this.player.y)<30) this.takeDamage(20);
+                    break;
+                case "rider":
+                    // periodically charges
+                    cr.chargeTimer-=dt;
+                    if(cr.chargeTimer<=0){cr.charging=!cr.charging; cr.chargeTimer=cr.charging?600:3000;}
+                    const spd2=cr.charging?-280:-70;
+                    cr.c.x+=spd2*(dt/1000);
+                    cr.c.y=cr.cy+Math.sin(cr.t/1000)*15;
+                    if(Math.abs(cr.c.x-this.player.x)<50&&Math.abs(cr.c.y-this.player.y)<30) this.takeDamage(18);
+                    break;
+            }
+            // Hit by mana
+            this.mana.forEach(m=>{
+                if(!cr.alive||!m.active) return;
+                const hitR={banshee:28,harpy:22,jellyfish:40,sprite:14,leviathan:55,rider:38}[cr.type]||28;
+                if(Math.abs(m.x-cr.c.x)<hitR&&Math.abs(m.y-cr.c.y)<hitR){
+                    cr.hp--;
+                    const pts={banshee:3,harpy:3,jellyfish:4,sprite:1,leviathan:15,rider:10}[cr.type]||2;
+                    const flash=this.add.image(m.x,m.y,"glow")
+                        .setBlendMode(Phaser.BlendModes.ADD).setTint(0xff4422).setScale(0.7).setDepth(60);
+                    this.tweens.add({targets:flash,alpha:0,scale:1.4,duration:280,onComplete:()=>flash.destroy()});
+                    m.destroy();
+                    if(cr.hp<=0){
+                        cr.alive=false;
+                        this.score+=pts;
+                        this.scoreText.setText("Score: "+this.score);
+                        if(cr.type==="leviathan"||cr.type==="rider") this.spawnManaPouch(cr.c.x,cr.c.y);
+                        const burst=this.add.image(cr.c.x,cr.c.y,"glow")
+                            .setBlendMode(Phaser.BlendModes.ADD).setTint(0xff2244).setScale(1.2).setDepth(60);
+                        this.tweens.add({targets:burst,alpha:0,scale:3,duration:600,onComplete:()=>burst.destroy()});
+                        cr.c.destroy();
+                    }
+                }
+            });
+            if(cr.alive&&cr.c.x<-200) {cr.alive=false; cr.c.destroy();}
+        });
+        this.creatures=this.creatures.filter(cr=>cr.alive);
+
+        // Mana pouches
+        this.manaPouches.forEach(p=>{
+            p.t+=dt; p.c.x+=p.vx*(dt/1000); p.c.y=p.cy+Math.sin(p.t/300)*8;
+            if(Math.abs(p.c.x-this.player.x)<26&&Math.abs(p.c.y-this.player.y)<24){
+                this.manaPool=Math.min(100,this.manaPool+55);
+                this.scene.get("ui").events.emit("mana",this.manaPool);
+                p.c.destroy();
+            }
+        });
+        this.manaPouches=this.manaPouches.filter(p=>p.c.active&&p.c.x>-40);
+
+        // Distance → end
+        this.distance+=dt/1000*90;
+        if(!this.towerSpawned&&this.distance>=this.goalDistance){
+            this.towerSpawned=true;
+            this.time.delayedCall(500,()=>this.finishLevel());
+        }
+    }
+}
+
+
 // ===== Boot =====
 (function () {
   const host = document.getElementById('game-host');
@@ -7853,7 +8603,7 @@ class SpellbookScene extends Phaser.Scene {
     type: Phaser.AUTO, parent: host, width: W, height: H,
     backgroundColor: '#06080c', pixelArt: true, antialias: false, roundPixels: true,
     scale: { mode: Phaser.Scale.RESIZE, autoCenter: Phaser.Scale.NO_CENTER, parent: host, expandParent: false, width: W, height: H },
-    scene: [TitleScene, CottageScene, MainScene, UIScene, SpellbookScene, FlightScene, TowerScene],
+    scene: [TitleScene, CottageScene, MainScene, UIScene, SpellbookScene, FlightScene, TowerScene, BloodMoonFlightScene],
     input: { activePointers: 3 },
   });
   game.scene.start('title');
