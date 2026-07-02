@@ -173,19 +173,26 @@
       animation: fadeContent 1s ease 2.2s forwards;
     }
     .devnote {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 6;
       display: flex;
       align-items: center;
       justify-content: center;
       text-align: center;
       gap: 6px;
       flex-wrap: wrap;
-      padding: 14px 24px;
-      background: rgba(201,169,110,0.06);
-      border-bottom: 1px solid var(--line);
+      padding: 24px 48px 56px;
+      background: linear-gradient(to bottom, rgba(12,12,11,0.94) 0%, rgba(12,12,11,0.78) 50%, rgba(12,12,11,0) 100%);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
       font-family: var(--sans);
       font-size: 13px;
       letter-spacing: 0.02em;
       color: var(--muted);
+      pointer-events: none;
     }
     .devnote strong { color: var(--text); font-weight: 500; }
     .devnote a {
@@ -193,6 +200,7 @@
       text-decoration: none;
       border-bottom: 1px solid rgba(201,169,110,0.4);
       transition: border-color 0.2s ease;
+      pointer-events: auto;
     }
     .devnote a:hover { border-color: var(--gold); }
     .hero-actions {
@@ -383,10 +391,10 @@
       .gateway-arrow { padding-bottom: 0; }
       footer { flex-direction: column; gap: 8px; text-align: center; }
       .hero-label { letter-spacing: 0.18em; }
+      .devnote { font-size: 12px; padding: 18px 20px 44px; }
     }
 
     @media (prefers-reduced-motion: reduce) {
-      .devnote { font-size: 12px; padding: 12px 20px; }
       .hero-label, .hero-title, .hero-desc, .hero-actions, .gateway-label, .gateway-link, .scroll-hint {
         animation: none !important; transform: none !important; opacity: 1 !important; filter: none !important; transition: none !important;
       }
@@ -404,12 +412,12 @@
       <div class="topbar-right">Sweden</div>
     </div>
 
-    <div class="devnote">
-      <span><strong>Heads up, I'm actually a web developer.</strong> These games are just a fun side project.</span>
-      <span>See what I actually do at <a href="https://stormieperformance.com">Stormie Performance</a>, or play below.</span>
-    </div>
-
     <section class="hero">
+      <div class="devnote">
+        <span><strong>Heads up, I'm actually a web developer.</strong> These games are just a fun side project.</span>
+        <span>See what I actually do at <a href="https://stormieperformance.com">Stormie Performance</a>, or play below.</span>
+      </div>
+
       <!--
         VIDEO INSTRUCTIONS
         ══════════════════════════════════════════════════════
