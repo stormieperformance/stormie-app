@@ -172,6 +172,29 @@
       transform: translateY(10px);
       animation: fadeContent 1s ease 2.2s forwards;
     }
+    .devnote {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      gap: 6px;
+      flex-wrap: wrap;
+      padding: 14px 24px;
+      background: rgba(201,169,110,0.06);
+      border-bottom: 1px solid var(--line);
+      font-family: var(--sans);
+      font-size: 13px;
+      letter-spacing: 0.02em;
+      color: var(--muted);
+    }
+    .devnote strong { color: var(--text); font-weight: 500; }
+    .devnote a {
+      color: var(--gold);
+      text-decoration: none;
+      border-bottom: 1px solid rgba(201,169,110,0.4);
+      transition: border-color 0.2s ease;
+    }
+    .devnote a:hover { border-color: var(--gold); }
     .hero-actions {
       display: flex;
       flex-direction: column;
@@ -363,6 +386,7 @@
     }
 
     @media (prefers-reduced-motion: reduce) {
+      .devnote { font-size: 12px; padding: 12px 20px; }
       .hero-label, .hero-title, .hero-desc, .hero-actions, .gateway-label, .gateway-link, .scroll-hint {
         animation: none !important; transform: none !important; opacity: 1 !important; filter: none !important; transition: none !important;
       }
@@ -378,6 +402,11 @@
     <div class="topbar">
       <div class="topbar-left">Stormie Games</div>
       <div class="topbar-right">Sweden</div>
+    </div>
+
+    <div class="devnote">
+      <span><strong>Heads up, I'm actually a web developer.</strong> These games are just a fun side project.</span>
+      <span>See what I actually do at <a href="https://stormieperformance.com">Stormie Performance</a>, or play below.</span>
     </div>
 
     <section class="hero">
