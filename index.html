@@ -106,27 +106,26 @@
       border-bottom: 1px solid rgba(201,169,110,0.14);
       background: #0a0a09;
       height: 240px;
-      display: flex;
-      align-items: center;
     }
-    .brand-marquee-track {
-      display: flex;
-      width: max-content;
-      align-items: center;
-      animation: marqueeScroll 26s linear infinite;
+    .brand-marquee-strip {
+      width: 100%;
+      height: 100%;
+      background-image: url('marquee-characters.png');
+      background-repeat: repeat-x;
+      background-size: auto 100%;
+      background-position: 0 center;
+      animation: marqueeBgDesktop 14s linear infinite;
     }
-    .brand-marquee-track img {
-      height: 240px;
-      width: auto;
-      display: block;
-      flex-shrink: 0;
+    @keyframes marqueeBgDesktop {
+      from { background-position-x: 0px; }
+      to   { background-position-x: -360px; }
     }
-    @keyframes marqueeScroll {
-      from { transform: translateX(0); }
-      to   { transform: translateX(-50%); }
+    @keyframes marqueeBgMobile {
+      from { background-position-x: 0px; }
+      to   { background-position-x: -225px; }
     }
     @media (prefers-reduced-motion: reduce) {
-      .brand-marquee-track { animation: none; }
+      .brand-marquee-strip { animation: none; }
     }
 
     /* HERO — bleeds to viewport edges */
@@ -156,11 +155,13 @@
       inset: 0;
       background: linear-gradient(
         to bottom,
-        rgba(12,12,11,0.65) 0%,
-        rgba(12,12,11,0.45) 28%,
-        rgba(12,12,11,0.58) 55%,
-        rgba(12,12,11,0.9) 76%,
-        #0c0c0b 88%,
+        #0c0c0b 0%,
+        #0c0c0b 8%,
+        rgba(12,12,11,0.5) 26%,
+        rgba(12,12,11,0.42) 45%,
+        rgba(12,12,11,0.58) 62%,
+        rgba(12,12,11,0.9) 78%,
+        #0c0c0b 90%,
         #0c0c0b 100%
       );
       pointer-events: none;
@@ -356,14 +357,14 @@
         linear-gradient(180deg, #0c0c0b 0%, rgba(12,12,11,0.52) 18%, rgba(12,12,11,0.52) 80%, #0c0c0b 100%),
         url('games-bg.png') center 55% / cover no-repeat;
     }
-    .gateway { max-width: 1080px; margin: 0 auto; padding: 88px 48px 92px; }
+    .gateway { max-width: 1080px; margin: 0 auto; padding: 36px 48px 92px; }
     .gateway-label {
       display: inline-block;
       font-size: 10px;
       letter-spacing: 0.22em;
       text-transform: uppercase;
       color: var(--gold);
-      margin-bottom: 36px;
+      margin-bottom: 20px;
       opacity: 0;
       transform: translateY(28px);
       filter: blur(6px);
@@ -530,8 +531,8 @@
       .hud-frame { margin-left: -24px; margin-right: -24px; }
       .hud-frame-inner { padding: 20px 24px; }
       .brand-marquee { margin-left: -24px; margin-right: -24px; height: 150px; }
-      .brand-marquee-track img { height: 150px; }
-      .gateway { padding: 64px 24px 68px; }
+      .brand-marquee-strip { animation-name: marqueeBgMobile; animation-duration: 10s; }
+      .gateway { padding: 28px 24px 68px; }
       .gateway-wrap { margin-left: -24px; margin-right: -24px; }
       .sc-stage { height: 190px; }
       .sc-card {
@@ -626,20 +627,7 @@
     </section>
 
     <div class="brand-marquee" aria-hidden="true">
-      <div class="brand-marquee-track">
-        <img src="marquee-characters.png" alt="" loading="lazy" />
-        <img src="marquee-characters.png" alt="" loading="lazy" />
-        <img src="marquee-characters.png" alt="" loading="lazy" />
-        <img src="marquee-characters.png" alt="" loading="lazy" />
-        <img src="marquee-characters.png" alt="" loading="lazy" />
-        <img src="marquee-characters.png" alt="" loading="lazy" />
-        <img src="marquee-characters.png" alt="" loading="lazy" />
-        <img src="marquee-characters.png" alt="" loading="lazy" />
-        <img src="marquee-characters.png" alt="" loading="lazy" />
-        <img src="marquee-characters.png" alt="" loading="lazy" />
-        <img src="marquee-characters.png" alt="" loading="lazy" />
-        <img src="marquee-characters.png" alt="" loading="lazy" />
-      </div>
+      <div class="brand-marquee-strip"></div>
     </div>
 
     <div class="gateway-wrap">
@@ -726,7 +714,7 @@
               obs.unobserve(entry.target);
             }
           });
-        }, { threshold: 0.18, rootMargin: '0px 0px -8% 0px' });
+        }, { threshold: 0.05, rootMargin: '0px 0px 0px 0px' });
         revealSections.forEach(s => observer.observe(s));
       }, 2400);
     });
