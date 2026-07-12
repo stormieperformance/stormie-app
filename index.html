@@ -88,10 +88,10 @@
     /* HERO — bleeds to viewport edges */
     .hero {
       position: relative;
-      min-height: 92vh;
+      min-height: 64vh;
       display: flex;
-      align-items: flex-end;
-      padding: 80px 48px 64px;
+      align-items: center;
+      padding: 64px 48px 56px;
       margin-left: -48px;
       margin-right: -48px;
       overflow: hidden;
@@ -440,7 +440,12 @@
     .gateway.in-view .sc-stage { transition-delay: 0.1s; }
 
     /* FOOTER */
-    footer { padding: 24px 0; border-top: 1px solid transparent; display: flex; flex-direction: column; gap: 14px; background: #000; }
+    .footer-wrap {
+      margin-left: -48px;
+      margin-right: -48px;
+      background: #000;
+    }
+    footer { padding: 24px 48px; border-top: 1px solid transparent; display: flex; flex-direction: column; gap: 14px; max-width: 1080px; margin: 0 auto; }
     .footer-row { display: flex; justify-content: space-between; align-items: center; }
     .footer-left { font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted2); }
     .footer-right { font-family: var(--serif); font-size: 13px; font-style: italic; color: var(--muted2); }
@@ -474,7 +479,7 @@
     /* RESPONSIVE */
     @media (max-width: 768px) {
       .page { padding: 0 24px; }
-      .hero { min-height: 88vh; padding: 56px 24px 44px; margin-left: -24px; margin-right: -24px; }
+      .hero { min-height: 58vh; padding: 48px 24px 40px; margin-left: -24px; margin-right: -24px; }
       .hero-bottom { flex-direction: column; align-items: flex-start; }
       .hero-actions { align-items: flex-start; }
       .scroll-hint { display: none; }
@@ -496,6 +501,8 @@
       .sc-arrow--prev { left: -4px; }
       .sc-arrow--next { right: -4px; }
       .footer-row { flex-direction: column; gap: 8px; text-align: center; }
+      .footer-wrap { margin-left: -24px; margin-right: -24px; }
+      footer { padding: 24px 24px; }
       .hero-label { letter-spacing: 0.18em; }
       .devnote { font-size: 12px; padding: 18px 20px 44px; }
     }
@@ -583,6 +590,7 @@
     </section>
     </div>
 
+    <div class="footer-wrap">
     <footer>
       <div class="footer-network">
         <a href="https://stormieperformance.com">Stormie Performance</a>
@@ -596,6 +604,7 @@
         <div class="footer-right">stormie.app</div>
       </div>
     </footer>
+    </div>
 
   </div>
 
