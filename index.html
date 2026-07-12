@@ -300,7 +300,17 @@
     .enter-btn:active { transform: translateY(0); }
 
     /* GATEWAY — carousel */
-    .gateway { padding: 88px 0 92px; border-bottom: 1px solid var(--line); }
+    .gateway-wrap {
+      width: 100vw;
+      margin-left: calc(-50vw + 50%);
+      background:
+        radial-gradient(120% 140% at 50% 0%, rgba(201,169,110,0.16), transparent 55%),
+        repeating-linear-gradient(180deg, rgba(232,228,220,0.025) 0px, rgba(232,228,220,0.025) 1px, transparent 1px, transparent 3px),
+        linear-gradient(180deg, #151109 0%, #0c0c0b 60%);
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+    }
+    .gateway { max-width: 1080px; margin: 0 auto; padding: 88px 48px 92px; }
     .gateway-label {
       display: inline-block;
       font-size: 10px;
@@ -330,6 +340,7 @@
       overflow: hidden; will-change: transform, opacity;
       transition: border-color 0.3s, box-shadow 0.4s;
       transform-style: preserve-3d; cursor: pointer;
+      clip-path: polygon(22px 0, 100% 0, 100% calc(100% - 22px), calc(100% - 22px) 100%, 0 100%, 0 22px);
     }
     .sc-card.is-active {
       border-color: var(--gold-line);
@@ -338,6 +349,17 @@
     }
     .sc-stage.is-dragging .sc-card { transition: none; cursor: grabbing; }
     .tilt-shine { position: absolute; inset: 0; z-index: 10; pointer-events: none; opacity: 0; transition: opacity 0.3s; }
+    .sc-card::before {
+      content: ''; position: absolute; inset: 0; z-index: 6; pointer-events: none;
+      background:
+        linear-gradient(var(--gold), var(--gold)) top right / 24px 1px no-repeat,
+        linear-gradient(var(--gold), var(--gold)) top right / 1px 24px no-repeat,
+        linear-gradient(var(--gold), var(--gold)) bottom left / 24px 1px no-repeat,
+        linear-gradient(var(--gold), var(--gold)) bottom left / 1px 24px no-repeat;
+      opacity: 0.4;
+      transition: opacity 0.3s ease;
+    }
+    .sc-card.is-active::before { opacity: 0.9; }
     .sc-card::after {
       content: ''; position: absolute; left: 0; right: 0; bottom: 0;
       height: 46%; background: linear-gradient(180deg, transparent, rgba(12,12,11,0.94));
@@ -454,9 +476,19 @@
       .hero-bottom { flex-direction: column; align-items: flex-start; }
       .hero-actions { align-items: flex-start; }
       .scroll-hint { display: none; }
-      .gateway { padding: 64px 0 68px; }
+      .gateway { padding: 64px 24px 68px; }
       .sc-stage { height: 190px; }
-      .sc-card { width: 260px; height: 150px; margin: -75px 0 0 -130px; }
+      .sc-card {
+        width: 260px; height: 150px; margin: -75px 0 0 -130px;
+        clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
+      }
+      .sc-card::before {
+        background:
+          linear-gradient(var(--gold), var(--gold)) top right / 16px 1px no-repeat,
+          linear-gradient(var(--gold), var(--gold)) top right / 1px 16px no-repeat,
+          linear-gradient(var(--gold), var(--gold)) bottom left / 16px 1px no-repeat,
+          linear-gradient(var(--gold), var(--gold)) bottom left / 1px 16px no-repeat;
+      }
       .sc-frame iframe { transform: scale(0.325); }
       .sc-arrow--prev { left: -4px; }
       .sc-arrow--next { right: -4px; }
@@ -532,6 +564,7 @@
       </div>
     </section>
 
+    <div class="gateway-wrap">
     <section class="gateway" id="gateway">
       <p class="gateway-label">Games</p>
 
@@ -550,6 +583,7 @@
         </div>
       </div>
     </section>
+    </div>
 
     <footer>
       <div class="footer-network">
