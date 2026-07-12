@@ -353,9 +353,14 @@
     .gateway.in-view .gateway-link:nth-child(4)  { transition-delay: 0.38s; }
 
     /* FOOTER */
-    footer { padding: 24px 0; border-top: 1px solid transparent; display: flex; justify-content: space-between; align-items: center; }
+    footer { padding: 24px 0; border-top: 1px solid transparent; display: flex; flex-direction: column; gap: 14px; }
+    .footer-row { display: flex; justify-content: space-between; align-items: center; }
     .footer-left { font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted2); }
     .footer-right { font-family: var(--serif); font-size: 13px; font-style: italic; color: var(--muted2); }
+    .footer-network { display: flex; justify-content: center; align-items: center; gap: 10px; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; }
+    .footer-network a { color: var(--muted2); text-decoration: none; transition: color 0.2s; }
+    .footer-network a:hover { color: var(--gold); }
+    .footer-network .dot { color: var(--muted2); }
 
     /* KEYFRAMES */
     @keyframes revealLabel {
@@ -389,7 +394,7 @@
       .gateway { padding: 64px 0 68px; }
       .gateway-link { grid-template-columns: 1fr; gap: 12px; align-items: start; padding: 22px 0 24px; }
       .gateway-arrow { padding-bottom: 0; }
-      footer { flex-direction: column; gap: 8px; text-align: center; }
+      .footer-row { flex-direction: column; gap: 8px; text-align: center; }
       .hero-label { letter-spacing: 0.18em; }
       .devnote { font-size: 12px; padding: 18px 20px 44px; }
     }
@@ -413,11 +418,6 @@
     </div>
 
     <section class="hero">
-      <div class="devnote">
-        <span><strong>Heads up, I'm actually a web developer.</strong> These games are just a fun side project.</span>
-        <span>See what I do for work at <a href="https://stormieperformance.com">Stormie Performance</a>, or play below.</span>
-      </div>
-
       <!--
         VIDEO INSTRUCTIONS
         ══════════════════════════════════════════════════════
@@ -506,8 +506,17 @@
     </section>
 
     <footer>
-      <div class="footer-left">Stormie Games By Storm Kolmodin</div>
-      <div class="footer-right">stormie.app</div>
+      <div class="footer-network">
+        <a href="https://stormieperformance.com">Stormie Performance</a>
+        <span class="dot">·</span>
+        <a href="https://stormiestudios.com">Stormie Studios</a>
+        <span class="dot">·</span>
+        <a href="https://stormiemoves.com">Stormie Moves</a>
+      </div>
+      <div class="footer-row">
+        <div class="footer-left">Stormie Games By Storm Kolmodin</div>
+        <div class="footer-right">stormie.app</div>
+      </div>
     </footer>
 
   </div>
