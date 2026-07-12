@@ -23,11 +23,13 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
       --bg: #0c0c0b;
+      --bg2: #111110;
       --text: #e8e4dc;
       --muted: rgba(232,228,220,0.42);
       --muted2: rgba(232,228,220,0.22);
       --line: rgba(232,228,220,0.08);
       --gold: #c9a96e;
+      --gold-line: rgba(201,169,110,0.4);
       --sans: 'DM Sans', sans-serif;
       --serif: 'Cormorant Garamond', serif;
     }
@@ -297,7 +299,7 @@
     }
     .enter-btn:active { transform: translateY(0); }
 
-    /* GATEWAY — unchanged */
+    /* GATEWAY — carousel */
     .gateway { padding: 88px 0 92px; border-bottom: 1px solid var(--line); }
     .gateway-label {
       display: inline-block;
@@ -311,46 +313,107 @@
       filter: blur(6px);
       transition: opacity 0.9s cubic-bezier(0.22, 1, 0.36, 1), transform 0.9s cubic-bezier(0.22, 1, 0.36, 1), filter 0.9s cubic-bezier(0.22, 1, 0.36, 1);
     }
-    .gateway-list { display: flex; flex-direction: column; }
-    .gateway-link {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
-      gap: 32px;
-      align-items: end;
-      text-decoration: none;
-      color: inherit;
-      padding: 26px 0 30px;
-      border-top: 1px solid var(--line);
-      opacity: 0;
-      transform: translateY(42px);
-      filter: blur(8px);
-      transition: opacity 1s cubic-bezier(0.22, 1, 0.36, 1), transform 1s cubic-bezier(0.22, 1, 0.36, 1), filter 1s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.35s ease;
+
+    /* ══ CAROUSEL (ported from stormieperformance.com) ══ */
+    .sc-wrap { max-width: 340px; margin: 0 auto; }
+    .sc-stage {
+      position: relative; height: 520px; perspective: 1200px;
+      touch-action: pan-y; user-select: none; -webkit-user-select: none;
+      opacity: 0; transform: translateY(28px); filter: blur(6px);
+      transition: opacity 0.9s cubic-bezier(0.22, 1, 0.36, 1), transform 0.9s cubic-bezier(0.22, 1, 0.36, 1), filter 0.9s cubic-bezier(0.22, 1, 0.36, 1);
     }
-    .gateway-link:last-child { border-bottom: 1px solid var(--line); }
-    .gateway-title {
-      font-family: var(--serif);
-      font-size: clamp(42px, 6vw, 76px);
-      font-weight: 300;
-      line-height: 0.92;
-      letter-spacing: -0.03em;
-      margin-bottom: 10px;
-      transition: transform 0.45s ease, color 0.35s ease;
+    .sc-track { position: absolute; inset: 0; transform-style: preserve-3d; }
+    .sc-card {
+      position: absolute; top: 50%; left: 50%;
+      width: 248px; height: 488px; margin: -244px 0 0 -124px;
+      border: 1px solid var(--line); background: var(--bg2);
+      overflow: hidden; will-change: transform, opacity;
+      transition: border-color 0.3s, box-shadow 0.4s;
+      transform-style: preserve-3d; cursor: pointer;
     }
-    .gateway-title em { font-style: italic; color: var(--muted); transition: color 0.35s ease; }
-    .gateway-meta { font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted2); transition: color 0.35s ease; }
-    .gateway-arrow { font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted2); white-space: nowrap; padding-bottom: 8px; transition: color 0.35s ease, transform 0.35s ease; }
-    .gateway-link:hover, .gateway-link:focus-visible { border-color: rgba(201,169,110,0.18); outline: none; }
-    .gateway-link:hover .gateway-title, .gateway-link:focus-visible .gateway-title { transform: translateX(8px); color: #f2ede3; }
-    .gateway-link:hover .gateway-title em, .gateway-link:focus-visible .gateway-title em { color: var(--gold); }
-    .gateway-link:hover .gateway-meta, .gateway-link:focus-visible .gateway-meta,
-    .gateway-link:hover .gateway-arrow, .gateway-link:focus-visible .gateway-arrow { color: var(--gold); }
-    .gateway-link:hover .gateway-arrow, .gateway-link:focus-visible .gateway-arrow { transform: translateX(6px); }
-    .gateway.in-view .gateway-label, .gateway.in-view .gateway-link { opacity: 1; transform: translateY(0); filter: blur(0); }
-    .gateway.in-view .gateway-label              { transition-delay: 0.02s; }
-    .gateway.in-view .gateway-link:nth-child(1)  { transition-delay: 0.08s; }
-    .gateway.in-view .gateway-link:nth-child(2)  { transition-delay: 0.18s; }
-    .gateway.in-view .gateway-link:nth-child(3)  { transition-delay: 0.28s; }
-    .gateway.in-view .gateway-link:nth-child(4)  { transition-delay: 0.38s; }
+    .sc-card.is-active {
+      border-color: var(--gold-line);
+      box-shadow: 0 0 0 1px var(--gold-line), 0 40px 80px rgba(0,0,0,0.7);
+      cursor: grab;
+    }
+    .sc-stage.is-dragging .sc-card { transition: none; cursor: grabbing; }
+    .tilt-shine { position: absolute; inset: 0; z-index: 10; pointer-events: none; opacity: 0; transition: opacity 0.3s; }
+    .sc-card::after {
+      content: ''; position: absolute; left: 0; right: 0; bottom: 0;
+      height: 40%; background: linear-gradient(180deg, transparent, rgba(12,12,11,0.94));
+      pointer-events: none;
+    }
+    .sc-card.is-coming-soon { cursor: default; }
+    .sc-card.is-coming-soon.is-active { cursor: default; }
+    .sc-coming-soon-inner {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column;
+      overflow: hidden; background: var(--bg2);
+    }
+    .sc-coming-soon-img {
+      width: 100%; flex: 1; object-fit: cover; object-position: center top;
+      display: block; opacity: 0.55;
+      filter: grayscale(20%);
+    }
+    .sc-coming-soon-overlay {
+      position: absolute; inset: 0;
+      background: linear-gradient(180deg, transparent 30%, rgba(12,12,11,0.97) 100%);
+    }
+    .sc-coming-soon-label { position: absolute; bottom: 0; left: 0; right: 0; padding: 20px 18px 18px; z-index: 2; }
+    .sc-coming-soon-status {
+      display: flex; align-items: center; gap: 7px;
+      font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase;
+      color: var(--gold); margin-bottom: 6px;
+    }
+    .sc-coming-soon-dot {
+      width: 5px; height: 5px; border-radius: 50%; background: var(--gold);
+      animation: pulse 2.6s ease-in-out infinite; flex-shrink: 0;
+    }
+    @keyframes pulse { 0%,100%{box-shadow:0 0 0 0 rgba(201,169,110,0.5)} 50%{box-shadow:0 0 0 7px rgba(201,169,110,0)} }
+    .sc-coming-soon-name { font-family: var(--serif); font-size: 20px; font-weight: 300; color: var(--text); line-height: 1.1; }
+    .sc-fallback {
+      position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+      text-align: center; padding: 24px;
+      font-family: var(--serif); font-size: 22px; font-weight: 300; color: var(--muted);
+      background: radial-gradient(130% 80% at 50% 0%, rgba(201,169,110,0.08), transparent 60%), var(--bg2);
+    }
+    .sc-frame { position: absolute; inset: 0; overflow: hidden; pointer-events: none; background: var(--bg2); }
+    .sc-frame iframe { width: 390px; height: 880px; border: 0; transform: scale(0.6359); transform-origin: top left; pointer-events: none; }
+    .sc-caption { position: absolute; left: 0; right: 0; bottom: 0; padding: 16px 16px 14px; z-index: 2; pointer-events: none; }
+    .sc-caption .sc-card-name { font-family: var(--serif); font-size: 20px; font-weight: 300; color: var(--text); line-height: 1.1; }
+    .sc-arrow {
+      position: absolute; top: 50%; transform: translateY(-50%); z-index: 30;
+      width: 40px; height: 40px; border: 1px solid var(--line); background: rgba(12,12,11,0.75);
+      color: var(--muted); font-size: 18px; line-height: 1; cursor: pointer; backdrop-filter: blur(6px);
+      transition: color 0.2s, border-color 0.2s, transform 0.2s;
+    }
+    .sc-arrow:hover { color: var(--gold); border-color: var(--gold-line); }
+    .sc-arrow--prev { left: -20px; }
+    .sc-arrow--next { right: -20px; }
+    .sc-arrow--prev:hover { transform: translateY(-50%) translateX(-3px); }
+    .sc-arrow--next:hover { transform: translateY(-50%) translateX(3px); }
+    .sc-detail {
+      margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--line);
+      text-align: center;
+      transition: opacity 0.25s ease, transform 0.25s ease;
+    }
+    .sc-detail.is-switching { opacity: 0; transform: translateY(6px); }
+    .sc-cat { font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--gold); margin-bottom: 8px; }
+    .sc-detail h3 { font-family: var(--serif); font-size: clamp(22px, 2.4vw, 30px); font-weight: 300; line-height: 1.05; margin-bottom: 8px; }
+    .sc-desc { font-size: 13px; font-weight: 300; color: var(--muted); line-height: 1.75; margin-bottom: 18px; }
+    .sc-detail-link { display: inline-block; }
+    .sc-hint { margin-top: 14px; font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted2); }
+    .btn-ghost {
+      font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase;
+      color: var(--muted); text-decoration: none; position: relative; padding-bottom: 4px;
+    }
+    .btn-ghost::after { content: ''; position: absolute; left: 0; bottom: 0; width: 100%; height: 1px; background: var(--line); }
+    .btn-ghost::before { content: ''; position: absolute; left: 0; bottom: 0; width: 0; height: 1px; background: var(--gold); transition: width 0.45s ease; z-index: 1; }
+    .btn-ghost:hover { color: var(--text); }
+    .btn-ghost:hover::before { width: 100%; }
+    .gateway.in-view .sc-stage { opacity: 1; transform: translateY(0); filter: blur(0); }
+    .gateway.in-view .gateway-label { opacity: 1; transform: translateY(0); filter: blur(0); }
+    .gateway.in-view .sc-stage { transition-delay: 0.1s; }
 
     /* FOOTER */
     footer { padding: 24px 0; border-top: 1px solid transparent; display: flex; flex-direction: column; gap: 14px; }
@@ -392,15 +455,18 @@
       .hero-actions { align-items: flex-start; }
       .scroll-hint { display: none; }
       .gateway { padding: 64px 0 68px; }
-      .gateway-link { grid-template-columns: 1fr; gap: 12px; align-items: start; padding: 22px 0 24px; }
-      .gateway-arrow { padding-bottom: 0; }
+      .sc-stage { height: 440px; }
+      .sc-card { width: 210px; height: 412px; margin: -206px 0 0 -105px; }
+      .sc-frame iframe { transform: scale(0.5385); }
+      .sc-arrow--prev { left: -4px; }
+      .sc-arrow--next { right: -4px; }
       .footer-row { flex-direction: column; gap: 8px; text-align: center; }
       .hero-label { letter-spacing: 0.18em; }
       .devnote { font-size: 12px; padding: 18px 20px 44px; }
     }
 
     @media (prefers-reduced-motion: reduce) {
-      .hero-label, .hero-title, .hero-desc, .hero-actions, .gateway-label, .gateway-link, .scroll-hint {
+      .hero-label, .hero-title, .hero-desc, .hero-actions, .gateway-label, .sc-stage, .scroll-hint {
         animation: none !important; transform: none !important; opacity: 1 !important; filter: none !important; transition: none !important;
       }
       .enter-btn::before { animation: none !important; }
@@ -468,40 +534,20 @@
 
     <section class="gateway" id="gateway">
       <p class="gateway-label">Games</p>
-      <div class="gateway-list">
 
-        <a class="gateway-link" href="https://forestgathering.stormie.app">
-          <div>
-            <h2 class="gateway-title">Forest Gathering<span><em>.</em></span></h2>
-            <p class="gateway-meta">Wander through nine pixel worlds searching for a new place to call home.</p>
-          </div>
-          <div class="gateway-arrow">Play →</div>
-        </a>
-
-        <a class="gateway-link" href="https://stormie.app/moonlit-hollow.html">
-          <div>
-            <h2 class="gateway-title">The Witch of Moonlit Hollow<span><em>.</em></span></h2>
-            <p class="gateway-meta">In Dev</p>
-          </div>
-          <div class="gateway-arrow">Play →</div>
-        </a>
-
-        <a class="gateway-link" href="https://game.stormie.app">
-          <div>
-            <h2 class="gateway-title">Storm//Duel<span><em>.</em></span></h2>
-            <p class="gateway-meta">Dodge · Survive · Repeat</p>
-          </div>
-          <div class="gateway-arrow">Play →</div>
-        </a>
-
-        <a class="gateway-link" href="https://stormie.app/tiny-kiwi.html">
-          <div>
-            <h2 class="gateway-title">Tiny Kiwi<span><em>.</em></span></h2>
-            <p class="gateway-meta">Wander. Collect every berry. Boop the grumpy mushrooms. Find the gate.</p>
-          </div>
-          <div class="gateway-arrow">Play →</div>
-        </a>
-
+      <div class="sc-wrap">
+        <div class="sc-stage" id="scStage" aria-roledescription="carousel" aria-label="Games showcase">
+          <button class="sc-arrow sc-arrow--prev" id="scPrev" aria-label="Previous">&#8249;</button>
+          <div class="sc-track" id="scTrack"></div>
+          <button class="sc-arrow sc-arrow--next" id="scNext" aria-label="Next">&#8250;</button>
+        </div>
+        <div class="sc-detail" id="scDetail" aria-live="polite">
+          <p class="sc-cat" id="scCat"></p>
+          <h3 id="scName"></h3>
+          <p class="sc-desc" id="scDesc"></p>
+          <a class="btn-ghost sc-detail-link" id="scLink" href="#"></a>
+          <p class="sc-hint">Drag to spin, or use the arrows</p>
+        </div>
       </div>
     </section>
 
@@ -556,6 +602,169 @@
         revealSections.forEach(s => observer.observe(s));
       }, 2400);
     });
+
+    // ══ GAMES CAROUSEL (ported from stormieperformance.com) ══
+    (function() {
+      const ITEMS = [
+        {
+          name: 'Forest Gathering', href: 'https://forestgathering.stormie.app', frame: 'https://forestgathering.stormie.app', comingSoon: false,
+          cat: 'Exploration · Pixel art', desc: 'Wander through nine pixel worlds searching for a new place to call home.', link: 'Play →'
+        },
+        {
+          name: 'Storm//Duel', href: 'https://game.stormie.app', frame: 'https://game.stormie.app', comingSoon: false,
+          cat: 'Arcade · Survival', desc: 'Dodge, survive, repeat. A fast, replayable arcade duel.', link: 'Play →'
+        },
+        {
+          name: 'Tiny Kiwi', href: 'https://stormie.app/tiny-kiwi.html', frame: 'https://stormie.app/tiny-kiwi.html', comingSoon: false,
+          cat: 'Adventure · Pixel art', desc: 'Wander, collect every berry, boop the grumpy mushrooms, and find the gate.', link: 'Play →'
+        },
+        {
+          name: 'The Witch of Moonlit Hollow', href: 'https://stormie.app/moonlit-hollow.html', frame: 'https://stormie.app/moonlit-hollow.html', comingSoon: true,
+          cat: 'In development', desc: 'A moody pixel adventure currently in the works. Details land here on release.', link: ''
+        }
+      ];
+
+      const N = ITEMS.length;
+      const stage = document.getElementById('scStage'), track = document.getElementById('scTrack'),
+            detail = document.getElementById('scDetail'), catEl = document.getElementById('scCat'),
+            nameEl = document.getElementById('scName'), descEl = document.getElementById('scDesc'),
+            linkEl = document.getElementById('scLink');
+      if (!stage || !track) return;
+      const rm = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      const cards = ITEMS.map((item, i) => {
+        const el = document.createElement('div');
+        el.className = 'sc-card' + (item.comingSoon ? ' is-coming-soon' : '');
+        el.setAttribute('role', 'button'); el.setAttribute('tabindex', '0'); el.setAttribute('aria-label', item.name);
+
+        if (item.comingSoon) {
+          el.innerHTML =
+            `<div class="sc-coming-soon-inner">` +
+              `<img class="sc-coming-soon-img" src="${item.frame}" alt="${item.name}" onerror="this.style.display='none'" loading="lazy" />` +
+              `<div class="sc-coming-soon-overlay"></div>` +
+              `<div class="sc-coming-soon-label">` +
+                `<div class="sc-coming-soon-status"><span class="sc-coming-soon-dot"></span><span>In development</span></div>` +
+                `<span class="sc-coming-soon-name">${item.name}</span>` +
+              `</div>` +
+            `</div>`;
+        } else {
+          el.innerHTML =
+            `<div class="sc-fallback">${item.name}</div>` +
+            `<div class="sc-frame"><iframe src="${item.frame}" loading="lazy" scrolling="no" tabindex="-1" aria-hidden="true" title=""></iframe></div>` +
+            `<div class="tilt-shine"></div>` +
+            `<div class="sc-caption"><span class="sc-card-name">${item.name}</span></div>`;
+        }
+
+        el.addEventListener('click', () => {
+          if (dragMoved) return;
+          if (item.comingSoon) return;
+          if (i === nearestIdx()) { window.location.href = item.href; return; }
+          goTo(i);
+        });
+        el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); if (!item.comingSoon) goTo(i); } });
+        track.appendChild(el);
+        return el;
+      });
+
+      let pos = 0, target = 0, shownIdx = -1, rafId = null;
+      function sp() { return window.innerWidth <= 768 ? 148 : 292; }
+      function mod(n, m) { return ((n % m) + m) % m; }
+      function nearestIdx() { return mod(Math.round(pos), N); }
+
+      function render() {
+        const s = sp(), active = nearestIdx();
+        cards.forEach((card, i) => {
+          const off = (() => { let o = mod(i - pos, N); if (o > N / 2) o -= N; return o; })();
+          const abs = Math.abs(off), vis = abs <= 1.85;
+          card.style.opacity = vis ? String(Math.max(0, 1 - abs * 0.38)) : '0';
+          card.style.pointerEvents = vis ? 'auto' : 'none';
+          card.style.zIndex = String(100 - Math.round(abs * 10));
+          card.style.transform = `translateX(${(off * s).toFixed(1)}px) translateZ(${(-abs * 180).toFixed(1)}px) rotateY(${(-off * 18).toFixed(2)}deg)`;
+          card.classList.toggle('is-active', i === active && Math.abs(pos - target) < 0.02);
+        });
+        if (active !== shownIdx && Math.abs(pos - Math.round(pos)) < 0.45) updateDetail(active, false);
+      }
+
+      function tick() {
+        const diff = target - pos;
+        if (Math.abs(diff) < 0.001) { pos = target; render(); rafId = null; return; }
+        pos += diff * (rm ? 1 : 0.13); render(); rafId = requestAnimationFrame(tick);
+      }
+      function startTween() { if (rafId === null) rafId = requestAnimationFrame(tick); }
+      function goTo(i) { const d = (() => { let x = mod(i - target, N); if (x > N / 2) x -= N; return x; })(); target += d; startTween(); }
+      function step(d) { target += d; startTween(); }
+
+      let dragging = false, dragStartX = 0, dragStartPos = 0, dragMoved = false;
+      stage.addEventListener('pointerdown', e => {
+        if (e.target.closest('.sc-arrow')) return;
+        dragging = true; dragMoved = false; dragStartX = e.clientX; dragStartPos = pos;
+        stage.classList.add('is-dragging'); if (rafId !== null) { cancelAnimationFrame(rafId); rafId = null; }
+        stage.setPointerCapture(e.pointerId);
+      });
+      stage.addEventListener('pointermove', e => {
+        if (!dragging) return; const dx = e.clientX - dragStartX;
+        if (Math.abs(dx) > 6) dragMoved = true; pos = dragStartPos - dx / sp(); render();
+      });
+      function endDrag() {
+        if (!dragging) return; dragging = false; stage.classList.remove('is-dragging');
+        target = Math.round(pos); startTween(); setTimeout(() => { dragMoved = false; }, 0);
+      }
+      stage.addEventListener('pointerup', endDrag); stage.addEventListener('pointercancel', endDrag);
+
+      if (!window.matchMedia('(hover:none)').matches) {
+        stage.addEventListener('mousemove', e => {
+          const active = nearestIdx(); const card = cards[active];
+          if (!card || ITEMS[active].comingSoon) return;
+          const rect = card.getBoundingClientRect();
+          const dx = (e.clientX - rect.left - rect.width / 2) / (rect.width / 2);
+          const dy = (e.clientY - rect.top - rect.height / 2) / (rect.height / 2);
+          const off = (() => { let o = mod(active - pos, N); if (o > N / 2) o -= N; return o; })();
+          const abs = Math.abs(off);
+          card.style.transform = `translateX(${(off * sp()).toFixed(1)}px) translateZ(${(-abs * 180).toFixed(1)}px) rotateY(${(-off * 18 + dx * 8).toFixed(2)}deg) rotateX(${(-dy * 6).toFixed(2)}deg)`;
+          const shine = card.querySelector('.tilt-shine');
+          if (shine) { const px = ((dx + 1) / 2 * 100).toFixed(0), py = ((dy + 1) / 2 * 100).toFixed(0); shine.style.background = `radial-gradient(circle at ${px}% ${py}%, rgba(236,217,174,0.10) 0%, transparent 65%)`; shine.style.opacity = '1'; }
+        });
+        stage.addEventListener('mouseleave', () => {
+          const card = cards[nearestIdx()]; if (!card) return;
+          const shine = card.querySelector('.tilt-shine'); if (shine) shine.style.opacity = '0'; render();
+        });
+      }
+
+      let autoScrollTimer = null;
+      function startAutoScroll() {
+        if (autoScrollTimer) return;
+        autoScrollTimer = setInterval(() => { if (!dragging) { target += 1; startTween(); } }, 4000);
+      }
+      function stopAutoScroll() { clearInterval(autoScrollTimer); autoScrollTimer = null; }
+      stage.addEventListener('mouseenter', stopAutoScroll);
+      stage.addEventListener('mouseleave', startAutoScroll);
+      stage.addEventListener('pointerdown', stopAutoScroll);
+      stage.addEventListener('pointerup', () => setTimeout(startAutoScroll, 2000));
+      stage.addEventListener('pointercancel', () => setTimeout(startAutoScroll, 2000));
+      startAutoScroll();
+
+      document.getElementById('scPrev').addEventListener('click', () => step(-1));
+      document.getElementById('scNext').addEventListener('click', () => step(1));
+      stage.addEventListener('keydown', e => { if (e.key === 'ArrowLeft') { e.preventDefault(); step(-1); } if (e.key === 'ArrowRight') { e.preventDefault(); step(1); } });
+
+      function updateDetail(i, instant) {
+        shownIdx = i;
+        const apply = () => {
+          const item = ITEMS[i];
+          catEl.textContent = item.cat;
+          nameEl.textContent = item.name;
+          descEl.textContent = item.desc;
+          if (item.link) { linkEl.textContent = item.link; linkEl.setAttribute('href', item.href); linkEl.style.display = ''; }
+          else { linkEl.style.display = 'none'; }
+          detail.classList.remove('is-switching');
+        };
+        if (rm || instant) { apply(); return; }
+        detail.classList.add('is-switching'); setTimeout(apply, 180);
+      }
+
+      window.addEventListener('resize', render);
+      render(); updateDetail(0, true);
+    })();
   </script>
 </body>
 </html>
