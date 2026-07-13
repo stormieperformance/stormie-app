@@ -115,76 +115,13 @@
       color: rgba(232,228,220,0.34);
     }
 
-    /* ══ BRAND MARQUEE — static divider between hero and games section ══ */
-    .brand-marquee {
-      position: relative;
-      isolation: isolate;
-      margin-left: -48px;
-      margin-right: -48px;
-      height: 64px;
-      overflow: hidden;
-      border-bottom: 1px solid rgba(201,169,110,0.07);
-      background:
-        radial-gradient(80% 120% at 50% 0%, rgba(60,110,130,0.07), transparent 70%),
-        linear-gradient(to bottom,
-          #0c0c0b 0%,
-          #0a0d0f 55%,
-          #081015 100%);
-    }
-
-    .brand-marquee-strip {
-      position: absolute;
-      inset: 0;
-      overflow: hidden;
-      pointer-events: none;
-    }
-
-    .brand-marquee-strip::before,
-    .brand-marquee-strip::after {
-      content: '';
-      position: absolute;
-      inset: -20% -10%;
-      background-repeat: repeat;
-      opacity: 0.22;
-      filter: blur(0.2px);
-      will-change: transform;
-    }
-
-    .brand-marquee-strip::before {
-      background-image:
-        radial-gradient(circle at 10px 12px, rgba(201,169,110,0.75) 0 0.8px, transparent 1.4px),
-        radial-gradient(circle at 46px 30px, rgba(160,210,220,0.55) 0 0.7px, transparent 1.3px),
-        radial-gradient(circle at 80px 18px, rgba(201,169,110,0.45) 0 0.6px, transparent 1.2px);
-      background-size: 96px 44px, 118px 58px, 134px 52px;
-      animation: transitionParticlesA 16s linear infinite;
-    }
-
-    .brand-marquee-strip::after {
-      background-image:
-        radial-gradient(circle at 22px 20px, rgba(232,228,220,0.42) 0 0.55px, transparent 1.1px),
-        radial-gradient(circle at 68px 8px, rgba(120,190,205,0.38) 0 0.65px, transparent 1.2px);
-      background-size: 126px 62px, 154px 70px;
-      opacity: 0.13;
-      animation: transitionParticlesB 22s linear infinite;
-    }
-
-    @keyframes transitionParticlesA {
-      from { transform: translate3d(0, 5px, 0); }
-      to   { transform: translate3d(-48px, -10px, 0); }
-    }
-
-    @keyframes transitionParticlesB {
-      from { transform: translate3d(-18px, 0, 0); }
-      to   { transform: translate3d(34px, -8px, 0); }
-    }
-
     /* HERO — bleeds to viewport edges */
     .hero {
       position: relative;
       min-height: 78vh;
       display: flex;
       align-items: flex-end;
-      padding: 80px 48px 56px;
+      padding: 80px 48px 0;
       margin-left: -48px;
       margin-right: -48px;
       overflow: hidden;
@@ -407,7 +344,7 @@
         linear-gradient(180deg, #0c0c0b 0%, rgba(12,12,11,0.52) 18%, rgba(12,12,11,0.52) 80%, #0c0c0b 100%),
         url('./games-bg.png') center 55% / cover no-repeat;
     }
-    .gateway { max-width: 1080px; margin: 0 auto; padding: 30px 48px 72px; }
+    .gateway { max-width: 1080px; margin: 0 auto; padding: 0 48px 72px; }
     .gateway-label {
       display: inline-block;
       font-size: 10px;
@@ -643,21 +580,12 @@
     /* RESPONSIVE */
     @media (max-width: 768px) {
       .page { padding: 0 24px; }
-      .hero { min-height: 70vh; padding: 56px 24px 40px; margin-left: -24px; margin-right: -24px; align-items: flex-end; }
+      .hero { min-height: 70vh; padding: 56px 24px 0; margin-left: -24px; margin-right: -24px; align-items: flex-end; }
       .hero-bottom { flex-direction: column; align-items: flex-start; }
       .hero-actions { align-items: flex-start; }
       .scroll-hint { display: none; }
       .hud-frame { margin-left: -24px; margin-right: -24px; }
       .hud-frame-inner { padding: 15px 24px; }
-      .brand-marquee {
-        margin-left: -24px;
-        margin-right: -24px;
-        height: 48px;
-      }
-      .brand-marquee-strip {
-        position: absolute;
-        inset: 0;
-      }
       .gateway { padding: 28px 24px 58px; }
       .gateway-wrap { margin-left: -24px; margin-right: -24px; }
       .sc-stage { height: 190px; }
@@ -684,10 +612,6 @@
     }
 
     @media (prefers-reduced-motion: reduce) {
-      .brand-marquee-strip::before,
-      .brand-marquee-strip::after {
-        animation: none !important;
-      }
       .hero-label, .hero-title, .hero-desc, .hero-actions, .gateway-label, .sc-stage, .scroll-hint {
         animation: none !important; transform: none !important; opacity: 1 !important; filter: none !important; transition: none !important;
       }
@@ -757,10 +681,6 @@
         <div class="scroll-line"></div>
       </div>
     </section>
-
-    <div class="brand-marquee" aria-hidden="true">
-      <div class="brand-marquee-strip"></div>
-    </div>
 
     <div class="gateway-wrap">
     <section class="gateway" id="gateway">
