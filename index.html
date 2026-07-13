@@ -336,6 +336,14 @@
     .enter-btn:active { transform: translateY(0); }
 
     /* ABOUT */
+    .about-bg-wrap {
+      margin-left: -48px;
+      margin-right: -48px;
+      position: relative;
+      background:
+        linear-gradient(180deg, #0c0c0b 0%, rgba(12,12,11,0.7) 14%, rgba(12,12,11,0.7) 86%, #0c0c0b 100%),
+        url('./about-bg.png') center 42% / cover no-repeat;
+    }
     .about-wrap { max-width: 1080px; margin: 0 auto; padding: 88px 48px; }
     .about-label {
       display: inline-block;
@@ -381,6 +389,7 @@
     .about.in-view .about-title { opacity: 1; transform: translateY(0); filter: blur(0); transition-delay: 0.05s; }
     .about.in-view .about-body { opacity: 1; transform: translateY(0); filter: blur(0); transition-delay: 0.1s; }
     @media (max-width: 640px) {
+      .about-bg-wrap { margin-left: -24px; margin-right: -24px; }
       .about-wrap { padding: 64px 24px; }
     }
 
@@ -731,6 +740,7 @@
       </div>
     </section>
 
+    <div class="about-bg-wrap">
     <section class="about" id="about">
       <div class="about-wrap">
         <p class="about-label">About</p>
@@ -742,6 +752,7 @@
         </div>
       </div>
     </section>
+    </div>
 
     <div class="gateway-wrap">
     <section class="gateway" id="gateway">
