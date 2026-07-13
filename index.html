@@ -70,19 +70,34 @@
       flex-direction: column;
     }
 
-    /* ══ HUD FRAME — reusable framed panel for header/footer ══ */
+    /* ══ HEADER / FOOTER SHELLS ══ */
     .hud-frame {
       position: relative;
       margin-left: -48px;
       margin-right: -48px;
-      border: 1px solid rgba(201,169,110,0.18);
-      background:
-        radial-gradient(120% 220% at 50% 0%, rgba(90,200,224,0.07), transparent 60%),
-        repeating-linear-gradient(180deg, rgba(140,210,224,0.03) 0px, rgba(140,210,224,0.03) 1px, transparent 1px, transparent 48px),
-        repeating-linear-gradient(90deg, rgba(140,210,224,0.03) 0px, rgba(140,210,224,0.03) 1px, transparent 1px, transparent 48px),
-        #0a0a09;
     }
-    .hud-frame-inner { max-width: 1080px; margin: 0 auto; padding: 24px 48px; }
+
+    .header-shell {
+      z-index: 20;
+      border: 0;
+      border-bottom: 1px solid rgba(201,169,110,0.14);
+      background: rgba(8,10,12,0.72);
+      -webkit-backdrop-filter: blur(14px);
+      backdrop-filter: blur(14px);
+    }
+
+    .footer-shell {
+      border: 0;
+      border-top: 1px solid rgba(201,169,110,0.12);
+      background:
+        linear-gradient(180deg, rgba(12,12,11,0.28), rgba(8,9,10,0.96));
+    }
+
+    .hud-frame-inner {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 18px 48px;
+    }
 
     .topbar {
       position: relative;
@@ -91,41 +106,33 @@
       justify-content: space-between;
       align-items: center;
     }
-    .topbar-left, .topbar-right {
-      font-size: 10px;
-      letter-spacing: 0.2em;
+
+    .topbar-left,
+    .topbar-right {
+      font-size: 9px;
+      letter-spacing: 0.22em;
       text-transform: uppercase;
-      color: var(--muted2);
+      color: rgba(232,228,220,0.34);
     }
 
-    /* ══ BRAND MARQUEE — divider between hero and games section ══ */
+    /* ══ BRAND MARQUEE — static divider between hero and games section ══ */
     .brand-marquee {
       overflow: hidden;
       margin-left: -48px;
       margin-right: -48px;
-      border-bottom: 1px solid rgba(201,169,110,0.14);
-      background: #0a0a09;
-      height: 90px;
+      height: 78px;
+      border-bottom: 1px solid rgba(201,169,110,0.12);
+      background: #090b0c;
     }
+
     .brand-marquee-strip {
       width: 100%;
       height: 100%;
       background-image: url('./marquee-scene.png');
       background-repeat: repeat-x;
-      background-size: auto 145%;
-      background-position: left bottom;
-      animation: marqueeBgDesktop 18s linear infinite;
-    }
-    @keyframes marqueeBgDesktop {
-      from { background-position-x: 0px; }
-      to   { background-position-x: -480px; }
-    }
-    @keyframes marqueeBgMobile {
-      from { background-position-x: 0px; }
-      to   { background-position-x: -300px; }
-    }
-    @media (prefers-reduced-motion: reduce) {
-      .brand-marquee-strip { animation: none; }
+      background-size: auto 146%;
+      background-position: center bottom;
+      animation: none;
     }
 
     /* HERO — bleeds to viewport edges */
@@ -357,7 +364,7 @@
         linear-gradient(180deg, #0c0c0b 0%, rgba(12,12,11,0.52) 18%, rgba(12,12,11,0.52) 80%, #0c0c0b 100%),
         url('./games-bg.png') center 55% / cover no-repeat;
     }
-    .gateway { max-width: 1080px; margin: 0 auto; padding: 16px 48px 92px; }
+    .gateway { max-width: 1080px; margin: 0 auto; padding: 30px 48px 72px; }
     .gateway-label {
       display: inline-block;
       font-size: 10px;
@@ -485,19 +492,88 @@
     .gateway.in-view .sc-stage { transition-delay: 0.1s; }
 
     /* FOOTER */
-    footer { padding: 44px 48px 40px; display: flex; flex-direction: column; align-items: center; gap: 22px; max-width: 1080px; margin: 0 auto; }
-    .footer-mark { color: rgba(201,169,110,0.75); }
-    .footer-row { display: flex; justify-content: space-between; align-items: center; width: 100%; }
-    .footer-left { font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted2); }
-    .footer-right { font-family: var(--serif); font-size: 13px; font-style: italic; color: var(--muted2); }
-    .footer-network { display: flex; justify-content: center; align-items: center; gap: 10px; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; }
-    .footer-network a { color: var(--muted2); text-decoration: none; transition: color 0.2s; }
+    footer {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 42px 48px 34px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      text-align: center;
+    }
+
+    .footer-mark {
+      width: 24px;
+      height: 24px;
+      color: rgba(201,169,110,0.68);
+      margin-bottom: 4px;
+    }
+
+    .footer-network {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      font-size: 9px;
+      letter-spacing: 0.13em;
+      text-transform: uppercase;
+    }
+
+    .footer-network a {
+      color: rgba(232,228,220,0.30);
+      text-decoration: none;
+      transition: color 0.2s ease;
+    }
+
     .footer-network a:hover { color: var(--gold); }
-    .footer-network .dot { color: var(--muted2); }
-    .footer-social { display: flex; align-items: center; gap: 20px; }
-    .footer-social a { color: rgba(201,169,110,0.6); display: inline-flex; transition: color 0.2s; }
-    .footer-social a:hover { color: var(--gold); }
-    .footer-social svg { width: 18px; height: 18px; }
+    .footer-network .dot { color: rgba(201,169,110,0.32); }
+
+    .footer-row {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+      width: 100%;
+    }
+
+    .footer-left {
+      font-size: 9px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: rgba(232,228,220,0.25);
+    }
+
+    .footer-right {
+      font-family: var(--serif);
+      font-size: 14px;
+      font-style: italic;
+      color: rgba(232,228,220,0.28);
+    }
+
+    .footer-social {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      margin-top: 4px;
+    }
+
+    .footer-social a {
+      color: rgba(201,169,110,0.52);
+      display: inline-flex;
+      transition: color 0.2s ease, transform 0.2s ease;
+    }
+
+    .footer-social a:hover {
+      color: var(--gold);
+      transform: translateY(-1px);
+    }
+
+    .footer-social svg {
+      width: 17px;
+      height: 17px;
+    }
 
     /* KEYFRAMES */
     @keyframes revealLabel {
@@ -529,15 +605,18 @@
       .hero-actions { align-items: flex-start; }
       .scroll-hint { display: none; }
       .hud-frame { margin-left: -24px; margin-right: -24px; }
-      .hud-frame-inner { padding: 20px 24px; }
-      .brand-marquee { margin-left: -24px; margin-right: -24px; height: 82px; }
-      .brand-marquee-strip {
-        background-size: auto 155%;
-        background-position: left bottom;
-        animation-name: marqueeBgMobile;
-        animation-duration: 13s;
+      .hud-frame-inner { padding: 15px 24px; }
+      .brand-marquee {
+        margin-left: -24px;
+        margin-right: -24px;
+        height: 72px;
       }
-      .gateway { padding: 12px 24px 68px; }
+      .brand-marquee-strip {
+        background-size: auto 145%;
+        background-position: center bottom;
+        animation: none;
+      }
+      .gateway { padding: 28px 24px 58px; }
       .gateway-wrap { margin-left: -24px; margin-right: -24px; }
       .sc-stage { height: 190px; }
       .sc-card {
@@ -554,8 +633,10 @@
       .sc-frame iframe { transform: scale(0.325); }
       .sc-arrow--prev { left: -4px; }
       .sc-arrow--next { right: -4px; }
-      .footer-row { flex-direction: column; gap: 8px; text-align: center; }
-      footer { padding: 24px 24px; }
+      .footer-row { flex-direction: column; gap: 5px; text-align: center; }
+      footer { padding: 36px 24px 30px; gap: 14px; }
+      .footer-network { max-width: 320px; line-height: 1.8; }
+      .topbar-left, .topbar-right { font-size: 8px; }
       .hero-label { letter-spacing: 0.18em; }
       .devnote { font-size: 12px; padding: 18px 20px 44px; }
     }
@@ -573,7 +654,7 @@
 <body>
   <div class="page">
 
-    <div class="hud-frame">
+    <div class="hud-frame header-shell">
       <div class="hud-frame-inner">
         <div class="topbar">
           <div class="topbar-left">Stormie Games</div>
@@ -656,7 +737,7 @@
     </section>
     </div>
 
-    <div class="hud-frame">
+    <div class="hud-frame footer-shell">
     <footer>
       <svg class="footer-mark" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" aria-hidden="true">
         <path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z"/>
