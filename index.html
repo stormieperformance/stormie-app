@@ -335,6 +335,55 @@
     }
     .enter-btn:active { transform: translateY(0); }
 
+    /* ABOUT */
+    .about-wrap { max-width: 1080px; margin: 0 auto; padding: 88px 48px; }
+    .about-label {
+      display: inline-block;
+      font-size: 10px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 20px;
+      opacity: 0;
+      transform: translateY(28px);
+      filter: blur(6px);
+      transition: opacity 0.9s cubic-bezier(0.22, 1, 0.36, 1), transform 0.9s cubic-bezier(0.22, 1, 0.36, 1), filter 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .about-title {
+      font-family: var(--serif);
+      font-weight: 300;
+      font-size: clamp(28px, 4vw, 40px);
+      color: var(--text);
+      margin: 0 0 28px;
+      max-width: 640px;
+      opacity: 0;
+      transform: translateY(28px);
+      filter: blur(6px);
+      transition: opacity 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.05s, transform 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.05s, filter 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.05s;
+    }
+    .about-body {
+      max-width: 640px;
+      opacity: 0;
+      transform: translateY(28px);
+      filter: blur(6px);
+      transition: opacity 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.1s, transform 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.1s, filter 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.1s;
+    }
+    .about-body p {
+      font-family: var(--sans);
+      font-size: 15px;
+      line-height: 1.75;
+      color: var(--muted);
+      margin: 0 0 16px;
+    }
+    .about-body p:last-child { margin-bottom: 0; }
+    .about-body strong { color: var(--text); font-weight: 500; }
+    .about.in-view .about-label { opacity: 1; transform: translateY(0); filter: blur(0); }
+    .about.in-view .about-title { opacity: 1; transform: translateY(0); filter: blur(0); transition-delay: 0.05s; }
+    .about.in-view .about-body { opacity: 1; transform: translateY(0); filter: blur(0); transition-delay: 0.1s; }
+    @media (max-width: 640px) {
+      .about-wrap { padding: 64px 24px; }
+    }
+
     /* GATEWAY — carousel */
     .gateway-wrap {
       margin-left: -48px;
@@ -612,7 +661,7 @@
     }
 
     @media (prefers-reduced-motion: reduce) {
-      .hero-label, .hero-title, .hero-desc, .hero-actions, .gateway-label, .sc-stage, .scroll-hint {
+      .hero-label, .hero-title, .hero-desc, .hero-actions, .gateway-label, .sc-stage, .scroll-hint, .about-label, .about-title, .about-body {
         animation: none !important; transform: none !important; opacity: 1 !important; filter: none !important; transition: none !important;
       }
       .enter-btn::before { animation: none !important; }
@@ -679,6 +728,18 @@
       <div class="scroll-hint">
         <span>Scroll</span>
         <div class="scroll-line"></div>
+      </div>
+    </section>
+
+    <section class="about" id="about">
+      <div class="about-wrap">
+        <p class="about-label">About</p>
+        <h2 class="about-title">About Stormie Games</h2>
+        <div class="about-body">
+          <p>Hi, I&rsquo;m Storm, an Agile Project Management student at Futuregames.</p>
+          <p>These games are personal projects where I explore game design and web development. They&rsquo;re built for fun, experimentation, and learning rather than as commercial releases.</p>
+          <p>Thanks for playing and following along as I continue building new ideas.</p>
+        </div>
       </div>
     </section>
 
@@ -751,7 +812,7 @@
       }
 
       const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      const revealSections = document.querySelectorAll('.gateway');
+      const revealSections = document.querySelectorAll('.gateway, .about');
 
       if (reducedMotion) {
         revealSections.forEach(s => s.classList.add('in-view'));
