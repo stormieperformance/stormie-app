@@ -79,12 +79,15 @@
     }
 
     .header-shell {
+      position: sticky;
+      top: 0;
       z-index: 20;
       border: 0;
-      border-bottom: 1px solid rgba(201,169,110,0.14);
-      background: rgba(8,10,12,0.72);
-      -webkit-backdrop-filter: blur(14px);
-      backdrop-filter: blur(14px);
+      border-bottom: 1px solid rgba(201,169,110,0.16);
+      background: rgba(9,10,11,0.62);
+      -webkit-backdrop-filter: blur(20px) saturate(140%);
+      backdrop-filter: blur(20px) saturate(140%);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 12px 30px rgba(0,0,0,0.25);
     }
 
     .footer-shell {
@@ -114,6 +117,38 @@
       letter-spacing: 0.22em;
       text-transform: uppercase;
       color: rgba(232,228,220,0.34);
+    }
+
+    .topbar-left {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .topbar-mark {
+      width: 12px;
+      height: 12px;
+      color: var(--gold);
+      flex-shrink: 0;
+    }
+
+    .topbar-play {
+      display: inline-block;
+      font-size: 9px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--gold);
+      text-decoration: none;
+      border: 1px solid rgba(201,169,110,0.4);
+      padding: 7px 16px;
+      transition: color 0.25s ease, border-color 0.25s ease, background 0.25s ease;
+    }
+
+    .topbar-play:hover,
+    .topbar-play:focus-visible {
+      color: #f3ead8;
+      border-color: var(--gold);
+      background: rgba(201,169,110,0.1);
     }
 
     /* HERO — bleeds to viewport edges */
@@ -677,6 +712,8 @@
       footer { padding: 36px 24px 30px; gap: 14px; }
       .footer-network { max-width: 320px; line-height: 1.8; }
       .topbar-left, .topbar-right { font-size: 8px; }
+      .topbar-mark { width: 10px; height: 10px; }
+      .topbar-play { padding: 5px 11px; letter-spacing: 0.12em; }
       .hero-label { letter-spacing: 0.18em; }
       .devnote { font-size: 12px; padding: 18px 20px 44px; }
     }
@@ -699,8 +736,13 @@
     <div class="hud-frame header-shell">
       <div class="hud-frame-inner">
         <div class="topbar">
-          <div class="topbar-left">Stormie Games</div>
-          <div class="topbar-right">Sweden</div>
+          <div class="topbar-left">
+            <svg class="topbar-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" aria-hidden="true">
+              <path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z"/>
+            </svg>
+            Stormie Games
+          </div>
+          <a class="topbar-play" href="#gateway">Play</a>
         </div>
       </div>
     </div>
