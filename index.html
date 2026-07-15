@@ -286,6 +286,29 @@
       transform: translateY(10px);
       animation: fadeContent 1s ease 2.2s forwards;
     }
+    .trust-badges {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+    .trust-badges span {
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .trust-badges span::before {
+      content: '';
+      display: inline-block;
+      width: 3px;
+      height: 3px;
+      border-radius: 50%;
+      background: var(--gold);
+      margin-right: 8px;
+      vertical-align: middle;
+    }
     .scroll-hint {
       position: absolute;
       bottom: 2.5rem;
@@ -688,6 +711,7 @@
       .hero { min-height: 88vh; padding: 56px 24px 0; margin-left: -24px; margin-right: -24px; align-items: flex-start; }
       .hero-bottom { flex-direction: column; align-items: flex-start; }
       .hero-actions { align-items: flex-start; }
+      .trust-badges { justify-content: flex-start; }
       .scroll-hint { display: none; }
       .hud-frame { margin-left: -24px; margin-right: -24px; }
       .hud-frame-inner { padding: 15px 24px; }
@@ -783,9 +807,15 @@
         </h1>
 
         <div class="hero-bottom">
-          <p class="hero-desc">Indie web games for mobile and desktop.</p>
+          <p class="hero-desc">Small adventures built for curious players.</p>
           <div class="hero-actions">
             <a class="enter-btn" href="#gateway"><span>Play Games</span></a>
+            <div class="trust-badges">
+              <span>Play instantly</span>
+              <span>Browser</span>
+              <span>No download</span>
+              <span>Free</span>
+            </div>
           </div>
         </div>
       </div>
@@ -803,9 +833,8 @@
         <span class="about-rule"></span>
         <h2 class="about-title">About Stormie Games</h2>
         <div class="about-body">
-          <p>Hi, I&rsquo;m Storm, an Agile Project Management student at Futuregames.</p>
-          <p>These games are personal projects where I explore game design and web development. They&rsquo;re built for fun, experimentation, and learning rather than as commercial releases.</p>
-          <p>Thanks for playing and following along as I continue building new ideas.</p>
+          <p>Stormie Games is where I experiment with game design, programming, and interactive experiences.</p>
+          <p>Every project is built to explore new ideas, learn something new, and hopefully make someone smile.</p>
         </div>
       </div>
     </section>
