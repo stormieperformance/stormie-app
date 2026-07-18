@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Stormie Games | By Storm Kolmodin </title>
-  <meta name="description" content="Storm Kolmodin is the founder of Stormie Performance, Stormie Games & Stormie Moves." />
+  <meta name="description" content="Storm Kolmodin is the founder of Stormie Studios, Stormie Games & Stormie Moves." />
 <meta property="og:title" content="Stormie Games | By Storm Kolmodin" />
 <meta property="og:description" content="Indie web games for mobile and desktop, made by Storm Kolmodin." />
 <meta property="og:url" content="https://stormie.app" />
@@ -618,6 +618,27 @@
       margin-bottom: 4px;
     }
 
+    .footer-mark-trigger {
+      background: none;
+      border: none;
+      padding: 0;
+      margin-bottom: 4px;
+      cursor: pointer;
+      color: rgba(201,169,110,0.68);
+      transition: color 0.2s ease;
+    }
+    .footer-mark-trigger:hover { color: var(--gold); }
+    .footer-mark-trigger .footer-mark { margin-bottom: 0; }
+
+    .footer-heart {
+      display: inline-flex;
+      margin-bottom: 4px;
+      opacity: 0.7;
+      transition: opacity 0.2s;
+      text-decoration: none;
+    }
+    .footer-heart:hover { opacity: 1; }
+
     .footer-network {
       display: flex;
       justify-content: center;
@@ -863,13 +884,16 @@
 
     <div class="hud-frame footer-shell">
     <footer>
-      <svg class="footer-mark" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" aria-hidden="true">
-        <path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z"/>
-      </svg>
+      <button type="button" class="footer-mark-trigger" aria-label="A little something extra" onclick="document.querySelector('.footer-heart').style.display='inline-flex';this.style.display='none';">
+        <svg class="footer-mark" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" aria-hidden="true">
+          <path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z"/>
+        </svg>
+      </button>
+      <a href="https://stormiestudios.com/alpine.html" class="footer-heart" aria-label="A little something extra" style="display:none">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="#c9a96e" xmlns="http://www.w3.org/2000/svg"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+      </a>
 
       <div class="footer-network">
-        <a href="https://stormieperformance.com">Stormie Performance</a>
-        <span class="dot">·</span>
         <a href="https://stormiestudios.com">Stormie Studios</a>
         <span class="dot">·</span>
         <a href="https://stormiemoves.com">Stormie Moves</a>
