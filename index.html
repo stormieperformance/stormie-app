@@ -18,7 +18,7 @@
 <meta name="twitter:image" content="https://stormie.app/stormie-app-og-v2.jpg" />
 <link rel="canonical" href="https://stormie.app" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400&family=Press+Start+2P&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -30,8 +30,10 @@
       --line: rgba(232,228,220,0.08);
       --gold: #c9a96e;
       --gold-line: rgba(201,169,110,0.4);
+      --crt-green: #6fd88a;
       --sans: 'DM Sans', sans-serif;
       --serif: 'Cormorant Garamond', serif;
+      --pixel: 'Press Start 2P', monospace;
     }
     html {
       overflow-x: clip;
@@ -207,8 +209,9 @@
     }
     .hero-label {
       display: inline-block;
-      font-size: 10px;
-      letter-spacing: 0.24em;
+      font-family: var(--pixel);
+      font-size: 9px;
+      letter-spacing: 0.14em;
       text-transform: uppercase;
       color: var(--gold);
       margin-bottom: 36px;
@@ -218,18 +221,18 @@
       animation: revealLabel 1.4s cubic-bezier(0.22, 1, 0.36, 1) 0.2s forwards;
     }
     .hero-title {
-      font-family: var(--serif);
-      font-size: clamp(72px, 12vw, 164px);
-      font-weight: 300;
-      line-height: 0.9;
-      letter-spacing: -0.03em;
+      font-family: var(--pixel);
+      font-size: clamp(32px, 6.2vw, 78px);
+      font-weight: 400;
+      line-height: 1.35;
+      letter-spacing: -0.01em;
       margin-bottom: 56px;
       opacity: 0;
       transform: translateY(10px);
       animation: fadeTitle 1.1s ease 1.3s forwards;
     }
     .hero-title .thin   { color: var(--text); }
-    .hero-title .italic { color: var(--muted); font-style: italic; }
+    .hero-title .italic { color: var(--gold); font-style: normal; }
     .hero-bottom {
       display: flex;
       justify-content: space-between;
@@ -345,10 +348,11 @@
       justify-content: center;
       text-decoration: none;
       color: var(--text);
-      font-size: 11px;
-      letter-spacing: 0.18em;
+      font-family: var(--pixel);
+      font-size: 9px;
+      letter-spacing: 0.05em;
       text-transform: uppercase;
-      padding: 14px 20px;
+      padding: 16px 20px;
       background: rgba(255,255,255,0.012);
       border: 1px solid rgba(201,169,110,0.26);
       overflow: hidden;
@@ -406,8 +410,9 @@
     .about-wrap { max-width: 1080px; margin: 0 auto; padding: 0 48px 88px; }
     .about-label {
       display: inline-block;
-      font-size: 10px;
-      letter-spacing: 0.22em;
+      font-family: var(--pixel);
+      font-size: 9px;
+      letter-spacing: 0.1em;
       text-transform: uppercase;
       color: var(--gold);
       margin-bottom: 20px;
@@ -425,9 +430,10 @@
       transition: width 1.1s cubic-bezier(0.22, 1, 0.36, 1) 0.15s;
     }
     .about-title {
-      font-family: var(--serif);
-      font-weight: 300;
-      font-size: clamp(28px, 4vw, 40px);
+      font-family: var(--pixel);
+      font-weight: 400;
+      font-size: clamp(17px, 2.6vw, 24px);
+      line-height: 1.6;
       color: var(--text);
       margin: 0 0 28px;
       max-width: 640px;
@@ -449,7 +455,9 @@
       transition: opacity 0.85s cubic-bezier(0.22, 1, 0.36, 1), transform 0.85s cubic-bezier(0.22, 1, 0.36, 1), filter 0.85s cubic-bezier(0.22, 1, 0.36, 1), color 0.3s ease;
     }
     .about-body p:last-child { margin-bottom: 0; }
-    .about-body strong { color: var(--text); font-weight: 500; }
+    .about-body strong { color: var(--gold); font-weight: 500; }
+    .about-body a { color: var(--gold); text-decoration: underline; text-decoration-color: rgba(201,169,110,0.4); text-underline-offset: 3px; transition: color 0.2s ease, text-decoration-color 0.2s ease; }
+    .about-body a:hover { color: #e3c48f; text-decoration-color: rgba(201,169,110,0.8); }
     .about-body p:hover { color: var(--text); }
     .about.in-view .about-label { opacity: 1; transform: translateY(0); filter: blur(0); }
     .about.in-view .about-rule { width: 96px; }
@@ -475,8 +483,9 @@
     .gateway { max-width: 1080px; margin: 0 auto; padding: 0 48px 72px; }
     .gateway-label {
       display: inline-block;
-      font-size: 10px;
-      letter-spacing: 0.22em;
+      font-family: var(--pixel);
+      font-size: 9px;
+      letter-spacing: 0.1em;
       text-transform: uppercase;
       color: var(--gold);
       margin-bottom: 20px;
@@ -546,14 +555,14 @@
     .sc-coming-soon-status {
       display: flex; align-items: center; gap: 7px;
       font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase;
-      color: var(--gold); margin-bottom: 6px;
+      color: var(--crt-green); margin-bottom: 6px;
     }
     .sc-coming-soon-dot {
-      width: 5px; height: 5px; border-radius: 50%; background: var(--gold);
+      width: 5px; height: 5px; border-radius: 50%; background: var(--crt-green);
       animation: pulse 2.6s ease-in-out infinite; flex-shrink: 0;
     }
-    @keyframes pulse { 0%,100%{box-shadow:0 0 0 0 rgba(168,118,62,0.5)} 50%{box-shadow:0 0 0 7px rgba(168,118,62,0)} }
-    .sc-coming-soon-name { font-family: var(--serif); font-size: 20px; font-weight: 300; color: var(--text); line-height: 1.1; }
+    @keyframes pulse { 0%,100%{box-shadow:0 0 0 0 rgba(111,216,138,0.5)} 50%{box-shadow:0 0 0 7px rgba(111,216,138,0)} }
+    .sc-coming-soon-name { font-family: var(--pixel); font-size: 12px; font-weight: 400; color: var(--text); line-height: 1.5; }
     .sc-fallback {
       position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
       text-align: center; padding: 24px;
@@ -571,7 +580,7 @@
       z-index: 3;
     }
     .sc-caption { position: absolute; left: 0; right: 0; bottom: 0; padding: 16px 16px 14px; z-index: 2; pointer-events: none; }
-    .sc-caption .sc-card-name { font-family: var(--serif); font-size: 20px; font-weight: 300; color: var(--text); line-height: 1.1; }
+    .sc-caption .sc-card-name { font-family: var(--pixel); font-size: 12px; font-weight: 400; color: var(--text); line-height: 1.5; }
     .sc-arrow {
       position: absolute; top: 50%; transform: translateY(-50%); z-index: 30;
       width: 40px; height: 40px; border: 1px solid var(--line); background: rgba(12,12,11,0.75);
@@ -588,8 +597,8 @@
       transition: opacity 0.25s ease, transform 0.25s ease;
     }
     .sc-detail.is-switching { opacity: 0; transform: translateY(6px); }
-    .sc-cat { font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--gold); margin-bottom: 8px; }
-    .sc-detail h3 { font-family: var(--serif); font-size: clamp(22px, 2.4vw, 30px); font-weight: 300; line-height: 1.05; margin-bottom: 8px; }
+    .sc-cat { font-family: var(--pixel); font-size: 8px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--gold); margin-bottom: 12px; line-height: 1.6; }
+    .sc-detail h3 { font-family: var(--pixel); font-size: clamp(14px, 1.8vw, 18px); font-weight: 400; line-height: 1.6; margin-bottom: 12px; }
     .sc-desc { font-size: 13px; font-weight: 300; color: var(--muted); line-height: 1.75; margin-bottom: 18px; }
     .sc-detail-link { display: inline-block; margin-bottom: 64px; }
     .sc-hint { margin-top: 14px; font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted2); }
@@ -754,7 +763,7 @@
       .topbar-left, .topbar-right { font-size: 8px; }
       .topbar-mark { width: 10px; height: 10px; }
       .topbar-play { padding: 5px 11px; letter-spacing: 0.12em; }
-      .hero-label { letter-spacing: 0.18em; }
+      .hero-label { letter-spacing: 0.08em; font-size: 8px; }
       .devnote { font-size: 12px; padding: 18px 20px 44px; }
     }
 
@@ -849,8 +858,9 @@
         <span class="about-rule"></span>
         <h2 class="about-title">About Stormie Games</h2>
         <div class="about-body">
-          <p>Stormie Games is where I experiment with game design, programming, and interactive experiences.</p>
-          <p>Every project is built to explore new ideas, learn something new, and hopefully make someone smile.</p>
+          <p>I trained at Futuregames, one of Europe's leading game development schools, on the Agile Project Management track, not programming or art. So these games aren't built the way a studio would build them. No engine, mostly vanilla HTML, JavaScript and Phaser, structured like a real project just built for an audience of one.</p>
+          <p>I don't really play games myself. I build them the way some people restore old radios: because the constraints are interesting, not because I'm chasing a genre. Whatever's a little odd about the results comes from that.</p>
+          <p>Most of my time goes into <a href="https://stormiestudios.com" target="_blank" rel="noopener noreferrer">Stormie Studios</a>, where I build and manage websites for gyms, coaches and martial arts clubs, and <a href="https://stormiemoves.com" target="_blank" rel="noopener noreferrer">Stormie Moves</a>, a small private movement club I run in Stockholm. Stormie Games is the smallest of the three, with no clients and no deadlines. Just a place to keep practicing.</p>
         </div>
       </div>
     </section>
