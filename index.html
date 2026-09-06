@@ -486,10 +486,10 @@
       transition: opacity 0.9s cubic-bezier(0.22, 1, 0.36, 1), transform 0.9s cubic-bezier(0.22, 1, 0.36, 1), filter 0.9s cubic-bezier(0.22, 1, 0.36, 1);
     }
 
-    /* ══ CAROUSEL (ported from stormieperformance.com) ══ */
+    /* ══ CAROUSEL (ported EXACTLY from stormieperformance.com backup) ══ */
     .sc-wrap { max-width: 500px; margin: 0 auto; }
     .sc-stage {
-      position: relative; height: 300px; perspective: 1200px;
+      position: relative; height: 520px; perspective: 1200px;
       touch-action: pan-y; user-select: none; -webkit-user-select: none;
       opacity: 0; transform: translateY(28px); filter: blur(6px);
       transition: opacity 0.9s cubic-bezier(0.22, 1, 0.36, 1), transform 0.9s cubic-bezier(0.22, 1, 0.36, 1), filter 0.9s cubic-bezier(0.22, 1, 0.36, 1);
@@ -497,12 +497,11 @@
     .sc-track { position: absolute; inset: 0; transform-style: preserve-3d; }
     .sc-card {
       position: absolute; top: 50%; left: 50%;
-      width: 440px; height: 248px; margin: -124px 0 0 -220px;
+      width: 248px; height: 488px; margin: -244px 0 0 -124px;
       border: 1px solid var(--line); background: var(--bg2);
       overflow: hidden; will-change: transform, opacity;
       transition: border-color 0.3s, box-shadow 0.4s;
       transform-style: preserve-3d; cursor: pointer;
-      clip-path: polygon(22px 0, 100% 0, 100% calc(100% - 22px), calc(100% - 22px) 100%, 0 100%, 0 22px);
     }
     .sc-card.is-active {
       border-color: var(--gold-line);
@@ -511,20 +510,9 @@
     }
     .sc-stage.is-dragging .sc-card { transition: none; cursor: grabbing; }
     .tilt-shine { position: absolute; inset: 0; z-index: 10; pointer-events: none; opacity: 0; transition: opacity 0.3s; }
-    .sc-card::before {
-      content: ''; position: absolute; inset: 0; z-index: 6; pointer-events: none;
-      background:
-        linear-gradient(var(--gold), var(--gold)) top right / 24px 1px no-repeat,
-        linear-gradient(var(--gold), var(--gold)) top right / 1px 24px no-repeat,
-        linear-gradient(var(--gold), var(--gold)) bottom left / 24px 1px no-repeat,
-        linear-gradient(var(--gold), var(--gold)) bottom left / 1px 24px no-repeat;
-      opacity: 0.4;
-      transition: opacity 0.3s ease;
-    }
-    .sc-card.is-active::before { opacity: 0.9; }
     .sc-card::after {
       content: ''; position: absolute; left: 0; right: 0; bottom: 0;
-      height: 46%; background: linear-gradient(180deg, transparent, rgba(12,12,11,0.94));
+      height: 40%; background: linear-gradient(180deg, transparent, rgba(7,7,6,0.94));
       pointer-events: none;
     }
     .sc-card.is-coming-soon { cursor: default; }
@@ -541,7 +529,7 @@
     }
     .sc-coming-soon-overlay {
       position: absolute; inset: 0;
-      background: linear-gradient(180deg, transparent 30%, rgba(12,12,11,0.97) 100%);
+      background: linear-gradient(180deg, transparent 30%, rgba(7,7,6,0.97) 100%);
     }
     .sc-coming-soon-label { position: absolute; bottom: 0; left: 0; right: 0; padding: 20px 18px 18px; z-index: 2; }
     .sc-coming-soon-status {
@@ -553,16 +541,16 @@
       width: 5px; height: 5px; border-radius: 50%; background: var(--gold);
       animation: pulse 2.6s ease-in-out infinite; flex-shrink: 0;
     }
-    @keyframes pulse { 0%,100%{box-shadow:0 0 0 0 rgba(201,169,110,0.5)} 50%{box-shadow:0 0 0 7px rgba(201,169,110,0)} }
+    @keyframes pulse { 0%,100%{box-shadow:0 0 0 0 rgba(168,118,62,0.5)} 50%{box-shadow:0 0 0 7px rgba(168,118,62,0)} }
     .sc-coming-soon-name { font-family: var(--serif); font-size: 20px; font-weight: 300; color: var(--text); line-height: 1.1; }
     .sc-fallback {
       position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
       text-align: center; padding: 24px;
       font-family: var(--serif); font-size: 22px; font-weight: 300; color: var(--muted);
-      background: radial-gradient(130% 80% at 50% 0%, rgba(201,169,110,0.08), transparent 60%), var(--bg2);
+      background: radial-gradient(130% 80% at 50% 0%, rgba(168,118,62,0.08), transparent 60%), var(--bg2);
     }
     .sc-frame { position: absolute; inset: 0; overflow: hidden; pointer-events: none; background: var(--bg2); }
-    .sc-frame iframe { width: 800px; height: 450px; border: 0; transform: scale(0.55); transform-origin: top left; pointer-events: none; }
+    .sc-frame iframe { width: 390px; height: 880px; border: 0; transform: scale(0.6359); transform-origin: top left; pointer-events: none; }
     .sc-caption { position: absolute; left: 0; right: 0; bottom: 0; padding: 16px 16px 14px; z-index: 2; pointer-events: none; }
     .sc-caption .sc-card-name { font-family: var(--serif); font-size: 20px; font-weight: 300; color: var(--text); line-height: 1.1; }
     .sc-arrow {
@@ -578,14 +566,13 @@
     .sc-arrow--next:hover { transform: translateY(-50%) translateX(3px); }
     .sc-detail {
       margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--line);
-      text-align: center;
       transition: opacity 0.25s ease, transform 0.25s ease;
     }
     .sc-detail.is-switching { opacity: 0; transform: translateY(6px); }
     .sc-cat { font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--gold); margin-bottom: 8px; }
     .sc-detail h3 { font-family: var(--serif); font-size: clamp(22px, 2.4vw, 30px); font-weight: 300; line-height: 1.05; margin-bottom: 8px; }
     .sc-desc { font-size: 13px; font-weight: 300; color: var(--muted); line-height: 1.75; margin-bottom: 18px; }
-    .sc-detail-link { display: inline-block; }
+    .sc-detail-link { display: inline-block; margin-bottom: 64px; }
     .sc-hint { margin-top: 14px; font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted2); }
     .btn-ghost {
       font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase;
@@ -738,19 +725,9 @@
       .hud-frame-inner { padding: 15px 24px; }
       .gateway { padding: 28px 24px 58px; }
       .gateway-wrap { margin-left: -24px; margin-right: -24px; }
-      .sc-stage { height: 212px; }
-      .sc-card {
-        width: 300px; height: 172px; margin: -86px 0 0 -150px;
-        clip-path: polygon(16px 0, 100% 0, 100% calc(100% - 16px), calc(100% - 16px) 100%, 0 100%, 0 16px);
-      }
-      .sc-card::before {
-        background:
-          linear-gradient(var(--gold), var(--gold)) top right / 18px 1px no-repeat,
-          linear-gradient(var(--gold), var(--gold)) top right / 1px 18px no-repeat,
-          linear-gradient(var(--gold), var(--gold)) bottom left / 18px 1px no-repeat,
-          linear-gradient(var(--gold), var(--gold)) bottom left / 1px 18px no-repeat;
-      }
-      .sc-frame iframe { transform: scale(0.375); }
+      .sc-stage { height: 440px; }
+      .sc-card { width: 210px; height: 412px; margin: -206px 0 0 -105px; }
+      .sc-frame iframe { transform: scale(0.5385); }
       .sc-arrow--prev { left: -4px; }
       .sc-arrow--next { right: -4px; }
       .footer-row { flex-direction: column; gap: 5px; text-align: center; }
@@ -993,7 +970,7 @@
               `<img class="sc-coming-soon-img" src="${item.frame}" alt="${item.name}" onerror="this.style.display='none'" loading="lazy" />` +
               `<div class="sc-coming-soon-overlay"></div>` +
               `<div class="sc-coming-soon-label">` +
-                `<div class="sc-coming-soon-status"><span class="sc-coming-soon-dot"></span><span>In development</span></div>` +
+                `<div class="sc-coming-soon-status"><span class="sc-coming-soon-dot"></span><span>Launching soon</span></div>` +
                 `<span class="sc-coming-soon-name">${item.name}</span>` +
               `</div>` +
             `</div>`;
@@ -1016,8 +993,9 @@
         return el;
       });
 
-      let pos = 0, target = 0, shownIdx = -1, rafId = null;
-      function sp() { return window.innerWidth <= 768 ? 220 : 370; }
+      let pos = 0, target = 0, shownIdx = -1, rafId = null, lastFrameT = null, autoScrollActive = false;
+      const DRIFT_PER_MS = 1 / 45000; // one full card-position every 45s — slow, continuous, never stops
+      function sp() { return window.innerWidth <= 768 ? 148 : 292; }
       function mod(n, m) { return ((n % m) + m) % m; }
       function nearestIdx() { return mod(Math.round(pos), N); }
 
@@ -1029,18 +1007,30 @@
           card.style.opacity = vis ? String(Math.max(0, 1 - abs * 0.38)) : '0';
           card.style.pointerEvents = vis ? 'auto' : 'none';
           card.style.zIndex = String(100 - Math.round(abs * 10));
-          card.style.transform = `translateX(${(off * s).toFixed(1)}px) translateZ(${(-abs * 130).toFixed(1)}px) rotateY(${(-off * 18).toFixed(2)}deg)`;
+          card.style.transform = `translateX(${(off * s).toFixed(1)}px) translateZ(${(-abs * 180).toFixed(1)}px) rotateY(${(-off * 18).toFixed(2)}deg)`;
           card.classList.toggle('is-active', i === active && Math.abs(pos - target) < 0.02);
         });
         if (active !== shownIdx && Math.abs(pos - Math.round(pos)) < 0.45) updateDetail(active, false);
       }
 
-      function tick() {
+      // Single persistent loop: eases toward a manual target when one is pending
+      // (drag, arrow, thumbnail click), otherwise drifts pos forward continuously
+      // at a slow constant rate — genuine perpetual motion, not discrete steps.
+      function tick(now) {
+        if (lastFrameT === null) lastFrameT = now;
+        const dt = now - lastFrameT; lastFrameT = now;
         const diff = target - pos;
-        if (Math.abs(diff) < 0.001) { pos = target; render(); rafId = null; return; }
-        pos += diff * (rm ? 1 : 0.13); render(); rafId = requestAnimationFrame(tick);
+        if (Math.abs(diff) > 0.001) {
+          pos += diff * (rm ? 1 : 0.13);
+        } else if (autoScrollActive && !rm) {
+          pos += DRIFT_PER_MS * dt; target = pos;
+        } else {
+          pos = target;
+        }
+        render();
+        rafId = requestAnimationFrame(tick);
       }
-      function startTween() { if (rafId === null) rafId = requestAnimationFrame(tick); }
+      function startTween() { if (rafId === null) { lastFrameT = null; rafId = requestAnimationFrame(tick); } }
       function goTo(i) { const d = (() => { let x = mod(i - target, N); if (x > N / 2) x -= N; return x; })(); target += d; startTween(); }
       function step(d) { target += d; startTween(); }
 
@@ -1070,7 +1060,7 @@
           const dy = (e.clientY - rect.top - rect.height / 2) / (rect.height / 2);
           const off = (() => { let o = mod(active - pos, N); if (o > N / 2) o -= N; return o; })();
           const abs = Math.abs(off);
-          card.style.transform = `translateX(${(off * sp()).toFixed(1)}px) translateZ(${(-abs * 130).toFixed(1)}px) rotateY(${(-off * 18 + dx * 8).toFixed(2)}deg) rotateX(${(-dy * 6).toFixed(2)}deg)`;
+          card.style.transform = `translateX(${(off * sp()).toFixed(1)}px) translateZ(${(-abs * 180).toFixed(1)}px) rotateY(${(-off * 18 + dx * 8).toFixed(2)}deg) rotateX(${(-dy * 6).toFixed(2)}deg)`;
           const shine = card.querySelector('.tilt-shine');
           if (shine) { const px = ((dx + 1) / 2 * 100).toFixed(0), py = ((dy + 1) / 2 * 100).toFixed(0); shine.style.background = `radial-gradient(circle at ${px}% ${py}%, rgba(236,217,174,0.10) 0%, transparent 65%)`; shine.style.opacity = '1'; }
         });
@@ -1080,12 +1070,15 @@
         });
       }
 
-      let autoScrollTimer = null;
+      // Auto-scroll: continuous, never-stopping drift (see DRIFT_PER_MS in tick()
+      // above), same eased 3D motion as manual navigation. Pauses on hover/drag,
+      // resumes shortly after. Off entirely if the visitor prefers reduced motion.
       function startAutoScroll() {
-        if (autoScrollTimer) return;
-        autoScrollTimer = setInterval(() => { if (!dragging) { target += 1; startTween(); } }, 4000);
+        if (rm) return;
+        autoScrollActive = true;
+        startTween();
       }
-      function stopAutoScroll() { clearInterval(autoScrollTimer); autoScrollTimer = null; }
+      function stopAutoScroll() { autoScrollActive = false; }
       stage.addEventListener('mouseenter', stopAutoScroll);
       stage.addEventListener('mouseleave', startAutoScroll);
       stage.addEventListener('pointerdown', stopAutoScroll);
