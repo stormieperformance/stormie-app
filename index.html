@@ -489,7 +489,7 @@
     /* ══ CAROUSEL (ported EXACTLY from stormieperformance.com backup) ══ */
     .sc-wrap { max-width: 500px; margin: 0 auto; }
     .sc-stage {
-      position: relative; height: 520px; perspective: 1200px;
+      position: relative; height: 380px; perspective: 1200px;
       touch-action: pan-y; user-select: none; -webkit-user-select: none;
       opacity: 0; transform: translateY(28px); filter: blur(6px);
       transition: opacity 0.9s cubic-bezier(0.22, 1, 0.36, 1), transform 0.9s cubic-bezier(0.22, 1, 0.36, 1), filter 0.9s cubic-bezier(0.22, 1, 0.36, 1);
@@ -497,15 +497,26 @@
     .sc-track { position: absolute; inset: 0; transform-style: preserve-3d; }
     .sc-card {
       position: absolute; top: 50%; left: 50%;
-      width: 248px; height: 488px; margin: -244px 0 0 -124px;
-      border: 1px solid var(--line); background: var(--bg2);
+      width: 360px; height: 270px; margin: -135px 0 0 -180px;
+      box-sizing: border-box;
+      border: 14px solid #171310;
+      border-radius: 6px;
+      background: #000;
       overflow: hidden; will-change: transform, opacity;
       transition: border-color 0.3s, box-shadow 0.4s;
       transform-style: preserve-3d; cursor: pointer;
+      box-shadow:
+        inset 0 2px 0 rgba(255,255,255,0.07),
+        inset 0 -3px 6px rgba(0,0,0,0.65),
+        0 20px 40px rgba(0,0,0,0.55);
     }
     .sc-card.is-active {
-      border-color: var(--gold-line);
-      box-shadow: 0 0 0 1px var(--gold-line), 0 40px 80px rgba(0,0,0,0.7);
+      border-color: #221b12;
+      box-shadow:
+        inset 0 2px 0 rgba(255,255,255,0.09),
+        inset 0 -3px 6px rgba(0,0,0,0.65),
+        0 0 0 2px var(--gold-line),
+        0 40px 80px rgba(0,0,0,0.7);
       cursor: grab;
     }
     .sc-stage.is-dragging .sc-card { transition: none; cursor: grabbing; }
@@ -550,7 +561,15 @@
       background: radial-gradient(130% 80% at 50% 0%, rgba(168,118,62,0.08), transparent 60%), var(--bg2);
     }
     .sc-frame { position: absolute; inset: 0; overflow: hidden; pointer-events: none; background: var(--bg2); }
-    .sc-frame iframe { width: 390px; height: 880px; border: 0; transform: scale(0.6359); transform-origin: top left; pointer-events: none; }
+    .sc-frame iframe { width: 100%; height: 100%; border: 0; pointer-events: none; }
+    .sc-frame::after {
+      content: '';
+      position: absolute; inset: 0;
+      background: repeating-linear-gradient(0deg, rgba(0,0,0,0.18) 0px, rgba(0,0,0,0.18) 1px, transparent 1px, transparent 3px);
+      mix-blend-mode: multiply;
+      pointer-events: none;
+      z-index: 3;
+    }
     .sc-caption { position: absolute; left: 0; right: 0; bottom: 0; padding: 16px 16px 14px; z-index: 2; pointer-events: none; }
     .sc-caption .sc-card-name { font-family: var(--serif); font-size: 20px; font-weight: 300; color: var(--text); line-height: 1.1; }
     .sc-arrow {
@@ -725,9 +744,8 @@
       .hud-frame-inner { padding: 15px 24px; }
       .gateway { padding: 28px 24px 58px; }
       .gateway-wrap { margin-left: -24px; margin-right: -24px; }
-      .sc-stage { height: 440px; }
-      .sc-card { width: 210px; height: 412px; margin: -206px 0 0 -105px; }
-      .sc-frame iframe { transform: scale(0.5385); }
+      .sc-stage { height: 300px; }
+      .sc-card { width: 260px; height: 195px; margin: -98px 0 0 -130px; border-width: 10px; }
       .sc-arrow--prev { left: -4px; }
       .sc-arrow--next { right: -4px; }
       .footer-row { flex-direction: column; gap: 5px; text-align: center; }
@@ -995,7 +1013,7 @@
 
       let pos = 0, target = 0, shownIdx = -1, rafId = null, lastFrameT = null, autoScrollActive = false;
       const DRIFT_PER_MS = 1 / 45000; // one full card-position every 45s — slow, continuous, never stops
-      function sp() { return window.innerWidth <= 768 ? 148 : 292; }
+      function sp() { return window.innerWidth <= 768 ? 190 : 390; }
       function mod(n, m) { return ((n % m) + m) % m; }
       function nearestIdx() { return mod(Math.round(pos), N); }
 
