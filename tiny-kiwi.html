@@ -144,8 +144,8 @@ canvas.addEventListener("pointerdown",e=>{
   joy.active=true;joy.id=e.pointerId;joy.cx=joy.x=e.clientX;joy.cy=joy.y=e.clientY;joy.dx=joy.dy=0;
   try{canvas.setPointerCapture(e.pointerId);}catch(_){}e.preventDefault();
 },{passive:false});
-function joyMove(e){if(!joy.active||e.pointerId!==joy.id)return;let dx=e.clientX-joy.cx,dy=e.clientY-joy.cy;const d=Math.hypot(dx,dy),max=46;if(d>max){dx=dx/d*max;dy=dy/d*max;}joy.x=joy.cx+dx;joy.y=joy.cy+dy;joy.dx=dx;joy.dy=dy;const dead=8;keys.left=dx<-dead;keys.right=dx>dead;}
-function joyEnd(e){if(!joy.active||e.pointerId!==joy.id)return;joy.active=false;joy.id=null;joy.dx=joy.dy=0;keys.left=false;keys.right=false;}
+function joyMove(e){if(!joy.active||e.pointerId!==joy.id)return;e.preventDefault();let dx=e.clientX-joy.cx,dy=e.clientY-joy.cy;const d=Math.hypot(dx,dy),max=46;if(d>max){dx=dx/d*max;dy=dy/d*max;}joy.x=joy.cx+dx;joy.y=joy.cy+dy;joy.dx=dx;joy.dy=dy;const dead=8;keys.left=dx<-dead;keys.right=dx>dead;}
+function joyEnd(e){if(!joy.active||e.pointerId!==joy.id)return;e.preventDefault();joy.active=false;joy.id=null;joy.dx=joy.dy=0;keys.left=false;keys.right=false;}
 window.addEventListener("pointermove",joyMove,{passive:false});
 window.addEventListener("pointerup",joyEnd,{passive:false});
 window.addEventListener("pointercancel",joyEnd,{passive:false});
@@ -769,13 +769,13 @@ function drawEnemies(t){
  
 function drawFireflies(t){
   const lvl=getLvl();
-  const visible=lvl.theme==="night"||lvl.theme==="cave"||lvl.theme==="ruins";
+  const visible=lvl.theme==="night"||lvl.theme==="cave"||lvl.theme==="ruins"||lvl.theme==="forest";
   if(!visible)return;
   for(const f of fireflies){
     const x=(f.x-cameraX)%(W+200)-100,y=f.y+Math.sin(t*2+f.t)*8;
     if(x<-20||x>W+20)continue;
     ctx.globalAlpha=(.5+.5*Math.sin(t*4+f.t))*f.s;
-    ctx.fillStyle=lvl.theme==="cave"?"#a8ffff":lvl.theme==="ruins"?"#ffcc44":"#fff6a8";
+    ctx.fillStyle=lvl.theme==="cave"?"#a8ffff":lvl.theme==="ruins"?"#ffcc44":lvl.theme==="forest"?"#d9ff9e":"#fff6a8";
     ctx.beginPath();ctx.arc(x,y,3*f.s,0,Math.PI*2);ctx.fill();
     ctx.globalAlpha*=0.4;ctx.beginPath();ctx.arc(x,y,8*f.s,0,Math.PI*2);ctx.fill();
   }
