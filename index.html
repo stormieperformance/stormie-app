@@ -210,7 +210,8 @@
       pointer-events: auto;
     }
 
-    .games-menu a {
+    .games-menu a,
+    .games-menu-soon {
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -225,12 +226,18 @@
       transition: color 0.2s ease, background 0.2s ease;
     }
 
-    .games-menu a:last-child { border-bottom: none; }
+    .games-menu a:last-child,
+    .games-menu-soon:last-child { border-bottom: none; }
 
     .games-menu a:hover,
     .games-menu a:focus-visible {
       color: var(--gold);
       background: rgba(201,169,110,0.08);
+    }
+
+    span.games-menu-soon {
+      color: rgba(232,228,220,0.45);
+      cursor: default;
     }
 
     .games-menu-soon span {
@@ -903,7 +910,7 @@
               <span></span><span></span><span></span>
             </button>
             <nav class="games-menu" id="gamesMenu">
-              <a href="https://forestgathering.stormie.app" target="_blank" rel="noopener noreferrer">Forest Gathering</a>
+              <span class="games-menu-soon">Forest Gathering <span>Coming soon</span></span>
               <a href="https://game.stormie.app" target="_blank" rel="noopener noreferrer">Storm//Duel</a>
               <a href="https://stormie.app/tiny-kiwi.html" target="_blank" rel="noopener noreferrer">Tiny Kiwi</a>
               <a class="games-menu-soon" href="https://stormie.app/moonlit-hollow.html" target="_blank" rel="noopener noreferrer">The Witch of Moonlit Hollow <span>Coming soon</span></a>
@@ -1112,8 +1119,8 @@
     (function() {
       const ITEMS = [
         {
-          name: 'Forest Gathering', href: 'https://forestgathering.stormie.app', frame: 'https://forestgathering.stormie.app', comingSoon: false,
-          cat: 'Exploration · Pixel art', desc: 'Wander through nine pixel worlds searching for a new place to call home.', link: 'Play →'
+          name: 'Forest Gathering', href: 'https://forestgathering.stormie.app', frame: 'https://forestgathering.stormie.app', comingSoon: true,
+          cat: 'In development', desc: 'Back in the workshop for a rework. Details land here when it returns.', link: ''
         },
         {
           name: 'Storm//Duel', href: 'https://game.stormie.app', frame: 'https://game.stormie.app', comingSoon: false,
