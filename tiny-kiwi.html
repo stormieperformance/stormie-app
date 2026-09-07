@@ -146,15 +146,19 @@ jumpBtn.addEventListener("pointerdown",e=>{jumpPointerId=e.pointerId;pressJump(e
 jumpBtn.addEventListener("pointerup",e=>{if(e.pointerId===jumpPointerId)releaseJump(e);},{passive:false});
 jumpBtn.addEventListener("pointercancel",e=>{if(e.pointerId===jumpPointerId)releaseJump(e);},{passive:false});
 jumpBtn.addEventListener("contextmenu",e=>e.preventDefault());
-let joy={active:false,id:null,cx:0,cy:0,x:0,y:0,dx:0,dy:0};
+let joy={active:false,id:null,cx:0,cy:0,x:0,y:0,dx:0,dy:0,lastMove:0};
 function isUIElement(el){return el&&(el===jumpBtn||el===restartBtn||el===muteBtn||el===levelsBtn||el.closest&&el.closest(".ui,.overlay,.controls button"));}
 canvas.addEventListener("pointerdown",e=>{
-  if(isUIElement(e.target))return;if(joy.active)return;
+  if(isUIElement(e.target))return;
   if(e.clientX>W*0.6&&e.pointerType!=="mouse")return;
-  joy.active=true;joy.id=e.pointerId;joy.cx=joy.x=e.clientX;joy.cy=joy.y=e.clientY;joy.dx=joy.dy=0;
+  // A fresh touch always takes over the joystick, even if joy.active was
+  // still (wrongly) true from a previous touch whose pointerup/pointercancel
+  // never arrived - there's never a legitimate reason for two simultaneous
+  // joystick touches, so this can't get permanently stuck anymore.
+  joy.active=true;joy.id=e.pointerId;joy.cx=joy.x=e.clientX;joy.cy=joy.y=e.clientY;joy.dx=joy.dy=0;joy.lastMove=timeAlive;
   try{canvas.setPointerCapture(e.pointerId);}catch(_){}e.preventDefault();
 },{passive:false});
-function joyMove(e){if(!joy.active||e.pointerId!==joy.id)return;e.preventDefault();let dx=e.clientX-joy.cx,dy=e.clientY-joy.cy;const d=Math.hypot(dx,dy),max=46;if(d>max){dx=dx/d*max;dy=dy/d*max;}joy.x=joy.cx+dx;joy.y=joy.cy+dy;joy.dx=dx;joy.dy=dy;const dead=8;keys.left=dx<-dead;keys.right=dx>dead;}
+function joyMove(e){if(!joy.active||e.pointerId!==joy.id)return;e.preventDefault();joy.lastMove=timeAlive;let dx=e.clientX-joy.cx,dy=e.clientY-joy.cy;const d=Math.hypot(dx,dy),max=46;if(d>max){dx=dx/d*max;dy=dy/d*max;}joy.x=joy.cx+dx;joy.y=joy.cy+dy;joy.dx=dx;joy.dy=dy;const dead=8;keys.left=dx<-dead;keys.right=dx>dead;}
 function joyEnd(e){if(!joy.active||e.pointerId!==joy.id)return;e.preventDefault();joy.active=false;joy.id=null;joy.dx=joy.dy=0;keys.left=false;keys.right=false;}
 window.addEventListener("pointermove",joyMove,{passive:false});
 window.addEventListener("pointerup",joyEnd,{passive:false});
