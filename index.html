@@ -134,24 +134,113 @@
       opacity: 0.92;
     }
 
-    .topbar-play {
-      display: inline-block;
-      font-size: 9px;
-      letter-spacing: 0.18em;
-      text-transform: uppercase;
-      color: #f3ead8;
-      text-decoration: none;
-      border: 1px solid rgba(201,169,110,0.65);
-      background: rgba(9,10,11,0.35);
-      padding: 7px 16px;
-      transition: color 0.25s ease, border-color 0.25s ease, background 0.25s ease;
+    .topbar-menu {
+      position: relative;
     }
 
-    .topbar-play:hover,
-    .topbar-play:focus-visible {
-      color: #fff8ec;
+    .topbar-burger {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: flex-end;
+      gap: 5px;
+      width: 32px;
+      height: 32px;
+      background: rgba(9,10,11,0.35);
+      border: 1px solid rgba(201,169,110,0.65);
+      cursor: pointer;
+      padding: 0 8px;
+      transition: border-color 0.25s ease, background 0.25s ease;
+    }
+
+    .topbar-burger span {
+      display: block;
+      height: 1.5px;
+      background: #f3ead8;
+      transition: width 0.25s ease, transform 0.25s ease, opacity 0.25s ease;
+    }
+
+    .topbar-burger span:nth-child(1) { width: 14px; }
+    .topbar-burger span:nth-child(2) { width: 18px; }
+    .topbar-burger span:nth-child(3) { width: 10px; }
+
+    .topbar-burger:hover,
+    .topbar-burger:focus-visible {
       border-color: var(--gold);
       background: rgba(201,169,110,0.18);
+    }
+
+    .topbar-burger:hover span,
+    .topbar-burger:focus-visible span {
+      width: 18px;
+    }
+
+    .topbar-burger[aria-expanded="true"] span:nth-child(1) {
+      transform: translateY(6.5px) rotate(45deg);
+      width: 18px;
+    }
+    .topbar-burger[aria-expanded="true"] span:nth-child(2) {
+      opacity: 0;
+    }
+    .topbar-burger[aria-expanded="true"] span:nth-child(3) {
+      transform: translateY(-6.5px) rotate(-45deg);
+      width: 18px;
+    }
+
+    .games-menu {
+      position: absolute;
+      top: calc(100% + 12px);
+      right: 0;
+      min-width: 240px;
+      background: rgba(9,10,11,0.96);
+      border: 1px solid rgba(201,169,110,0.4);
+      backdrop-filter: blur(20px);
+      display: flex;
+      flex-direction: column;
+      padding: 8px;
+      opacity: 0;
+      transform: translateY(-8px);
+      pointer-events: none;
+      transition: opacity 0.25s ease, transform 0.25s ease;
+      z-index: 40;
+    }
+
+    .games-menu.is-open {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+
+    .games-menu a {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 14px;
+      font-family: var(--sans);
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text);
+      text-decoration: none;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      transition: color 0.2s ease, background 0.2s ease;
+    }
+
+    .games-menu a:last-child { border-bottom: none; }
+
+    .games-menu a:hover,
+    .games-menu a:focus-visible {
+      color: var(--gold);
+      background: rgba(201,169,110,0.08);
+    }
+
+    .games-menu-soon span {
+      font-size: 8px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--crt-green);
+      white-space: nowrap;
+      flex-shrink: 0;
     }
 
     /* HERO — bleeds to viewport edges */
@@ -783,7 +872,8 @@
       .footer-network { max-width: 320px; line-height: 1.8; }
       .topbar-left, .topbar-right { font-size: 8px; }
       .topbar-logo { height: 24px; }
-      .topbar-play { padding: 5px 11px; letter-spacing: 0.12em; }
+      .topbar-burger { width: 28px; height: 28px; }
+      .games-menu { min-width: 210px; }
       .hero-label { letter-spacing: 0.16em; font-size: 10px; }
       .devnote { font-size: 12px; padding: 18px 20px 44px; }
     }
@@ -809,7 +899,17 @@
           <div class="topbar-left">
             <img class="topbar-logo" src="logo-white.png" alt="Stormie Games">
           </div>
-          <a class="topbar-play" href="#gateway">Play</a>
+          <div class="topbar-menu">
+            <button class="topbar-burger" id="menuToggle" aria-label="Open games menu" aria-expanded="false" aria-controls="gamesMenu">
+              <span></span><span></span><span></span>
+            </button>
+            <nav class="games-menu" id="gamesMenu">
+              <a href="https://forestgathering.stormie.app" target="_blank" rel="noopener noreferrer">Forest Gathering</a>
+              <a href="https://game.stormie.app" target="_blank" rel="noopener noreferrer">Storm//Duel</a>
+              <a href="https://stormie.app/tiny-kiwi.html" target="_blank" rel="noopener noreferrer">Tiny Kiwi</a>
+              <a class="games-menu-soon" href="https://stormie.app/moonlit-hollow.html" target="_blank" rel="noopener noreferrer">The Witch of Moonlit Hollow <span>Coming soon</span></a>
+            </nav>
+          </div>
         </div>
       </div>
     </div>
@@ -944,6 +1044,36 @@
   </div>
 
   <script>
+    (function () {
+      const btn = document.getElementById('menuToggle');
+      const menu = document.getElementById('gamesMenu');
+      if (!btn || !menu) return;
+
+      function closeMenu() {
+        menu.classList.remove('is-open');
+        btn.setAttribute('aria-expanded', 'false');
+      }
+      function openMenu() {
+        menu.classList.add('is-open');
+        btn.setAttribute('aria-expanded', 'true');
+      }
+
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (menu.classList.contains('is-open')) closeMenu(); else openMenu();
+      });
+
+      document.addEventListener('click', (e) => {
+        if (!menu.contains(e.target) && e.target !== btn) closeMenu();
+      });
+
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeMenu();
+      });
+
+      menu.querySelectorAll('a').forEach(a => a.addEventListener('click', closeMenu));
+    })();
+
     window.addEventListener('load', () => {
       document.body.classList.add('page-loaded');
 
