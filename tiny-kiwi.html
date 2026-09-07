@@ -42,6 +42,15 @@ button{border-radius:999px;border:2px solid rgba(255,255,255,.7);background:rgba
 .bigbtn{display:inline-block;padding:14px 36px;font-size:14px;letter-spacing:3px;border-radius:999px;border:2px solid rgba(255,255,255,.8);background:rgba(255,255,255,.15);color:white;font-weight:900;cursor:pointer;transition:transform .1s,background .15s}
 .bigbtn:active{transform:scale(.96);background:rgba(255,255,255,.3)}
 .hint{font-size:11px;opacity:.55;margin-top:18px;letter-spacing:1px}
+.panel-levels{max-width:380px}
+.level-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:20px 0 4px;max-height:44vh;overflow-y:auto;padding:2px}
+.level-card{display:flex;flex-direction:column;align-items:flex-start;gap:3px;padding:11px 13px;border-radius:14px;border:2px solid rgba(255,255,255,.28);background:rgba(255,255,255,.08);color:white;cursor:pointer;text-align:left;transition:transform .1s ease,background .15s ease;font-family:inherit}
+.level-card:active{transform:scale(.96);background:rgba(255,255,255,.18)}
+.level-card .num{font-size:10px;letter-spacing:1.5px;opacity:.65;font-weight:800}
+.level-card .name{font-size:12.5px;font-weight:800;letter-spacing:.3px;line-height:1.3}
+.level-card.locked{opacity:.4;cursor:not-allowed;border-color:rgba(255,255,255,.14);background:rgba(255,255,255,.02)}
+.level-card.locked:active{transform:none;background:rgba(255,255,255,.02)}
+.level-card.locked .name::after{content:" 🔒";}
 .level-banner{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:25;text-align:center;pointer-events:none;transition:opacity .8s}
 .level-banner.hidden{opacity:0}
 .level-banner h2{font-size:32px;font-weight:900;letter-spacing:4px;text-shadow:0 4px 12px rgba(0,0,0,.5)}
@@ -57,6 +66,7 @@ button{border-radius:999px;border:2px solid rgba(255,255,255,.7);background:rgba
   </div>
   <div class="topright">
     <div class="pill" id="score">Berries 0/24</div>
+    <button class="iconbtn" id="levelsBtn" title="Levels">☰</button>
     <button class="iconbtn" id="muteBtn" title="Mute">♪</button>
     <button class="iconbtn" id="restartBtn" title="Restart">↻</button>
   </div>
@@ -67,12 +77,12 @@ button{border-radius:999px;border:2px solid rgba(255,255,255,.7);background:rgba
   <button class="jump" id="jump">JUMP</button>
 </div>
 <div class="overlay" id="menu">
-  <div class="panel">
+  <div class="panel panel-levels">
     <h1>TINY KIWI</h1>
     <div class="sub">A TINY KIWI ADVENTURE</div>
     <div style="font-size:11px;opacity:.35;letter-spacing:2px;margin-top:1px">by Stormie Games</div>
     <p>Wander. Collect every berry. Boop the grumpy mushrooms. Find the gate.</p>
-    <button class="bigbtn" id="startBtn">BEGIN</button>
+    <div class="level-grid" id="levelGrid"></div>
     <div class="hint">Touch left side to move · Tap JUMP · Keyboard: ← → / Space</div>
   </div>
 </div>
@@ -80,8 +90,8 @@ button{border-radius:999px;border:2px solid rgba(255,255,255,.7);background:rgba
 (()=>{
 const canvas=document.getElementById("game"),ctx=canvas.getContext("2d");
 const scoreEl=document.getElementById("score"),messageEl=document.getElementById("message");
-const menuEl=document.getElementById("menu"),startBtn=document.getElementById("startBtn");
-const restartBtn=document.getElementById("restartBtn"),muteBtn=document.getElementById("muteBtn");
+const menuEl=document.getElementById("menu"),levelGridEl=document.getElementById("levelGrid");
+const restartBtn=document.getElementById("restartBtn"),muteBtn=document.getElementById("muteBtn"),levelsBtn=document.getElementById("levelsBtn");
 const jumpBtn=document.getElementById("jump");
 const levelNameEl=document.getElementById("levelName");
 const levelBanner=document.getElementById("levelBanner");
@@ -137,7 +147,7 @@ jumpBtn.addEventListener("pointerup",e=>{if(e.pointerId===jumpPointerId)releaseJ
 jumpBtn.addEventListener("pointercancel",e=>{if(e.pointerId===jumpPointerId)releaseJump(e);},{passive:false});
 jumpBtn.addEventListener("contextmenu",e=>e.preventDefault());
 let joy={active:false,id:null,cx:0,cy:0,x:0,y:0,dx:0,dy:0};
-function isUIElement(el){return el&&(el===jumpBtn||el===restartBtn||el===muteBtn||el===startBtn||el.closest&&el.closest(".ui,.overlay,.controls button"));}
+function isUIElement(el){return el&&(el===jumpBtn||el===restartBtn||el===muteBtn||el===levelsBtn||el.closest&&el.closest(".ui,.overlay,.controls button"));}
 canvas.addEventListener("pointerdown",e=>{
   if(isUIElement(e.target))return;if(joy.active)return;
   if(e.clientX>W*0.6&&e.pointerType!=="mouse")return;
@@ -368,6 +378,20 @@ const LEVELS=[
 /* ---------- STATE ---------- */
 let currentLevel=0,gameStarted=false;
 let cameraX=0,cameraShake=0,last=performance.now(),timeAlive=0;
+let checkpoint={x:0,y:0,reached:false};
+
+/* ---------- PROGRESS (localStorage, no backend needed) ---------- */
+const SAVE_KEY="tinykiwi_progress_v1";
+function loadProgress(){
+  try{const n=parseInt(localStorage.getItem(SAVE_KEY)||"0",10);return isNaN(n)?0:Math.max(0,n);}catch(_){return 0;}
+}
+function saveProgress(n){
+  try{localStorage.setItem(SAVE_KEY,String(n));}catch(_){}
+}
+let highestUnlocked=loadProgress();
+function unlockLevel(idx){
+  if(idx>highestUnlocked){highestUnlocked=Math.min(idx,LEVELS.length-1);saveProgress(highestUnlocked);}
+}
 let berries=[],enemies=[],particles=[],floatingTexts=[];
 let levelTransition=0,showingEnding=false,endingTimer=0;
 const fireflies=[];for(let i=0;i<80;i++)fireflies.push({x:Math.random()*6000,y:240+Math.random()*340,t:Math.random()*99,s:0.6+Math.random()*0.8});
@@ -399,26 +423,71 @@ function resetEntities(){
   particles.length=0;floatingTexts.length=0;
 }
  
+function computeCheckpoint(lvl){
+  // Pick a platform roughly in the middle third of the level to use as the
+  // mid-level checkpoint, so it always lines up with solid ground without
+  // needing to hand-author coordinates per level.
+  const lo=lvl.worldWidth*0.35,hi=lvl.worldWidth*0.65,target=lvl.worldWidth*0.5;
+  let best=null,bestD=Infinity;
+  for(const p of lvl.platforms){
+    if(p.x<lo||p.x>hi)continue;
+    const d=Math.abs(p.x-target);
+    if(d<bestD){bestD=d;best=p;}
+  }
+  if(!best)best=lvl.platforms[Math.floor(lvl.platforms.length/2)];
+  return {x:best.x+Math.min(60,best.w/2),y:best.y-100,reached:false};
+}
+
 function respawnPlayer(soft){
-  player.x=80;player.y=420;player.vx=0;player.vy=0;player.won=false;
+  if(soft&&checkpoint.reached){
+    player.x=checkpoint.x;player.y=checkpoint.y;
+  }else{
+    player.x=80;player.y=420;
+  }
+  player.vx=0;player.vy=0;player.won=false;
   player.coyote=0;player.buffer=0;player.respawnFlash=1;player.windForce=0;
   if(!soft){const lvl=getLvl();setMessage(lvl.messages[0]);}
 }
- 
+
 function loadLevel(idx,fresh){
   currentLevel=idx;
   const lvl=getLvl();
   levelNameEl.textContent=lvl.name;
   scoreEl.textContent=`Berries 0/${lvl.berries.length}`;
+  checkpoint=computeCheckpoint(lvl);
   resetEntities();respawnPlayer(false);
   cameraX=0;cameraShake=0;player.deaths=0;
   showBanner(lvl.title,lvl.subtitle);
   if(fresh)setMessage(lvl.messages[0]);
 }
- 
+
 function restart(){loadLevel(currentLevel,true);}
 restartBtn.addEventListener("click",e=>{e.stopPropagation();restart();});
-startBtn.addEventListener("click",()=>{unlockAudio();menuEl.classList.add("hidden");gameStarted=true;loadLevel(0,true);});
+function renderLevelGrid(){
+  levelGridEl.innerHTML="";
+  LEVELS.forEach((lvl,i)=>{
+    const locked=i>highestUnlocked;
+    const card=document.createElement("button");
+    card.className="level-card"+(locked?" locked":"");
+    const shortName=lvl.name.split("·")[1]?.trim()||lvl.name;
+    card.innerHTML=`<span class="num">LEVEL ${i+1}</span><span class="name">${shortName}</span>`;
+    if(!locked){
+      card.addEventListener("click",e=>{
+        e.stopPropagation();unlockAudio();menuEl.classList.add("hidden");
+        gameStarted=true;loadLevel(i,true);
+      });
+    }
+    levelGridEl.appendChild(card);
+  });
+}
+renderLevelGrid();
+
+levelsBtn.addEventListener("click",e=>{
+  e.stopPropagation();
+  gameStarted=false;
+  renderLevelGrid();
+  menuEl.classList.remove("hidden");
+});
  
 function addParticles(x,y,n=12,color="#fff3a6",spread=1){
   for(let i=0;i<n;i++)particles.push({x,y,vx:(Math.random()-.5)*240*spread,vy:(Math.random()-1.2)*260*spread,life:.6+Math.random()*.6,r:2+Math.random()*4,color,grav:380+Math.random()*120});
@@ -526,6 +595,15 @@ function update(dt){
     if(prog>0.45&&prog<0.55&&Math.random()<dt*0.4)setMessage(lvl.messages[2]);
     if(prog>0.72&&prog<0.85&&Math.random()<dt*0.4)setMessage(lvl.messages[3]);
  
+    // Checkpoint
+    if(!checkpoint.reached&&player.grounded&&player.x>=checkpoint.x-20){
+      checkpoint.reached=true;
+      addParticles(checkpoint.x,checkpoint.y+30,26,"#ffe27a",1.2);
+      addFloatingText(checkpoint.x,checkpoint.y-10,"CHECKPOINT!","#ffe27a");
+      setMessage("Checkpoint reached.");
+      sfx.berry();
+    }
+ 
     const collected=berries.filter(b=>b.taken).length;
     scoreEl.textContent=`Berries ${collected}/${berries.length}`;
  
@@ -536,6 +614,7 @@ function update(dt){
       setMessage(lvl.messages[4]);
       addParticles(player.x+player.w/2,player.y+player.h/2,80,"#ffffff",1.6);
       shake(10);
+      unlockLevel(currentLevel+1);
       if(lvl.isLast){sfx.ending();showingEnding=false;endingTimer=0;}
       else sfx.win();
       setTimeout(()=>{
@@ -804,6 +883,24 @@ function drawPlayer(t){
   ctx.restore();
 }
  
+function drawCheckpoint(){
+  const x=checkpoint.x-cameraX,y=checkpoint.y+100;
+  if(x<-60||x>W+60)return;
+  const lit=checkpoint.reached;
+  const bob=lit?Math.sin(timeAlive*3)*3:0;
+  ctx.strokeStyle=lit?"#ffe27a":"rgba(255,255,255,.55)";ctx.lineWidth=4;
+  ctx.beginPath();ctx.moveTo(x,y+40);ctx.lineTo(x,y-56+bob);ctx.stroke();
+  ctx.fillStyle=lit?"#ffd23f":"rgba(255,255,255,.35)";
+  ctx.beginPath();ctx.moveTo(x,y-56+bob);ctx.lineTo(x+34,y-46+bob);ctx.lineTo(x,y-36+bob);ctx.closePath();ctx.fill();
+  if(lit){
+    ctx.globalAlpha=0.35+0.15*Math.sin(timeAlive*4);
+    ctx.fillStyle="#ffe27a";ctx.beginPath();ctx.arc(x,y-30,26,0,Math.PI*2);ctx.fill();
+    ctx.globalAlpha=1;
+  }
+  ctx.fillStyle=lit?"#8b6a1a":"#5a5a5a";
+  ctx.beginPath();ctx.ellipse(x,y+42,10,5,0,0,Math.PI*2);ctx.fill();
+}
+
 function drawGate(){
   const lvl=getLvl();
   const x=lvl.gateX-cameraX,y=lvl.gateY;
@@ -941,7 +1038,7 @@ function drawEnding(t){
 function render(t){
   const sx=(Math.random()-0.5)*cameraShake,sy=(Math.random()-0.5)*cameraShake;
   ctx.save();ctx.translate(sx,sy);
-  drawSky(t);drawWindZones();drawPlatforms();drawGate();
+  drawSky(t);drawWindZones();drawPlatforms();drawCheckpoint();drawGate();
   drawFireflies(t);drawBerries(t);drawEnemies(t);drawPlayer(t);drawParticles();drawFloatingTexts();
   drawVignette();
   ctx.restore();
