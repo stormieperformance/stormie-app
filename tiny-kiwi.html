@@ -389,6 +389,27 @@ let currentLevel=0,gameStarted=false;
 let cameraX=0,cameraShake=0,last=performance.now(),timeAlive=0;
 let checkpoint={x:0,y:0,reached:false};
 let secretGem={x:0,y:0,taken:false};
+let zipline=null;
+
+function computeZipline(lvl){
+  // Find the single biggest horizontal gap between adjacent platforms and
+  // bridge it with a zipline - turns what would otherwise be your longest,
+  // most awkward jump into a distinct traversal moment instead.
+  const byX=[...lvl.platforms].sort((a,b)=>a.x-b.x);
+  let best=null,bestGap=-Infinity;
+  for(let i=0;i<byX.length-1;i++){
+    const a=byX[i],b=byX[i+1];
+    const gap=b.x-(a.x+a.w);
+    if(gap>bestGap){bestGap=gap;best=[a,b];}
+  }
+  if(!best||bestGap<160)return null;
+  const [a,b]=best;
+  return {
+    x1:a.x+a.w-20,y1:a.y-70,
+    x2:b.x+20,y2:b.y-40,
+    active:false
+  };
+}
 
 /* ---------- PROGRESS (localStorage, no backend needed) ---------- */
 const SAVE_KEY="tinykiwi_progress_v1";
@@ -434,7 +455,7 @@ const snowflakes=[];for(let i=0;i<100;i++)snowflakes.push({x:Math.random()*700,y
 const stars=[];for(let i=0;i<180;i++)stars.push({x:Math.random()*6000,y:Math.random()*350,s:0.5+Math.random()*1.5,t:Math.random()*99});
 const rainDrops=[];for(let i=0;i<80;i++)rainDrops.push({x:Math.random()*700,y:Math.random()*H,s:0.5+Math.random()});
  
-const player={x:80,y:420,w:34,h:40,vx:0,vy:0,speed:400,jump:720,grounded:false,wasGrounded:false,face:1,won:false,squash:0,stretch:0,coyote:0,buffer:0,respawnFlash:0,deaths:0,windForce:0,big:false,bigTimer:0,scale:1,speedy:false,speedTimer:0,standingOn:null};
+const player={x:80,y:420,w:34,h:40,vx:0,vy:0,speed:400,jump:720,grounded:false,wasGrounded:false,face:1,won:false,squash:0,stretch:0,coyote:0,buffer:0,respawnFlash:0,deaths:0,windForce:0,big:false,bigTimer:0,scale:1,speedy:false,speedTimer:0,standingOn:null,iceTimer:0,onZip:null,zipT:0};
 let comboCount=0,comboTimer=0;
  
 function getLvl(){return LEVELS[currentLevel];}
@@ -492,6 +513,12 @@ function tagSpecialPlatforms(lvl){
     p.moveAxis=n===0?"y":"x";p.moveRange=p.moveAxis==="y"?60:90;p.moveSpeed=0.9+n*0.15;
   });
   onewayIdx.forEach(i=>platforms[i].oneway=true);
+  if(!lvl.slippery){
+    // A short icy patch (2 adjacent platforms) in one other spot per level,
+    // so the slide-y feel shows up as a moment, not just Frosted Peaks' thing.
+    const iceIdx=[pickNear(0.46),pickNear(0.5)].filter(i=>i!==null);
+    iceIdx.forEach(i=>platforms[i].ice=true);
+  }
 }
 
 function resetEntities(){
@@ -539,6 +566,7 @@ function respawnPlayer(soft){
   player.big=false;player.bigTimer=0;player.scale=1;
   player.speedy=false;player.speedTimer=0;
   player.standingOn=null;
+  player.onZip=null;player.zipT=0;player.iceTimer=0;
   comboCount=0;comboTimer=0;
   if(!soft){const lvl=getLvl();setMessage(lvl.messages[0]);}
 }
@@ -550,6 +578,7 @@ function loadLevel(idx,fresh){
   scoreEl.textContent=`Berries 0/${lvl.berries.length}`;
   checkpoint=computeCheckpoint(lvl);
   secretGem=computeSecretGem(lvl);
+  zipline=computeZipline(lvl);
   resetEntities();respawnPlayer(false);
   cameraX=0;cameraShake=0;player.deaths=0;
   showBanner(lvl.title,lvl.subtitle);
@@ -607,9 +636,12 @@ function update(dt){
   if(!player.won){
     let move=0;
     if(keys.left)move--;if(keys.right)move++;
+    const jumpPressedThisFrame=keys.jumpPressed;
  
-    // Ice slipperiness
-    const friction=lvl.slippery?8:18;
+    // Ice slipperiness - either a whole slippery level, or a recent icy
+    // platform (momentum carries over briefly after leaving one too)
+    if(player.iceTimer>0)player.iceTimer-=dt;
+    const friction=(lvl.slippery||player.iceTimer>0)?8:18;
     const targetVx=(move*player.speed*(player.speedy?1.55:1))+player.windForce;
     player.vx+=(targetVx-player.vx)*Math.min(1,dt*friction);
     if(move)player.face=move;
@@ -666,6 +698,7 @@ function update(dt){
             if(player.vy>520){player.squash=Math.min(1.2,player.vy/700);shake(player.vy/180);addDust(player.x+player.w/2,player.y+player.h);sfx.land();}
             else if(player.vy>200){player.squash=0.5;}
             player.vy=0;player.grounded=true;player.standingOn=p;
+            if(p.ice)player.iceTimer=0.5;
           }
           if(p.crumbly&&p.crumbleT<0){
             p.crumbleT=0.45;
@@ -686,6 +719,38 @@ function update(dt){
         if(p.respawnT<=0){p.gone=false;addParticles(p.x+p.w/2,p.y,16,"#c9f2a0",0.8);}
       }
       if(p.squish>0)p.squish=Math.max(0,p.squish-dt*4);
+    }
+ 
+    // Zipline: attach when airborne and close to the cable, ride it at a
+    // fixed speed, detach at the far end (or early with jump) with a
+    // forward launch. Overrides this frame's position, same as bounce
+    // overrides a normal landing.
+    if(zipline){
+      if(!player.onZip&&!player.grounded){
+        const px=player.x+player.w/2,py=player.y+player.h/2;
+        const dx=zipline.x2-zipline.x1,dy=zipline.y2-zipline.y1,len=Math.hypot(dx,dy);
+        const tRaw=((px-zipline.x1)*dx+(py-zipline.y1)*dy)/(len*len);
+        const tClamp=Math.max(0,Math.min(1,tRaw));
+        const cx=zipline.x1+dx*tClamp,cy=zipline.y1+dy*tClamp;
+        if(Math.hypot(px-cx,py-cy)<28){
+          player.onZip=zipline;player.zipT=tClamp;
+          addParticles(cx,cy,14,"#e8d98a",0.8);sfx.berry();
+        }
+      }
+      if(player.onZip){
+        const z=player.onZip,dx=z.x2-z.x1,dy=z.y2-z.y1,len=Math.hypot(dx,dy);
+        player.zipT+=(560/len)*dt;
+        const done=player.zipT>=1;
+        const t=Math.min(1,player.zipT);
+        player.x=z.x1+dx*t-player.w/2;player.y=z.y1+dy*t-player.h/2;
+        player.vy=0;player.grounded=false;
+        if(done||jumpPressedThisFrame){
+          const angle=Math.atan2(dy,dx);
+          player.vx=Math.cos(angle)*480;player.vy=Math.min(-160,Math.sin(angle)*480);
+          player.onZip=null;
+          addParticles(player.x+player.w/2,player.y+player.h/2,16,"#e8d98a",1);sfx.jump();
+        }
+      }
     }
  
     // Berries
@@ -1191,6 +1256,26 @@ function drawSecretGem(t){
   ctx.restore();
 }
 
+function drawZipline(){
+  if(!zipline)return;
+  const x1=zipline.x1-cameraX,y1=zipline.y1,x2=zipline.x2-cameraX,y2=zipline.y2;
+  if(x2<-60||x1>W+60)return;
+  // Anchor posts
+  ctx.fillStyle="#6b4b2a";ctx.fillRect(x1-4,y1,8,60);ctx.fillRect(x2-4,y2,8,60);
+  ctx.fillStyle="#8a6a42";ctx.fillRect(x1-7,y1-4,14,8);ctx.fillRect(x2-7,y2-4,14,8);
+  // Cable
+  ctx.strokeStyle="#3a2c1a";ctx.lineWidth=3;
+  ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
+  // Sliding handle
+  if(player.onZip===zipline){
+    const t=Math.min(1,player.zipT);
+    const hx=x1+(x2-x1)*t,hy=y1+(y2-y1)*t;
+    ctx.fillStyle="#e8d98a";ctx.beginPath();ctx.arc(hx,hy,5,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle="rgba(232,217,138,.5)";ctx.lineWidth=2;
+    ctx.beginPath();ctx.moveTo(hx,hy);ctx.lineTo(hx,hy+10);ctx.stroke();
+  }
+}
+
 function drawCheckpoint(){
   const x=checkpoint.x-cameraX,y=checkpoint.y+100;
   if(x<-60||x>W+60)return;
@@ -1346,7 +1431,7 @@ function drawEnding(t){
 function render(t){
   const sx=(Math.random()-0.5)*cameraShake,sy=(Math.random()-0.5)*cameraShake;
   ctx.save();ctx.translate(sx,sy);
-  drawSky(t);drawWindZones();drawPlatforms(t);drawCheckpoint();drawSecretGem(t);drawGate();
+  drawSky(t);drawWindZones();drawPlatforms(t);drawZipline();drawCheckpoint();drawSecretGem(t);drawGate();
   drawFireflies(t);drawBerries(t);drawEnemies(t);drawPlayer(t);drawParticles();drawFloatingTexts();
   drawVignette();
   ctx.restore();
