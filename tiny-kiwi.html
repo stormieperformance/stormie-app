@@ -836,7 +836,7 @@ function update(dt){
             player.bonusAirJumps=2;
             shake(6);addParticles(p.x+p.w/2,p.y,22,"#ff5d5d",1);sfx.bounce();
             if(p.bonusMushroom){
-              bonusRing={active:true,x:p.x+p.w/2,y:p.y-540,life:3.4};
+              bonusRing={active:true,x:p.x+p.w/2,y:p.y-250,life:3.4};
               setMessage("Boiiing! Chain jumps mid-air to reach the ring!");
             }else{
               setMessage("Boiiing!");
