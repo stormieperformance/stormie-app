@@ -131,7 +131,8 @@ const sfx={
   ending:()=>{[523,659,784,1046,784,659,523,659,784,1046,1318,1046].forEach((f,i)=>setTimeout(()=>tone(f,0.3,"sine",0.08),i*180));},
   grow:()=>{[330,440,554,660,880].forEach((f,i)=>setTimeout(()=>tone(f,0.16,"sine",0.07),i*70));},
   shrink:()=>{[440,330,220].forEach((f,i)=>setTimeout(()=>tone(f,0.14,"triangle",0.06),i*60));noiseBurst(0.1,0.03,300);},
-  combo:(n)=>{const f=520+Math.min(n,6)*90;tone(f,0.1,"square",0.05);tone(f*1.5,0.08,"square",0.03,0.01);}
+  combo:(n)=>{const f=520+Math.min(n,6)*90;tone(f,0.1,"square",0.05);tone(f*1.5,0.08,"square",0.03,0.01);},
+  bounce:()=>{[260,420,620,880].forEach((f,i)=>setTimeout(()=>tone(f,0.1,"square",0.045,0.002),i*22));}
 };
 function setMuted(m){muted=m;if(masterGain)masterGain.gain.value=muted?0:0.7;muteBtn.textContent=muted?"♪̸":"♪";}
 muteBtn.addEventListener("click",e=>{e.stopPropagation();setMuted(!muted);});
@@ -426,7 +427,7 @@ function computeSecretGem(lvl){
   return {x:pick.x+pick.w/2,y:pick.y-46,taken:false};
 }
 
-let berries=[],enemies=[],particles=[],floatingTexts=[];
+let berries=[],enemies=[],particles=[],floatingTexts=[],platforms=[];
 let levelTransition=0,showingEnding=false,endingTimer=0;
 const fireflies=[];for(let i=0;i<80;i++)fireflies.push({x:Math.random()*6000,y:240+Math.random()*340,t:Math.random()*99,s:0.6+Math.random()*0.8});
 const snowflakes=[];for(let i=0;i<100;i++)snowflakes.push({x:Math.random()*700,y:Math.random()*H,s:0.5+Math.random()*1.5,sp:0.4+Math.random()*0.8});
@@ -451,6 +452,31 @@ function setMessage(t,fade=5000){
   setMessage._t=setTimeout(()=>{messageEl.style.opacity="0";},fade);
 }
  
+function tagSpecialPlatforms(lvl){
+  // Pick a couple of EXISTING platforms per level to behave differently -
+  // geometry is never touched, only what happens when you land on them.
+  // Avoids the very first/last platform (safe start/end) and avoids
+  // re-picking the same platform for more than one role.
+  const byX=lvl.platforms.map((p,i)=>({p,i})).sort((a,b)=>a.p.x-b.p.x);
+  const middle=byX.slice(1,-1).length?byX.slice(1,-1):byX;
+  const used=new Set();
+  function pickNear(frac){
+    const target=lvl.worldWidth*frac;
+    let best=null,bestD=Infinity;
+    for(const c of middle){
+      if(used.has(c.i))continue;
+      const d=Math.abs(c.p.x-target);
+      if(d<bestD){bestD=d;best=c;}
+    }
+    if(best)used.add(best.i);
+    return best?best.i:null;
+  }
+  const bounceIdx=[pickNear(0.22),pickNear(0.58)].filter(i=>i!==null);
+  const crumbleIdx=[pickNear(0.4),pickNear(0.82)].filter(i=>i!==null);
+  bounceIdx.forEach(i=>platforms[i].bouncy=true);
+  crumbleIdx.forEach(i=>platforms[i].crumbly=true);
+}
+
 function resetEntities(){
   const lvl=getLvl();
   berries=lvl.berries.map(b=>({x:b[0],y:b[1],taken:false,bob:Math.random()*10}));
@@ -465,6 +491,8 @@ function resetEntities(){
     if(pickSpeed!==pick)pickSpeed.speedy=true;
   }
   enemies=lvl.enemies.map(e=>({...e,w:34,h:32,alive:true,bounce:0,baseY:e.y,pauseT:0,dashT:0}));
+  platforms=lvl.platforms.map(p=>({...p,gone:false,crumbleT:-1,respawnT:0,squish:0}));
+  tagSpecialPlatforms(lvl);
   particles.length=0;floatingTexts.length=0;
 }
  
@@ -593,15 +621,39 @@ function update(dt){
     player.x=Math.max(0,Math.min(lvl.worldWidth-player.w,player.x));
  
     player.wasGrounded=player.grounded;player.grounded=false;
-    for(const p of lvl.platforms){
+    for(const p of platforms){
+      if(p.gone)continue;
       if(rects(player,p)){
         if(player.vy>=0&&player.y+player.h-player.vy*dt<=p.y+8){
           player.y=p.y-player.h;
-          if(player.vy>520){player.squash=Math.min(1.2,player.vy/700);shake(player.vy/180);addDust(player.x+player.w/2,player.y+player.h);sfx.land();}
-          else if(player.vy>200){player.squash=0.5;}
-          player.vy=0;player.grounded=true;
+          if(p.bouncy){
+            player.vy=-1080;player.squash=0;player.stretch=1;p.squish=1;
+            shake(6);addParticles(p.x+p.w/2,p.y,22,"#ff5d5d",1);sfx.bounce();
+            setMessage("Boiiing!");
+          }else{
+            if(player.vy>520){player.squash=Math.min(1.2,player.vy/700);shake(player.vy/180);addDust(player.x+player.w/2,player.y+player.h);sfx.land();}
+            else if(player.vy>200){player.squash=0.5;}
+            player.vy=0;player.grounded=true;
+          }
+          if(p.crumbly&&p.crumbleT<0){
+            p.crumbleT=0.45;
+            setMessage("It's crumbling! Keep moving.");
+          }
         }
       }
+    }
+ 
+    // Crumbling platform timers (ticks even if the player has already
+    // jumped off, so the platform still falls away and respawns later)
+    for(const p of platforms){
+      if(p.crumbleT>=0){
+        p.crumbleT-=dt;
+        if(p.crumbleT<=0){p.gone=true;p.crumbleT=-1;p.respawnT=3.2;addParticles(p.x+p.w/2,p.y,20,"#a8785a",0.9);}
+      }else if(p.gone){
+        p.respawnT-=dt;
+        if(p.respawnT<=0){p.gone=false;addParticles(p.x+p.w/2,p.y,16,"#c9f2a0",0.8);}
+      }
+      if(p.squish>0)p.squish=Math.max(0,p.squish-dt*4);
     }
  
     // Berries
@@ -885,11 +937,15 @@ function drawSky(t){
   }
 }
  
-function drawPlatforms(){
+function drawPlatforms(t){
   const lvl=getLvl();
-  for(const p of lvl.platforms){
-    const x=p.x-cameraX,y=p.y;
+  for(const p of platforms){
+    if(p.gone)continue;
+    const shakeX=p.crumbleT>=0?(Math.random()-0.5)*4*(1-p.crumbleT/0.45):0;
+    const squishY=p.squish>0?p.squish*6:0;
+    const x=p.x-cameraX+shakeX,y=p.y+squishY;
     if(x+p.w<-80||x>W+80)continue;
+    ctx.globalAlpha=p.crumbleT>=0?0.4+0.6*(p.crumbleT/0.45):1;
  
     if(p.ice){
       ctx.fillStyle="#a8d8f0";roundRect(x,y,p.w,p.h,14);ctx.fill();
@@ -918,6 +974,28 @@ function drawPlatforms(){
       ctx.fillStyle=lvl.theme==="home"?"#6db856":"#5fc278";
       for(let i=20;i<p.w-20;i+=40){ctx.beginPath();ctx.moveTo(x+i,y);ctx.lineTo(x+i+3,y-6);ctx.lineTo(x+i+6,y);ctx.closePath();ctx.fill();}
     }
+ 
+    // Crumbling crack overlay, intensifies as it counts down
+    if(p.crumbleT>=0){
+      ctx.strokeStyle="rgba(30,20,10,.55)";ctx.lineWidth=2;
+      ctx.beginPath();
+      ctx.moveTo(x+p.w*0.3,y);ctx.lineTo(x+p.w*0.42,y+p.h*0.5);ctx.lineTo(x+p.w*0.28,y+p.h);
+      ctx.moveTo(x+p.w*0.68,y);ctx.lineTo(x+p.w*0.58,y+p.h*0.55);ctx.lineTo(x+p.w*0.74,y+p.h);
+      ctx.stroke();
+    }
+ 
+    // Bouncy mushroom cap sitting on top
+    if(p.bouncy){
+      const bob=Math.sin(t*2.4)*2-p.squish*8;
+      const cx=x+p.w/2,cy=y-2+bob;
+      ctx.fillStyle="#e8493f";ctx.beginPath();ctx.ellipse(cx,cy,26,15,0,Math.PI,0);ctx.fill();
+      ctx.fillStyle="#fff";
+      ctx.beginPath();ctx.arc(cx-12,cy-5,3,0,Math.PI*2);ctx.fill();
+      ctx.beginPath();ctx.arc(cx,cy-9,3,0,Math.PI*2);ctx.fill();
+      ctx.beginPath();ctx.arc(cx+12,cy-5,3,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle="#f5e6c8";roundRect(cx-8,cy-2,16,10,4);ctx.fill();
+    }
+    ctx.globalAlpha=1;
   }
 }
  
@@ -1223,7 +1301,7 @@ function drawEnding(t){
 function render(t){
   const sx=(Math.random()-0.5)*cameraShake,sy=(Math.random()-0.5)*cameraShake;
   ctx.save();ctx.translate(sx,sy);
-  drawSky(t);drawWindZones();drawPlatforms();drawCheckpoint();drawSecretGem(t);drawGate();
+  drawSky(t);drawWindZones();drawPlatforms(t);drawCheckpoint();drawSecretGem(t);drawGate();
   drawFireflies(t);drawBerries(t);drawEnemies(t);drawPlayer(t);drawParticles();drawFloatingTexts();
   drawVignette();
   ctx.restore();
