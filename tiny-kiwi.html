@@ -406,7 +406,7 @@ const snowflakes=[];for(let i=0;i<100;i++)snowflakes.push({x:Math.random()*700,y
 const stars=[];for(let i=0;i<180;i++)stars.push({x:Math.random()*6000,y:Math.random()*350,s:0.5+Math.random()*1.5,t:Math.random()*99});
 const rainDrops=[];for(let i=0;i<80;i++)rainDrops.push({x:Math.random()*700,y:Math.random()*H,s:0.5+Math.random()});
  
-const player={x:80,y:420,w:34,h:40,vx:0,vy:0,speed:400,jump:720,grounded:false,wasGrounded:false,face:1,won:false,squash:0,stretch:0,coyote:0,buffer:0,respawnFlash:0,deaths:0,windForce:0,big:false,bigTimer:0,scale:1};
+const player={x:80,y:420,w:34,h:40,vx:0,vy:0,speed:400,jump:720,grounded:false,wasGrounded:false,face:1,won:false,squash:0,stretch:0,coyote:0,buffer:0,respawnFlash:0,deaths:0,windForce:0,big:false,bigTimer:0,scale:1,speedy:false,speedTimer:0};
 let comboCount=0,comboTimer=0;
  
 function getLvl(){return LEVELS[currentLevel];}
@@ -434,6 +434,8 @@ function resetEntities(){
     const byX=[...berries].sort((a,b)=>a.x-b.x);
     const pick=byX[Math.min(Math.floor(byX.length*0.7),byX.length-1)];
     pick.golden=true;
+    const pickSpeed=byX[Math.min(Math.floor(byX.length*0.3),byX.length-1)];
+    if(pickSpeed!==pick)pickSpeed.speedy=true;
   }
   enemies=lvl.enemies.map(e=>({...e,w:34,h:32,alive:true,bounce:0}));
   particles.length=0;floatingTexts.length=0;
@@ -463,6 +465,7 @@ function respawnPlayer(soft){
   player.vx=0;player.vy=0;player.won=false;
   player.coyote=0;player.buffer=0;player.respawnFlash=1;player.windForce=0;
   player.big=false;player.bigTimer=0;player.scale=1;
+  player.speedy=false;player.speedTimer=0;
   comboCount=0;comboTimer=0;
   if(!soft){const lvl=getLvl();setMessage(lvl.messages[0]);}
 }
@@ -532,7 +535,7 @@ function update(dt){
  
     // Ice slipperiness
     const friction=lvl.slippery?8:18;
-    const targetVx=(move*player.speed)+player.windForce;
+    const targetVx=(move*player.speed*(player.speedy?1.55:1))+player.windForce;
     player.vx+=(targetVx-player.vx)*Math.min(1,dt*friction);
     if(move)player.face=move;
  
@@ -586,6 +589,12 @@ function update(dt){
           addFloatingText(player.x+player.w/2,player.y-32,"GIANT BERRY!","#ffd23f");
           shake(6);sfx.grow();
         }
+        if(b.speedy){
+          player.speedy=true;player.speedTimer=10;
+          addParticles(player.x+player.w/2,player.y+player.h/2,36,"#5fd6ff",1.6);
+          addFloatingText(player.x+player.w/2,player.y-32,"SPEED BERRY!","#5fd6ff");
+          shake(4);sfx.grow();
+        }
       }
     }
  
@@ -600,6 +609,17 @@ function update(dt){
       }
     }
     player.scale+=((player.big?1.55:1)-player.scale)*Math.min(1,dt*8);
+ 
+    // Speed-buff countdown + trailing dust while boosted
+    if(player.speedy){
+      player.speedTimer-=dt;
+      if(player.speedTimer<=0){
+        player.speedy=false;
+        addFloatingText(player.x+player.w/2,player.y-10,"Back to normal","#c6f2ff");
+      }else if(Math.abs(player.vx)>50){
+        addParticles(player.x+player.w/2-player.face*14,player.y+player.h-6,1,"#8fe6ff",0.35);
+      }
+    }
  
     // Enemies
     if(comboTimer>0){comboTimer-=dt;if(comboTimer<=0)comboCount=0;}
@@ -841,6 +861,22 @@ function drawBerries(t){
     if(b.taken)continue;
     const x=b.x-cameraX,y=b.y+Math.sin(t*5+b.bob)*5;
     if(x<-40||x>W+40)continue;
+    if(b.speedy){
+      const pulse=1+Math.sin(t*4+b.bob)*0.1;
+      ctx.globalAlpha=0.3+0.15*Math.sin(t*4+b.bob);
+      ctx.fillStyle="#5fd6ff";ctx.beginPath();ctx.arc(x,y,26*pulse,0,Math.PI*2);ctx.fill();
+      ctx.globalAlpha=1;
+      ctx.save();ctx.translate(x,y);
+      for(let i=0;i<3;i++){
+        ctx.rotate(Math.PI*2/3);
+        ctx.fillStyle="#8fe6ff";ctx.beginPath();
+        ctx.moveTo(0,-16*pulse);ctx.lineTo(4,-4);ctx.lineTo(0,4);ctx.lineTo(-4,-4);ctx.closePath();ctx.fill();
+      }
+      ctx.restore();
+      ctx.fillStyle="#5fd6ff";ctx.beginPath();ctx.arc(x,y,10*pulse,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle="#eafcff";ctx.beginPath();ctx.arc(x-3,y-3,3,0,Math.PI*2);ctx.fill();
+      continue;
+    }
     if(b.golden){
       const pulse=1+Math.sin(t*3+b.bob)*0.12;
       ctx.globalAlpha=0.3+0.15*Math.sin(t*3+b.bob);
