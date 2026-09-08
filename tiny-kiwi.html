@@ -387,10 +387,109 @@ const LEVELS=[
  
 /* ---------- STATE ---------- */
 let currentLevel=0,gameStarted=false;
-let cameraX=0,cameraShake=0,last=performance.now(),timeAlive=0;
+let cameraX=0,cameraY=0,cameraShake=0,last=performance.now(),timeAlive=0;
 let checkpoint={x:0,y:0,reached:false};
 let secretGem={x:0,y:0,taken:false};
 let zipline=null;
+let bonusRing={active:false,x:0,y:0,life:0};
+let inBonusRound=false,bonusTimer=0,bonusCollected=0,bonusFruits=[],bonusCamX=0,bonusCamY=0,bonusReturn=null;
+
+/* ---------- BONUS CLOUD ROUND ----------
+   A cozy no-fail side room. Reached by grabbing a floating ring that
+   appears when you bounce off one special mushroom per level. Not tied
+   to the main berries/gate progress at all - purely a delightful detour. */
+const BONUS_W=900,BONUS_H=700;
+const BONUS_CLOUDS=[
+  {x:60,y:560,w:180},{x:320,y:600,w:160},{x:560,y:520,w:170},
+  {x:760,y:440,w:150},{x:600,y:340,w:160},{x:380,y:280,w:150},
+  {x:150,y:340,w:170},{x:60,y:200,w:150},{x:300,y:140,w:170},
+  {x:560,y:120,w:160},{x:760,y:200,w:150}
+];
+const BONUS_FRUITS_DATA=[
+  {x:150,y:520,fruit:"cherry"},{x:400,y:560,fruit:"orange"},{x:640,y:480,fruit:"grape"},
+  {x:830,y:400,fruit:"cherry"},{x:680,y:300,fruit:"orange"},{x:460,y:240,fruit:"grape"},
+  {x:230,y:300,fruit:"cherry"},{x:140,y:160,fruit:"orange"},{x:380,y:100,fruit:"grape"},
+  {x:640,y:80,fruit:"cherry"},{x:830,y:160,fruit:"orange"}
+];
+
+function enterBonusRound(){
+  bonusReturn={x:player.x,y:player.y,vx:player.vx,vy:player.vy,cx:cameraX};
+  inBonusRound=true;bonusTimer=20;bonusCollected=0;
+  bonusFruits=BONUS_FRUITS_DATA.map(f=>({...f,taken:false}));
+  player.x=70;player.y=500;player.vx=0;player.vy=0;
+  player.big=false;player.bigTimer=0;player.scale=1;player.speedy=false;player.speedTimer=0;
+  bonusCamX=0;bonusCamY=0;
+  bonusRing.active=false;
+  addParticles(player.x+player.w/2,player.y+player.h/2,50,"#fff4c2",1.8);
+  shake(6);sfx.grow();
+  setMessage("Bonus round! Grab the cute fruits!");
+}
+
+function exitBonusRound(){
+  inBonusRound=false;
+  player.x=bonusReturn.x;player.y=bonusReturn.y;player.vx=bonusReturn.vx;player.vy=bonusReturn.vy;
+  cameraX=bonusReturn.cx;cameraY=0;
+  addParticles(player.x+player.w/2,player.y+player.h/2,40,"#c9f2a0",1.4);
+  shake(5);sfx.win();
+  addFloatingText(player.x+player.w/2,player.y-34,`Bonus: ${bonusCollected}/${bonusFruits.length}!`,"#ffe27a");
+  setMessage(`Back to the adventure! Found ${bonusCollected}/${bonusFruits.length} bonus fruits.`);
+}
+
+function updateBonusRound(dt){
+  timeAlive+=dt;
+  bonusTimer-=dt;
+  let move=0;if(keys.left)move--;if(keys.right)move++;
+  const jumpPressedThisFrame=keys.jumpPressed;keys.jumpPressed=false;
+  const targetVx=move*380;
+  player.vx+=(targetVx-player.vx)*Math.min(1,dt*16);
+  if(move)player.face=move;
+ 
+  if(player.grounded)player.coyote=0.1;else player.coyote=Math.max(0,player.coyote-dt);
+  if(jumpPressedThisFrame)player.buffer=0.12;else player.buffer=Math.max(0,player.buffer-dt);
+  if(player.buffer>0&&player.coyote>0){
+    player.vy=-680;player.grounded=false;player.coyote=0;player.buffer=0;
+    player.squash=0;player.stretch=1;sfx.jump();
+  }
+  if(keys.jumpReleased&&player.vy<-260)player.vy=-260;
+  keys.jumpReleased=false;
+ 
+  player.vy+=1500*dt;if(player.vy>1000)player.vy=1000;
+  player.x+=player.vx*dt;player.y+=player.vy*dt;
+  player.x=Math.max(0,Math.min(BONUS_W-player.w,player.x));
+ 
+  player.grounded=false;
+  for(const c of BONUS_CLOUDS){
+    if(player.x+player.w>c.x&&player.x<c.x+c.w&&player.vy>=0&&player.y+player.h-player.vy*dt<=c.y+10&&player.y+player.h>=c.y-4&&player.y+player.h<=c.y+30){
+      player.y=c.y-player.h;player.vy=0;player.grounded=true;
+      if(player.wasGrounded===false)sfx.land();
+    }
+  }
+  player.wasGrounded=player.grounded;
+  if(player.y>BONUS_H+120){
+    const c=BONUS_CLOUDS[Math.floor(Math.random()*BONUS_CLOUDS.length)];
+    player.x=c.x+c.w/2-player.w/2;player.y=c.y-60;player.vy=0;player.vx=0;
+    addParticles(player.x+player.w/2,player.y,20,"#fff4c2",1);
+  }
+ 
+  for(const f of bonusFruits){
+    if(!f.taken&&Math.hypot(player.x+player.w/2-f.x,player.y+player.h/2-f.y)<30){
+      f.taken=true;bonusCollected++;
+      addParticles(f.x,f.y,18,"#ffb3c6",1);addFloatingText(f.x,f.y-16,"+1","#ffb3c6");sfx.berry();
+    }
+  }
+ 
+  bonusCamX=Math.max(0,Math.min(BONUS_W-W,player.x-W/2));
+  bonusCamY=Math.max(0,Math.min(BONUS_H-H,player.y-H/2));
+  cameraX=bonusCamX;cameraY=bonusCamY;
+ 
+  updateParticlesAndText(dt);
+ 
+  const allCollected=bonusCollected>=bonusFruits.length;
+  if(bonusTimer<=0||allCollected){
+    if(allCollected)addFloatingText(player.x+player.w/2,player.y-40,"ALL FRUITS FOUND!","#ffe27a");
+    exitBonusRound();
+  }
+}
 
 function computeZipline(lvl){
   // Find the single biggest horizontal gap between adjacent platforms and
@@ -519,7 +618,7 @@ function tagSpecialPlatforms(lvl){
   const crumbleIdx=[pickNear(0.4),pickNear(0.82)].filter(i=>i!==null);
   const movingIdx=[pickNear(0.13),pickNear(0.5)].filter(i=>i!==null);
   const onewayIdx=[pickNear(0.3),pickNear(0.68)].filter(i=>i!==null);
-  bounceIdx.forEach(i=>platforms[i].bouncy=true);
+  bounceIdx.forEach((i,n)=>{platforms[i].bouncy=true;if(n===0)platforms[i].bonusMushroom=true;});
   crumbleIdx.forEach(i=>platforms[i].crumbly=true);
   movingIdx.forEach((i,n)=>{
     const p=platforms[i];
@@ -645,6 +744,7 @@ function shake(amount){cameraShake=Math.min(cameraShake+amount,16);}
 function update(dt){
   if(!gameStarted)return;
   if(showingEnding){endingTimer+=dt;return;}
+  if(inBonusRound){updateBonusRound(dt);return;}
   timeAlive+=dt;
   const lvl=getLvl();
   if(player.respawnFlash>0)player.respawnFlash-=dt*2;
@@ -710,6 +810,9 @@ function update(dt){
             player.vy=-1080;player.squash=0;player.stretch=1;p.squish=1;
             shake(6);addParticles(p.x+p.w/2,p.y,22,"#ff5d5d",1);sfx.bounce();
             setMessage("Boiiing!");
+            if(p.bonusMushroom){
+              bonusRing={active:true,x:p.x+p.w/2,y:p.y-250,life:2.4};
+            }
           }else{
             if(player.vy>520){player.squash=Math.min(1.2,player.vy/700);shake(player.vy/180);addDust(player.x+player.w/2,player.y+player.h);sfx.land();}
             else if(player.vy>200){player.squash=0.5;}
@@ -766,6 +869,16 @@ function update(dt){
           player.onZip=null;
           addParticles(player.x+player.w/2,player.y+player.h/2,16,"#e8d98a",1);sfx.jump();
         }
+      }
+    }
+ 
+    // Bonus ring: grab it while airborne to warp into the cloud bonus round
+    if(bonusRing.active){
+      bonusRing.life-=dt;
+      if(bonusRing.life<=0)bonusRing.active=false;
+      else if(Math.hypot(player.x+player.w/2-bonusRing.x,player.y+player.h/2-bonusRing.y)<34){
+        bonusRing.active=false;
+        enterBonusRound();
       }
     }
  
@@ -948,6 +1061,10 @@ function update(dt){
   cameraX=Math.max(0,Math.min(lvl.worldWidth-W,cameraX));
   cameraShake*=Math.pow(0.001,dt);
  
+  updateParticlesAndText(dt);
+}
+
+function updateParticlesAndText(dt){
   for(let i=particles.length-1;i>=0;i--){
     const p=particles[i];p.life-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=(p.grav||400)*dt;p.vx*=Math.pow(0.5,dt);
     if(p.life<=0)particles.splice(i,1);
@@ -1255,7 +1372,7 @@ function drawFireflies(t){
 }
  
 function drawPlayer(t){
-  const x=player.x-cameraX,y=player.y;
+  const x=player.x-cameraX,y=player.y-cameraY;
   const sq=1-player.squash*0.25,st=1+player.stretch*0.15;
   const sx=(1+player.squash*0.18-player.stretch*0.1)*player.scale,sy=sq*st*player.scale;
   ctx.save();
@@ -1295,6 +1412,20 @@ function drawSecretGem(t){
   ctx.fillStyle="#f5d9ff";ctx.beginPath();
   ctx.moveTo(0,-13);ctx.lineTo(5,-2);ctx.lineTo(0,3);ctx.lineTo(-5,-2);ctx.closePath();ctx.fill();
   ctx.restore();
+}
+
+function drawBonusRing(t){
+  if(!bonusRing.active)return;
+  const x=bonusRing.x-cameraX,y=bonusRing.y+Math.sin(t*4)*6;
+  const fade=Math.min(1,bonusRing.life);
+  ctx.globalAlpha=fade;
+  ctx.strokeStyle="#ffe27a";ctx.lineWidth=5;
+  ctx.beginPath();ctx.ellipse(x,y,20,20,0,0,Math.PI*2);ctx.stroke();
+  ctx.strokeStyle="rgba(255,226,122,.4)";ctx.lineWidth=10;
+  ctx.beginPath();ctx.ellipse(x,y,24,24,0,0,Math.PI*2);ctx.stroke();
+  ctx.fillStyle="#fff8dc";ctx.font="900 11px system-ui";ctx.textAlign="center";
+  ctx.fillText("BONUS!",x,y-32);
+  ctx.globalAlpha=1;
 }
 
 function drawZipline(){
@@ -1361,7 +1492,7 @@ function drawGate(){
 function drawParticles(){
   for(const p of particles){
     ctx.globalAlpha=Math.max(0,Math.min(1,p.life));ctx.fillStyle=p.color;
-    ctx.beginPath();ctx.arc(p.x-cameraX,p.y,p.r,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.arc(p.x-cameraX,p.y-cameraY,p.r,0,Math.PI*2);ctx.fill();
   }
   ctx.globalAlpha=1;
 }
@@ -1370,7 +1501,7 @@ function drawFloatingTexts(){
   for(const f of floatingTexts){
     ctx.globalAlpha=Math.min(1,f.life);ctx.fillStyle=f.color;
     ctx.font="900 14px system-ui";ctx.textAlign="center";
-    ctx.fillText(f.text,f.x-cameraX,f.y);
+    ctx.fillText(f.text,f.x-cameraX,f.y-cameraY);
   }
   ctx.globalAlpha=1;
 }
@@ -1469,10 +1600,78 @@ function drawEnding(t){
   ctx.globalAlpha=1;
 }
  
+function renderBonusRound(t){
+  // Cozy pastel sky
+  const grad=ctx.createLinearGradient(0,0,0,H);
+  grad.addColorStop(0,"#bfe9ff");grad.addColorStop(0.55,"#dff3ff");grad.addColorStop(1,"#fff4e0");
+  ctx.fillStyle=grad;ctx.fillRect(0,0,W,H);
+  // Soft sun
+  ctx.fillStyle="rgba(255,246,200,.8)";ctx.beginPath();ctx.arc(W*0.82-cameraX*0.1,90,60,0,Math.PI*2);ctx.fill();
+ 
+  // Happy-face clouds
+  for(const c of BONUS_CLOUDS){
+    const x=c.x-cameraX,y=c.y-cameraY;
+    if(x+c.w<-60||x>W+60)continue;
+    const bob=Math.sin(t*1.4+c.x*0.01)*4;
+    ctx.fillStyle="#ffffff";
+    roundRect(x,y+bob,c.w,44,22);ctx.fill();
+    ctx.beginPath();ctx.ellipse(x+c.w*0.25,y+bob+6,26,22,0,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.ellipse(x+c.w*0.75,y+bob+4,28,24,0,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.ellipse(x+c.w*0.5,y+bob-6,30,26,0,0,Math.PI*2);ctx.fill();
+    // Happy face
+    const fx=x+c.w/2,fy=y+bob+14;
+    ctx.fillStyle="#4a4a4a";
+    ctx.beginPath();ctx.arc(fx-12,fy,2.6,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.arc(fx+12,fy,2.6,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle="#4a4a4a";ctx.lineWidth=2;ctx.lineCap="round";
+    ctx.beginPath();ctx.arc(fx,fy+3,8,0.15*Math.PI,0.85*Math.PI);ctx.stroke();
+    ctx.fillStyle="rgba(255,180,190,.5)";
+    ctx.beginPath();ctx.arc(fx-19,fy+4,4,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.arc(fx+19,fy+4,4,0,Math.PI*2);ctx.fill();
+  }
+ 
+  // Cute fruits
+  for(const f of bonusFruits){
+    if(f.taken)continue;
+    const x=f.x-cameraX,y=f.y-cameraY+Math.sin(t*3+f.x*0.05)*4;
+    if(x<-30||x>W+30)continue;
+    if(f.fruit==="cherry"){
+      ctx.fillStyle="#ff5d7a";
+      ctx.beginPath();ctx.arc(x-6,y+4,9,0,Math.PI*2);ctx.fill();
+      ctx.beginPath();ctx.arc(x+7,y+7,9,0,Math.PI*2);ctx.fill();
+      ctx.strokeStyle="#5a8a3a";ctx.lineWidth=2;
+      ctx.beginPath();ctx.moveTo(x-6,y-4);ctx.quadraticCurveTo(x,y-16,x+7,y-2);ctx.stroke();
+      ctx.fillStyle="rgba(255,255,255,.6)";ctx.beginPath();ctx.arc(x-9,y,2,0,Math.PI*2);ctx.fill();
+    }else if(f.fruit==="orange"){
+      ctx.fillStyle="#ffa23e";ctx.beginPath();ctx.arc(x,y,12,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle="#5a8a3a";ctx.beginPath();ctx.ellipse(x,y-11,4,3,0,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle="rgba(255,255,255,.6)";ctx.beginPath();ctx.arc(x-4,y-4,2.5,0,Math.PI*2);ctx.fill();
+    }else{
+      ctx.fillStyle="#b673ff";
+      for(const[dx,dy]of[[-6,-4],[6,-4],[0,2],[-9,6],[9,6],[0,10]]){
+        ctx.beginPath();ctx.arc(x+dx,y+dy,7,0,Math.PI*2);ctx.fill();
+      }
+      ctx.fillStyle="rgba(255,255,255,.5)";ctx.beginPath();ctx.arc(x-3,y-6,1.8,0,Math.PI*2);ctx.fill();
+    }
+  }
+ 
+  drawPlayer(t);drawParticles();drawFloatingTexts();
+ 
+  // HUD
+  ctx.fillStyle="rgba(90,60,40,.85)";roundRect(12,12,168,44,14);ctx.fill();
+  ctx.fillStyle="#fff8ec";ctx.font="900 13px system-ui";ctx.textAlign="left";
+  ctx.fillText(`\u{1F31F} Bonus Round`,24,30);
+  ctx.font="700 11px system-ui";ctx.globalAlpha=0.85;
+  ctx.fillText(`Fruits ${bonusCollected}/${bonusFruits.length}  \u23F1 ${Math.max(0,Math.ceil(bonusTimer))}s`,24,46);
+  ctx.globalAlpha=1;
+  drawJoystick();
+}
+
 function render(t){
+  if(inBonusRound){renderBonusRound(t);return;}
   const sx=(Math.random()-0.5)*cameraShake,sy=(Math.random()-0.5)*cameraShake;
   ctx.save();ctx.translate(sx,sy);
-  drawSky(t);drawWindZones();drawPlatforms(t);drawZipline();drawCheckpoint();drawSecretGem(t);drawGate();
+  drawSky(t);drawWindZones();drawPlatforms(t);drawZipline();drawBonusRing(t);drawCheckpoint();drawSecretGem(t);drawGate();
   drawFireflies(t);drawBerries(t);drawEnemies(t);drawPlayer(t);drawParticles();drawFloatingTexts();
   drawVignette();
   ctx.restore();
