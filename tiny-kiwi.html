@@ -434,7 +434,7 @@ const snowflakes=[];for(let i=0;i<100;i++)snowflakes.push({x:Math.random()*700,y
 const stars=[];for(let i=0;i<180;i++)stars.push({x:Math.random()*6000,y:Math.random()*350,s:0.5+Math.random()*1.5,t:Math.random()*99});
 const rainDrops=[];for(let i=0;i<80;i++)rainDrops.push({x:Math.random()*700,y:Math.random()*H,s:0.5+Math.random()});
  
-const player={x:80,y:420,w:34,h:40,vx:0,vy:0,speed:400,jump:720,grounded:false,wasGrounded:false,face:1,won:false,squash:0,stretch:0,coyote:0,buffer:0,respawnFlash:0,deaths:0,windForce:0,big:false,bigTimer:0,scale:1,speedy:false,speedTimer:0};
+const player={x:80,y:420,w:34,h:40,vx:0,vy:0,speed:400,jump:720,grounded:false,wasGrounded:false,face:1,won:false,squash:0,stretch:0,coyote:0,buffer:0,respawnFlash:0,deaths:0,windForce:0,big:false,bigTimer:0,scale:1,speedy:false,speedTimer:0,standingOn:null};
 let comboCount=0,comboTimer=0;
  
 function getLvl(){return LEVELS[currentLevel];}
@@ -460,6 +460,15 @@ function tagSpecialPlatforms(lvl){
   const byX=lvl.platforms.map((p,i)=>({p,i})).sort((a,b)=>a.p.x-b.p.x);
   const middle=byX.slice(1,-1).length?byX.slice(1,-1):byX;
   const used=new Set();
+  // Never let the checkpoint or secret-gem platform also be crumbly/moving -
+  // respawning onto a platform that's since vanished or drifted away would
+  // strand the player. Mirror each function's own selection exactly.
+  const cpLo=lvl.worldWidth*0.35,cpHi=lvl.worldWidth*0.65,cpTarget=lvl.worldWidth*0.5;
+  let cpBest=null,cpBestD=Infinity;
+  for(const c of byX){if(c.p.x<cpLo||c.p.x>cpHi)continue;const d=Math.abs(c.p.x-cpTarget);if(d<cpBestD){cpBestD=d;cpBest=c;}}
+  if(cpBest)used.add(cpBest.i);
+  let narrowest=middle[0];for(const c of middle)if(c.p.w<narrowest.p.w)narrowest=c;
+  used.add(narrowest.i);
   function pickNear(frac){
     const target=lvl.worldWidth*frac;
     let best=null,bestD=Infinity;
@@ -473,8 +482,16 @@ function tagSpecialPlatforms(lvl){
   }
   const bounceIdx=[pickNear(0.22),pickNear(0.58)].filter(i=>i!==null);
   const crumbleIdx=[pickNear(0.4),pickNear(0.82)].filter(i=>i!==null);
+  const movingIdx=[pickNear(0.13),pickNear(0.5)].filter(i=>i!==null);
+  const onewayIdx=[pickNear(0.3),pickNear(0.68)].filter(i=>i!==null);
   bounceIdx.forEach(i=>platforms[i].bouncy=true);
   crumbleIdx.forEach(i=>platforms[i].crumbly=true);
+  movingIdx.forEach((i,n)=>{
+    const p=platforms[i];
+    p.moving=true;p.baseX=p.x;p.baseY=p.y;
+    p.moveAxis=n===0?"y":"x";p.moveRange=p.moveAxis==="y"?60:90;p.moveSpeed=0.9+n*0.15;
+  });
+  onewayIdx.forEach(i=>platforms[i].oneway=true);
 }
 
 function resetEntities(){
@@ -521,6 +538,7 @@ function respawnPlayer(soft){
   player.coyote=0;player.buffer=0;player.respawnFlash=1;player.windForce=0;
   player.big=false;player.bigTimer=0;player.scale=1;
   player.speedy=false;player.speedTimer=0;
+  player.standingOn=null;
   comboCount=0;comboTimer=0;
   if(!soft){const lvl=getLvl();setMessage(lvl.messages[0]);}
 }
@@ -620,9 +638,23 @@ function update(dt){
     player.x+=player.vx*dt;player.y+=player.vy*dt;
     player.x=Math.max(0,Math.min(lvl.worldWidth-player.w,player.x));
  
+    // Moving platforms: advance their position, then carry the player along
+    // if they were standing on one last frame (before this frame's own
+    // movement/gravity gets resolved below).
+    for(const p of platforms){
+      if(!p.moving)continue;
+      const prevX=p.x,prevY=p.y;
+      if(p.moveAxis==="x")p.x=p.baseX+Math.sin(timeAlive*p.moveSpeed)*p.moveRange;
+      else p.y=p.baseY+Math.sin(timeAlive*p.moveSpeed)*p.moveRange;
+      p.dx=p.x-prevX;p.dy=p.y-prevY;
+      if(player.standingOn===p){player.x+=p.dx;player.y+=p.dy;}
+    }
+ 
     player.wasGrounded=player.grounded;player.grounded=false;
+    player.standingOn=null;
     for(const p of platforms){
       if(p.gone)continue;
+      if(p.oneway&&player.vy<0)continue;
       if(rects(player,p)){
         if(player.vy>=0&&player.y+player.h-player.vy*dt<=p.y+8){
           player.y=p.y-player.h;
@@ -633,7 +665,7 @@ function update(dt){
           }else{
             if(player.vy>520){player.squash=Math.min(1.2,player.vy/700);shake(player.vy/180);addDust(player.x+player.w/2,player.y+player.h);sfx.land();}
             else if(player.vy>200){player.squash=0.5;}
-            player.vy=0;player.grounded=true;
+            player.vy=0;player.grounded=true;player.standingOn=p;
           }
           if(p.crumbly&&p.crumbleT<0){
             p.crumbleT=0.45;
@@ -947,7 +979,14 @@ function drawPlatforms(t){
     if(x+p.w<-80||x>W+80)continue;
     ctx.globalAlpha=p.crumbleT>=0?0.4+0.6*(p.crumbleT/0.45):1;
  
-    if(p.ice){
+    if(p.oneway){
+      // Slatted planks with visible gaps - signals "you can rise through this"
+      ctx.fillStyle="#8a6a42";
+      const slatW=10,gap=6;
+      for(let sx=x;sx<x+p.w;sx+=slatW+gap){roundRect(sx,y,Math.min(slatW,x+p.w-sx),12,3);ctx.fill();}
+      ctx.fillStyle="rgba(255,255,255,.22)";
+      for(let sx=x;sx<x+p.w;sx+=slatW+gap)ctx.fillRect(sx,y+1,Math.min(slatW,x+p.w-sx),2);
+    } else if(p.ice){
       ctx.fillStyle="#a8d8f0";roundRect(x,y,p.w,p.h,14);ctx.fill();
       ctx.fillStyle="#d4eef8";roundRect(x,y,p.w,20,14);ctx.fill();
       // Ice shine
@@ -973,6 +1012,12 @@ function drawPlatforms(t){
       ctx.fillStyle="rgba(255,255,255,.18)";ctx.fillRect(x+8,y+5,p.w-16,3);
       ctx.fillStyle=lvl.theme==="home"?"#6db856":"#5fc278";
       for(let i=20;i<p.w-20;i+=40){ctx.beginPath();ctx.moveTo(x+i,y);ctx.lineTo(x+i+3,y-6);ctx.lineTo(x+i+6,y);ctx.closePath();ctx.fill();}
+    }
+ 
+    // Moving platforms get a soft pulsing outline so they read as different
+    if(p.moving){
+      ctx.strokeStyle=`rgba(180,220,255,${0.35+0.2*Math.sin(t*3)})`;ctx.lineWidth=2;
+      roundRect(x-2,y-2,p.w+4,p.h+4,14);ctx.stroke();
     }
  
     // Crumbling crack overlay, intensifies as it counts down
