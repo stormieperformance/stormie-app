@@ -136,33 +136,6 @@ const sfx={
 function setMuted(m){muted=m;if(masterGain)masterGain.gain.value=muted?0:0.7;muteBtn.textContent=muted?"♪̸":"♪";}
 muteBtn.addEventListener("click",e=>{e.stopPropagation();setMuted(!muted);});
 
-/* ---------- AMBIENT MUSIC (one soft looping chord per theme) ---------- */
-let musicTimer=null,musicTheme=null;
-const THEME_CHORDS={
-  forest:[196.0,247.0,294.0],
-  night:[220.0,261.6,329.6],
-  cave:[164.8,246.9,329.6],
-  snow:[293.7,392.0,440.0],
-  ruins:[174.6,220.0,261.6],
-  sky:[220.0,293.7,349.2],
-  home:[261.6,329.6,392.0]
-};
-function playAmbientChord(theme){
-  const freqs=THEME_CHORDS[theme]||THEME_CHORDS.forest;
-  freqs.forEach(f=>tone(f,7.5,"sine",0.016,1.4));
-}
-function startMusic(theme){
-  if(musicTheme===theme&&musicTimer)return;
-  stopMusic();
-  musicTheme=theme;
-  playAmbientChord(theme);
-  musicTimer=setInterval(()=>playAmbientChord(theme),7000);
-}
-function stopMusic(){
-  if(musicTimer){clearInterval(musicTimer);musicTimer=null;}
-  musicTheme=null;
-}
- 
 /* ---------- CANVAS ---------- */
 let W,H,dpr;
 function resize(){dpr=Math.min(window.devicePixelRatio||1,2);W=innerWidth;H=innerHeight;canvas.width=Math.floor(W*dpr);canvas.height=Math.floor(H*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);ctx.imageSmoothingEnabled=true;}
@@ -534,7 +507,6 @@ function loadLevel(idx,fresh){
   resetEntities();respawnPlayer(false);
   cameraX=0;cameraShake=0;player.deaths=0;
   showBanner(lvl.title,lvl.subtitle);
-  startMusic(lvl.theme);
   if(fresh)setMessage(lvl.messages[0]);
 }
 
@@ -779,7 +751,7 @@ function update(dt){
       if(lvl.isLast){sfx.ending();showingEnding=false;endingTimer=0;}
       else sfx.win();
       setTimeout(()=>{
-        if(lvl.isLast){showingEnding=true;stopMusic();}
+        if(lvl.isLast){showingEnding=true;}
         else{
           levelTransition=1;
           setTimeout(()=>{loadLevel(currentLevel+1,false);levelTransition=0;},800);
