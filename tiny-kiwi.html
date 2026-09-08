@@ -423,6 +423,7 @@ function enterBonusRound(){
   addParticles(player.x+player.w/2,player.y+player.h/2,50,"#fff4c2",1.8);
   shake(6);sfx.grow();
   setMessage("Bonus round! Grab the cute fruits!");
+  startBonusMusic();
 }
 
 function exitBonusRound(){
@@ -433,6 +434,24 @@ function exitBonusRound(){
   shake(5);sfx.win();
   addFloatingText(player.x+player.w/2,player.y-34,`Bonus: ${bonusCollected}/${bonusFruits.length}!`,"#ffe27a");
   setMessage(`Back to the adventure! Found ${bonusCollected}/${bonusFruits.length} bonus fruits.`);
+  stopBonusMusic();
+}
+
+/* Cute bell-like jingle, only during the bonus round - separate from (and
+   much more playful than) the ambient pad system that got removed from
+   the main game. */
+let bonusMusicTimer=null;
+const BONUS_JINGLE=[784,880,988,1047,988,880,988,1175,1047,880,784,659];
+function playBonusJingle(){
+  BONUS_JINGLE.forEach((f,i)=>setTimeout(()=>{if(inBonusRound)tone(f,0.16,"triangle",0.055,0.008);},i*130));
+}
+function startBonusMusic(){
+  stopBonusMusic();
+  playBonusJingle();
+  bonusMusicTimer=setInterval(playBonusJingle,BONUS_JINGLE.length*130+250);
+}
+function stopBonusMusic(){
+  if(bonusMusicTimer){clearInterval(bonusMusicTimer);bonusMusicTimer=null;}
 }
 
 function updateBonusRound(dt){
@@ -466,9 +485,9 @@ function updateBonusRound(dt){
   }
   player.wasGrounded=player.grounded;
   if(player.y>BONUS_H+120){
-    const c=BONUS_CLOUDS[Math.floor(Math.random()*BONUS_CLOUDS.length)];
-    player.x=c.x+c.w/2-player.w/2;player.y=c.y-60;player.vy=0;player.vx=0;
-    addParticles(player.x+player.w/2,player.y,20,"#fff4c2",1);
+    setMessage("Whoops, back down you go!");
+    exitBonusRound();
+    return;
   }
  
   for(const f of bonusFruits){
@@ -567,7 +586,7 @@ const snowflakes=[];for(let i=0;i<100;i++)snowflakes.push({x:Math.random()*700,y
 const stars=[];for(let i=0;i<180;i++)stars.push({x:Math.random()*6000,y:Math.random()*350,s:0.5+Math.random()*1.5,t:Math.random()*99});
 const rainDrops=[];for(let i=0;i<80;i++)rainDrops.push({x:Math.random()*700,y:Math.random()*H,s:0.5+Math.random()});
  
-const player={x:80,y:420,w:34,h:40,vx:0,vy:0,speed:400,jump:720,grounded:false,wasGrounded:false,face:1,won:false,squash:0,stretch:0,coyote:0,buffer:0,respawnFlash:0,deaths:0,windForce:0,big:false,bigTimer:0,scale:1,speedy:false,speedTimer:0,standingOn:null,iceTimer:0,onZip:null,zipT:0};
+const player={x:80,y:420,w:34,h:40,vx:0,vy:0,speed:400,jump:720,grounded:false,wasGrounded:false,face:1,won:false,squash:0,stretch:0,coyote:0,buffer:0,respawnFlash:0,deaths:0,windForce:0,big:false,bigTimer:0,scale:1,speedy:false,speedTimer:0,standingOn:null,iceTimer:0,onZip:null,zipT:0,bonusAirJumps:0};
 let comboCount=0,comboTimer=0;
 let noDeathMsgShown=false;
  
@@ -679,7 +698,7 @@ function respawnPlayer(soft){
   player.big=false;player.bigTimer=0;player.scale=1;
   player.speedy=false;player.speedTimer=0;
   player.standingOn=null;
-  player.onZip=null;player.zipT=0;player.iceTimer=0;
+  player.onZip=null;player.zipT=0;player.iceTimer=0;player.bonusAirJumps=0;
   comboCount=0;comboTimer=0;
   if(!soft){const lvl=getLvl();setMessage(lvl.messages[0]);}
 }
@@ -777,6 +796,12 @@ function update(dt){
     if(player.buffer>0&&player.coyote>0){
       player.vy=-player.jump;player.grounded=false;player.coyote=0;player.buffer=0;
       player.squash=0;player.stretch=1;addDust(player.x+player.w/2,player.y+player.h);sfx.jump();
+    }else if(jumpPressedThisFrame&&player.bonusAirJumps>0&&!player.grounded){
+      // Extra mid-air jump, only available right after bouncing off a
+      // mushroom - chain these to reach real height (like the bonus ring).
+      player.vy=Math.min(player.vy,-820);player.bonusAirJumps--;
+      player.squash=0;player.stretch=1;player.buffer=0;
+      addParticles(player.x+player.w/2,player.y+player.h/2,14,"#ff8a8a",0.8);sfx.jump();
     }
     if(keys.jumpReleased&&player.vy<-260)player.vy=-260;
     keys.jumpReleased=false;
@@ -808,15 +833,18 @@ function update(dt){
           player.y=p.y-player.h;
           if(p.bouncy){
             player.vy=-1080;player.squash=0;player.stretch=1;p.squish=1;
+            player.bonusAirJumps=2;
             shake(6);addParticles(p.x+p.w/2,p.y,22,"#ff5d5d",1);sfx.bounce();
-            setMessage("Boiiing!");
             if(p.bonusMushroom){
-              bonusRing={active:true,x:p.x+p.w/2,y:p.y-250,life:2.4};
+              bonusRing={active:true,x:p.x+p.w/2,y:p.y-540,life:3.4};
+              setMessage("Boiiing! Chain jumps mid-air to reach the ring!");
+            }else{
+              setMessage("Boiiing!");
             }
           }else{
             if(player.vy>520){player.squash=Math.min(1.2,player.vy/700);shake(player.vy/180);addDust(player.x+player.w/2,player.y+player.h);sfx.land();}
             else if(player.vy>200){player.squash=0.5;}
-            player.vy=0;player.grounded=true;player.standingOn=p;
+            player.vy=0;player.grounded=true;player.standingOn=p;player.bonusAirJumps=0;
             if(p.ice)player.iceTimer=0.5;
           }
           if(p.crumbly&&p.crumbleT<0){
