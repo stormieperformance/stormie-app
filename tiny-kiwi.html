@@ -610,14 +610,14 @@ function computeSecretGem(lvl){
   return {x:pick.x+pick.w/2,y:pick.y-46,taken:false};
 }
 
-let berries=[],enemies=[],particles=[],floatingTexts=[],platforms=[];
+let berries=[],enemies=[],particles=[],floatingTexts=[],platforms=[],blocks=[],bonusPopBerries=[];
 let levelTransition=0,showingEnding=false,endingTimer=0;
 const fireflies=[];for(let i=0;i<80;i++)fireflies.push({x:Math.random()*6000,y:240+Math.random()*340,t:Math.random()*99,s:0.6+Math.random()*0.8});
 const snowflakes=[];for(let i=0;i<100;i++)snowflakes.push({x:Math.random()*700,y:Math.random()*H,s:0.5+Math.random()*1.5,sp:0.4+Math.random()*0.8});
 const stars=[];for(let i=0;i<180;i++)stars.push({x:Math.random()*6000,y:Math.random()*350,s:0.5+Math.random()*1.5,t:Math.random()*99});
 const rainDrops=[];for(let i=0;i<80;i++)rainDrops.push({x:Math.random()*700,y:Math.random()*H,s:0.5+Math.random()});
  
-const player={x:80,y:420,w:34,h:40,vx:0,vy:0,speed:400,jump:720,grounded:false,wasGrounded:false,face:1,won:false,squash:0,stretch:0,coyote:0,buffer:0,respawnFlash:0,deaths:0,windForce:0,big:false,bigTimer:0,scale:1,speedy:false,speedTimer:0,standingOn:null,iceTimer:0,onZip:null,zipT:0,bonusAirJumps:0,invincible:0,standingOnCloud:null};
+const player={x:80,y:420,w:34,h:40,vx:0,vy:0,speed:400,jump:720,grounded:false,wasGrounded:false,face:1,won:false,squash:0,stretch:0,coyote:0,buffer:0,respawnFlash:0,deaths:0,windForce:0,big:false,bigTimer:0,scale:1,speedy:false,speedTimer:0,standingOn:null,iceTimer:0,onZip:null,zipT:0,bonusAirJumps:0,invincible:0,standingOnCloud:null,flying:false,flyTimer:0};
 let comboCount=0,comboTimer=0;
 let noDeathMsgShown=false;
  
@@ -682,6 +682,16 @@ function tagSpecialPlatforms(lvl){
     const iceIdx=[pickNear(0.46),pickNear(0.5)].filter(i=>i!==null);
     iceIdx.forEach(i=>platforms[i].ice=true);
   }
+ 
+  // Bump blocks: 4 mystery crates floating above stable ground, hit from
+  // below to reveal what's inside. One flight power (guaranteed), one
+  // enemy (risk), two small berry bonuses - identical from the outside.
+  const blockIdx=[pickNear(0.1),pickNear(0.36),pickNear(0.62),pickNear(0.9)].filter(i=>i!==null);
+  const blockTypes=["flight","enemy","berry","berry"];
+  blocks=blockIdx.map((i,n)=>{
+    const p=lvl.platforms[i];
+    return {x:p.x+p.w/2-18,y:p.y-105,w:36,h:30,used:false,kind:blockTypes[n]||"berry",bounceT:0};
+  });
 }
 
 function resetEntities(){
@@ -700,7 +710,7 @@ function resetEntities(){
   enemies=lvl.enemies.map(e=>({...e,w:34,h:32,alive:true,bounce:0,baseY:e.y,pauseT:0,dashT:0}));
   platforms=lvl.platforms.map(p=>({...p,gone:false,crumbleT:-1,respawnT:0,squish:0}));
   tagSpecialPlatforms(lvl);
-  particles.length=0;floatingTexts.length=0;
+  particles.length=0;floatingTexts.length=0;bonusPopBerries.length=0;
 }
  
 function computeCheckpoint(lvl){
@@ -730,6 +740,7 @@ function respawnPlayer(soft){
   player.speedy=false;player.speedTimer=0;
   player.standingOn=null;
   player.onZip=null;player.zipT=0;player.iceTimer=0;player.bonusAirJumps=0;player.invincible=0;
+  player.flying=false;player.flyTimer=0;
   comboCount=0;comboTimer=0;
   if(!soft){const lvl=getLvl();setMessage(lvl.messages[0]);}
 }
@@ -822,27 +833,45 @@ function update(dt){
       }
     }
  
-    if(player.grounded)player.coyote=0.1;else player.coyote=Math.max(0,player.coyote-dt);
-    if(keys.jumpPressed)player.buffer=0.12;else player.buffer=Math.max(0,player.buffer-dt);
-    keys.jumpPressed=false;
+    if(player.flying){
+      // Free flight: hold jump to rise, release to glide down gently,
+      // ignores gravity and (via skipping the platform loop below) ignores
+      // ground collision entirely - sails straight over crumbling platforms.
+      player.flyTimer-=dt;
+      if(player.flyTimer<=0){
+        player.flying=false;
+        addFloatingText(player.x+player.w/2,player.y-10,"Wings fading...","#bfe8ff");
+      }
+      const targetFlyVy=keys.jump?-320:170;
+      player.vy+=(targetFlyVy-player.vy)*Math.min(1,dt*6);
+      player.x+=player.vx*dt;player.y+=player.vy*dt;
+      player.x=Math.max(0,Math.min(lvl.worldWidth-player.w,player.x));
+      player.y=Math.max(-40,Math.min(860,player.y));
+      keys.jumpPressed=false;keys.jumpReleased=false;
+      if(Math.random()<dt*14)addParticles(player.x+player.w/2,player.y+player.h*0.7,1,"#eaf7ff",0.4);
+    }else{
+      if(player.grounded)player.coyote=0.1;else player.coyote=Math.max(0,player.coyote-dt);
+      if(keys.jumpPressed)player.buffer=0.12;else player.buffer=Math.max(0,player.buffer-dt);
+      keys.jumpPressed=false;
  
-    if(player.buffer>0&&player.coyote>0){
-      player.vy=-player.jump;player.grounded=false;player.coyote=0;player.buffer=0;
-      player.squash=0;player.stretch=1;addDust(player.x+player.w/2,player.y+player.h);sfx.jump();
-    }else if(jumpPressedThisFrame&&player.bonusAirJumps>0&&!player.grounded){
-      // Extra mid-air jump, only available right after bouncing off a
-      // mushroom - chain these to reach real height (like the bonus ring).
-      player.vy=Math.min(player.vy,-820);player.bonusAirJumps--;
-      player.squash=0;player.stretch=1;player.buffer=0;
-      addParticles(player.x+player.w/2,player.y+player.h/2,14,"#ff8a8a",0.8);sfx.jump();
+      if(player.buffer>0&&player.coyote>0){
+        player.vy=-player.jump;player.grounded=false;player.coyote=0;player.buffer=0;
+        player.squash=0;player.stretch=1;addDust(player.x+player.w/2,player.y+player.h);sfx.jump();
+      }else if(jumpPressedThisFrame&&player.bonusAirJumps>0&&!player.grounded){
+        // Extra mid-air jump, only available right after bouncing off a
+        // mushroom - chain these to reach real height (like the bonus ring).
+        player.vy=Math.min(player.vy,-820);player.bonusAirJumps--;
+        player.squash=0;player.stretch=1;player.buffer=0;
+        addParticles(player.x+player.w/2,player.y+player.h/2,14,"#ff8a8a",0.8);sfx.jump();
+      }
+      if(keys.jumpReleased&&player.vy<-260)player.vy=-260;
+      keys.jumpReleased=false;
+ 
+      player.vy+=lvl.gravity*dt;
+      if(player.vy>1100)player.vy=1100;
+      player.x+=player.vx*dt;player.y+=player.vy*dt;
+      player.x=Math.max(0,Math.min(lvl.worldWidth-player.w,player.x));
     }
-    if(keys.jumpReleased&&player.vy<-260)player.vy=-260;
-    keys.jumpReleased=false;
- 
-    player.vy+=lvl.gravity*dt;
-    if(player.vy>1100)player.vy=1100;
-    player.x+=player.vx*dt;player.y+=player.vy*dt;
-    player.x=Math.max(0,Math.min(lvl.worldWidth-player.w,player.x));
  
     // Moving platforms: advance their position, then carry the player along
     // if they were standing on one last frame (before this frame's own
@@ -858,7 +887,7 @@ function update(dt){
  
     player.wasGrounded=player.grounded;player.grounded=false;
     player.standingOn=null;
-    for(const p of platforms){
+    if(!player.flying)for(const p of platforms){
       if(p.gone)continue;
       if(p.oneway&&player.vy<0)continue;
       if(rects(player,p)){
@@ -901,6 +930,36 @@ function update(dt){
       if(p.squish>0)p.squish=Math.max(0,p.squish-dt*4);
     }
  
+    // Bump blocks: hit one from below (moving upward) to pop its contents.
+    for(const bl of blocks){
+      if(bl.used){if(bl.bounceT>0)bl.bounceT=Math.max(0,bl.bounceT-dt*3);continue;}
+      if(player.vy<0&&player.x+player.w>bl.x&&player.x<bl.x+bl.w&&
+         player.y<=bl.y+bl.h&&player.y-player.vy*dt>bl.y+bl.h-10){
+        bl.used=true;bl.bounceT=1;
+        player.vy=120;
+        shake(4);sfx.bounce();
+        if(bl.kind==="flight"){
+          player.flying=true;player.flyTimer=10;
+          addParticles(bl.x+bl.w/2,bl.y,40,"#bfe8ff",1.6);
+          addFloatingText(bl.x+bl.w/2,bl.y-20,"YOU CAN FLY!","#bfe8ff");
+          setMessage("Take to the sky! Hold jump to rise.");
+          sfx.grow();
+        }else if(bl.kind==="enemy"){
+          const type=["normal","crystal","ghost","ice","storm"][Math.floor(Math.random()*5)];
+          enemies.push({x:bl.x+bl.w/2-17,y:bl.y+bl.h,w:34,h:32,vx:70,min:bl.x-90,max:bl.x+90,
+            type,alive:true,bounce:0,baseY:bl.y+bl.h,pauseT:0,dashT:0});
+          addParticles(bl.x+bl.w/2,bl.y+bl.h,20,"#ff8a8a",1);
+          addFloatingText(bl.x+bl.w/2,bl.y-14,"Uh oh!","#ff8a8a");
+          shake(6);sfx.hurt();
+        }else{
+          const n=1+Math.floor(Math.random()*2);
+          for(let k=0;k<n;k++)bonusPopBerries.push({x:bl.x+bl.w/2,y:bl.y,vx:(k-0.5)*90,vy:-260,t:0,taken:false});
+          addFloatingText(bl.x+bl.w/2,bl.y-16,`+${n} bonus!`,"#ffd37a");
+          sfx.berry();
+        }
+      }
+    }
+ 
     // Zipline: attach when airborne and close to the cable, ride it at a
     // fixed speed, detach at the far end (or early with jump) with a
     // forward launch. Overrides this frame's position, same as bounce
@@ -941,6 +1000,21 @@ function update(dt){
         bonusRing.active=false;
         enterBonusRound();
       }
+    }
+ 
+    // Bonus berries popped from blocks: small arc, then collectible - do
+    // NOT count toward the gate requirement, purely a side bonus.
+    for(let i=bonusPopBerries.length-1;i>=0;i--){
+      const pb=bonusPopBerries[i];
+      if(!pb.taken){
+        pb.t+=dt;pb.vy+=900*dt;pb.x+=pb.vx*dt;pb.y+=pb.vy*dt;
+        if(pb.t>1.4)pb.vx*=Math.pow(0.1,dt);
+        if(Math.hypot(player.x+player.w/2-pb.x,player.y+player.h/2-pb.y)<28){
+          pb.taken=true;
+          addParticles(pb.x,pb.y,10,"#ffd37a");sfx.berry();
+        }
+      }
+      if(pb.taken||pb.t>6)bonusPopBerries.splice(i,1);
     }
  
     // Berries
@@ -1066,7 +1140,7 @@ function update(dt){
     }
  
     // Fall
-    if(player.y>H+200||player.y>900){
+    if(!player.flying&&(player.y>H+200||player.y>900)){
       setMessage("You tumbled down. Try again.");sfx.fall();shake(6);player.deaths++;respawnPlayer(true);
     }
  
@@ -1480,6 +1554,15 @@ function drawPlayer(t){
   ctx.fillStyle="white";ctx.beginPath();ctx.ellipse(player.face*20,-10,4,4*blink,0,0,Math.PI*2);ctx.fill();
   ctx.fillStyle="#183224";ctx.beginPath();ctx.ellipse(player.face*21,-10,2,2*blink,0,0,Math.PI*2);ctx.fill();
   ctx.fillStyle="#f5d66b";ctx.beginPath();ctx.arc(player.face*25,-3,3,0,Math.PI*2);ctx.fill();
+  if(player.flying){
+    const flap=Math.sin(t*14)*10;
+    ctx.fillStyle="rgba(235,248,255,.92)";
+    ctx.beginPath();ctx.ellipse(-20,-2+flap*0.3,16,9,-0.4,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.ellipse(20,-2-flap*0.3,16,9,0.4,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle="rgba(180,220,255,.6)";ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.ellipse(-20,-2+flap*0.3,16,9,-0.4,0,Math.PI*2);ctx.stroke();
+    ctx.beginPath();ctx.ellipse(20,-2-flap*0.3,16,9,0.4,0,Math.PI*2);ctx.stroke();
+  }
   ctx.restore();
 }
  
@@ -1529,6 +1612,37 @@ function drawZipline(){
     ctx.fillStyle="#e8d98a";ctx.beginPath();ctx.arc(hx,hy,5,0,Math.PI*2);ctx.fill();
     ctx.strokeStyle="rgba(232,217,138,.5)";ctx.lineWidth=2;
     ctx.beginPath();ctx.moveTo(hx,hy);ctx.lineTo(hx,hy+10);ctx.stroke();
+  }
+}
+
+function drawBlocks(t){
+  for(const bl of blocks){
+    const x=bl.x-cameraX,y=bl.y-(bl.bounceT>0?Math.sin(bl.bounceT*Math.PI)*8:0);
+    if(x+bl.w<-40||x>W+40)continue;
+    if(bl.used){
+      ctx.fillStyle="#6b5a48";roundRect(x,y,bl.w,bl.h,6);ctx.fill();
+      ctx.fillStyle="rgba(0,0,0,.2)";roundRect(x+4,y+4,bl.w-8,bl.h-8,4);ctx.fill();
+    }else{
+      const pulse=1+Math.sin(t*3+bl.x*0.02)*0.04;
+      ctx.fillStyle="#e8a23e";roundRect(x,y,bl.w,bl.h,6);ctx.fill();
+      ctx.strokeStyle="#8a5a20";ctx.lineWidth=2;roundRect(x+2,y+2,bl.w-4,bl.h-4,4);ctx.stroke();
+      ctx.fillStyle="#fff6da";ctx.font="900 16px system-ui";ctx.textAlign="center";
+      ctx.save();ctx.translate(x+bl.w/2,y+bl.h/2+6);ctx.scale(pulse,pulse);
+      ctx.fillText("?",0,0);ctx.restore();
+      ctx.globalAlpha=0.4+0.3*Math.sin(t*4+bl.x*0.03);
+      ctx.strokeStyle="#ffe9b0";ctx.lineWidth=1.5;roundRect(x-2,y-2,bl.w+4,bl.h+4,8);ctx.stroke();
+      ctx.globalAlpha=1;
+    }
+  }
+}
+
+function drawPopBerries(t){
+  for(const pb of bonusPopBerries){
+    if(pb.taken)continue;
+    const x=pb.x-cameraX,y=pb.y;
+    if(x<-30||x>W+30)continue;
+    ctx.fillStyle="#ffd37a";ctx.beginPath();ctx.arc(x,y,9,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle="rgba(255,255,255,.6)";ctx.beginPath();ctx.arc(x-3,y-3,2.5,0,Math.PI*2);ctx.fill();
   }
 }
 
@@ -1755,7 +1869,7 @@ function render(t){
   if(inBonusRound){renderBonusRound(t);return;}
   const sx=(Math.random()-0.5)*cameraShake,sy=(Math.random()-0.5)*cameraShake;
   ctx.save();ctx.translate(sx,sy);
-  drawSky(t);drawWindZones();drawPlatforms(t);drawZipline();drawBonusRing(t);drawCheckpoint();drawSecretGem(t);drawGate();
+  drawSky(t);drawWindZones();drawPlatforms(t);drawBlocks(t);drawPopBerries(t);drawZipline();drawBonusRing(t);drawCheckpoint();drawSecretGem(t);drawGate();
   drawFireflies(t);drawBerries(t);drawEnemies(t);drawPlayer(t);drawParticles();drawFloatingTexts();
   drawVignette();
   ctx.restore();
