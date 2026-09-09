@@ -393,6 +393,7 @@ let secretGem={x:0,y:0,taken:false};
 let zipline=null;
 let bonusRing={active:false,x:0,y:0,life:0};
 let inBonusRound=false,bonusTimer=0,bonusCollected=0,bonusFruits=[],bonusCamX=0,bonusCamY=0,bonusReturn=null;
+let bonusClouds=[];
 
 /* ---------- BONUS CLOUD ROUND ----------
    A cozy no-fail side room. Reached by grabbing a floating ring that
@@ -416,8 +417,15 @@ function enterBonusRound(){
   bonusReturn={x:player.x,y:player.y,vx:player.vx,vy:player.vy,cx:cameraX};
   inBonusRound=true;bonusTimer=20;bonusCollected=0;
   bonusFruits=BONUS_FRUITS_DATA.map(f=>({...f,taken:false}));
+  bonusClouds=BONUS_CLOUDS.map((c,i)=>({
+    ...c,baseX:c.x,baseY:c.y,dx:0,dy:0,
+    axis:i%2===0?"x":"y",
+    range:i%2===0?55:32,
+    speed:0.55+((i*37)%9)/10
+  }));
   player.x=70;player.y=500;player.vx=0;player.vy=0;
   player.big=false;player.bigTimer=0;player.scale=1;player.speedy=false;player.speedTimer=0;
+  player.standingOnCloud=null;
   bonusCamX=0;bonusCamY=0;
   bonusRing.active=false;
   addParticles(player.x+player.w/2,player.y+player.h/2,50,"#fff4c2",1.8);
@@ -426,15 +434,22 @@ function enterBonusRound(){
   startBonusMusic();
 }
 
-function exitBonusRound(){
+function exitBonusRound(fullClear){
   inBonusRound=false;
   player.x=bonusReturn.x;player.y=bonusReturn.y;player.vx=bonusReturn.vx;player.vy=bonusReturn.vy;
   cameraX=bonusReturn.cx;cameraY=0;
   addParticles(player.x+player.w/2,player.y+player.h/2,40,"#c9f2a0",1.4);
   shake(5);sfx.win();
-  addFloatingText(player.x+player.w/2,player.y-34,`Bonus: ${bonusCollected}/${bonusFruits.length}!`,"#ffe27a");
-  setMessage(`Back to the adventure! Found ${bonusCollected}/${bonusFruits.length} bonus fruits.`);
   stopBonusMusic();
+  if(fullClear){
+    player.invincible=12;
+    addFloatingText(player.x+player.w/2,player.y-34,"SUPER POWER: INVINCIBLE!","#ffe27a");
+    setMessage("You're invincible for a little while - go wild!");
+    addParticles(player.x+player.w/2,player.y+player.h/2,40,"#ff8fd6",1.6);
+  }else{
+    addFloatingText(player.x+player.w/2,player.y-34,`Bonus: ${bonusCollected}/${bonusFruits.length}!`,"#ffe27a");
+    setMessage(`Back to the adventure! Found ${bonusCollected}/${bonusFruits.length} bonus fruits.`);
+  }
 }
 
 /* Cute bell-like jingle, only during the bonus round - separate from (and
@@ -476,11 +491,22 @@ function updateBonusRound(dt){
   player.x+=player.vx*dt;player.y+=player.vy*dt;
   player.x=Math.max(0,Math.min(BONUS_W-player.w,player.x));
  
+  // Clouds drift gently on their own path - makes landing and fruit-hopping
+  // a moving target instead of static platforming
+  for(const c of bonusClouds){
+    const prevX=c.x,prevY=c.y;
+    if(c.axis==="x")c.x=c.baseX+Math.sin(timeAlive*c.speed)*c.range;
+    else c.y=c.baseY+Math.sin(timeAlive*c.speed)*c.range;
+    c.dx=c.x-prevX;c.dy=c.y-prevY;
+    if(player.standingOnCloud===c){player.x+=c.dx;player.y+=c.dy;}
+  }
+ 
   player.grounded=false;
-  for(const c of BONUS_CLOUDS){
+  const prevCloud=player.standingOnCloud;player.standingOnCloud=null;
+  for(const c of bonusClouds){
     if(player.x+player.w>c.x&&player.x<c.x+c.w&&player.vy>=0&&player.y+player.h-player.vy*dt<=c.y+10&&player.y+player.h>=c.y-4&&player.y+player.h<=c.y+30){
-      player.y=c.y-player.h;player.vy=0;player.grounded=true;
-      if(player.wasGrounded===false)sfx.land();
+      player.y=c.y-player.h;player.vy=0;player.grounded=true;player.standingOnCloud=c;
+      if(prevCloud===null)sfx.land();
     }
   }
   player.wasGrounded=player.grounded;
@@ -505,8 +531,13 @@ function updateBonusRound(dt){
  
   const allCollected=bonusCollected>=bonusFruits.length;
   if(bonusTimer<=0||allCollected){
-    if(allCollected)addFloatingText(player.x+player.w/2,player.y-40,"ALL FRUITS FOUND!","#ffe27a");
-    exitBonusRound();
+    if(allCollected){
+      addParticles(player.x+player.w/2,player.y+player.h/2,60,"#ffe27a",2);
+      addFloatingText(player.x+player.w/2,player.y-40,"ALL FRUITS FOUND!","#ffe27a");
+      setMessage("Every fruit! You earned a super power!");
+      sfx.ending();
+    }
+    exitBonusRound(allCollected);
   }
 }
 
@@ -586,7 +617,7 @@ const snowflakes=[];for(let i=0;i<100;i++)snowflakes.push({x:Math.random()*700,y
 const stars=[];for(let i=0;i<180;i++)stars.push({x:Math.random()*6000,y:Math.random()*350,s:0.5+Math.random()*1.5,t:Math.random()*99});
 const rainDrops=[];for(let i=0;i<80;i++)rainDrops.push({x:Math.random()*700,y:Math.random()*H,s:0.5+Math.random()});
  
-const player={x:80,y:420,w:34,h:40,vx:0,vy:0,speed:400,jump:720,grounded:false,wasGrounded:false,face:1,won:false,squash:0,stretch:0,coyote:0,buffer:0,respawnFlash:0,deaths:0,windForce:0,big:false,bigTimer:0,scale:1,speedy:false,speedTimer:0,standingOn:null,iceTimer:0,onZip:null,zipT:0,bonusAirJumps:0};
+const player={x:80,y:420,w:34,h:40,vx:0,vy:0,speed:400,jump:720,grounded:false,wasGrounded:false,face:1,won:false,squash:0,stretch:0,coyote:0,buffer:0,respawnFlash:0,deaths:0,windForce:0,big:false,bigTimer:0,scale:1,speedy:false,speedTimer:0,standingOn:null,iceTimer:0,onZip:null,zipT:0,bonusAirJumps:0,invincible:0,standingOnCloud:null};
 let comboCount=0,comboTimer=0;
 let noDeathMsgShown=false;
  
@@ -698,7 +729,7 @@ function respawnPlayer(soft){
   player.big=false;player.bigTimer=0;player.scale=1;
   player.speedy=false;player.speedTimer=0;
   player.standingOn=null;
-  player.onZip=null;player.zipT=0;player.iceTimer=0;player.bonusAirJumps=0;
+  player.onZip=null;player.zipT=0;player.iceTimer=0;player.bonusAirJumps=0;player.invincible=0;
   comboCount=0;comboTimer=0;
   if(!soft){const lvl=getLvl();setMessage(lvl.messages[0]);}
 }
@@ -711,6 +742,8 @@ function loadLevel(idx,fresh){
   checkpoint=computeCheckpoint(lvl);
   secretGem=computeSecretGem(lvl);
   zipline=computeZipline(lvl);
+  bonusRing={active:false,x:0,y:0,life:0};
+  inBonusRound=false;stopBonusMusic();
   resetEntities();respawnPlayer(false);
   cameraX=0;cameraShake=0;player.deaths=0;
   noDeathMsgShown=false;
@@ -956,6 +989,17 @@ function update(dt){
       }
     }
  
+    // Bonus-round reward: brief invincibility, sparkly rainbow trail
+    if(player.invincible>0){
+      player.invincible-=dt;
+      if(player.invincible<=0){
+        addFloatingText(player.x+player.w/2,player.y-10,"Power fading...","#ffffff");
+      }else if(Math.random()<dt*10){
+        const hue=Math.floor(Math.random()*360);
+        addParticles(player.x+player.w/2,player.y+player.h/2,1,`hsl(${hue},90%,70%)`,0.5);
+      }
+    }
+ 
     // Enemies
     if(comboTimer>0){comboTimer-=dt;if(comboTimer<=0)comboCount=0;}
     for(const e of enemies){
@@ -993,7 +1037,13 @@ function update(dt){
       }
       if(rects(player,e)){
         const stomp=player.vy>0&&player.y+player.h-player.vy*dt<e.y+14;
-        if(stomp){
+        if(player.invincible>0){
+          e.alive=false;e.bounce=1;
+          comboCount++;comboTimer=1.6;
+          addParticles(e.x+e.w/2,e.y+e.h/2,26,"#fff27a",1.2);
+          addFloatingText(e.x+17,e.y-10,"ZOOM!","#fff27a");
+          shake(4);sfx.stomp();
+        }else if(stomp){
           e.alive=false;e.bounce=1;
           player.vy=keys.jump?(player.big?-620:-560):(player.big?-460:-420);player.squash=0.6;
           comboCount++;comboTimer=1.6;
@@ -1412,6 +1462,12 @@ function drawPlayer(t){
     ctx.beginPath();ctx.arc(0,2,30,0,Math.PI*2);ctx.fill();
     ctx.globalAlpha=player.respawnFlash>0?0.4+0.6*Math.abs(Math.sin(player.respawnFlash*20)):1;
   }
+  if(player.invincible>0){
+    ctx.strokeStyle=`hsl(${(t*260)%360},90%,65%)`;ctx.lineWidth=3;
+    ctx.globalAlpha=0.7+0.3*Math.sin(t*8);
+    ctx.beginPath();ctx.arc(0,2,26,0,Math.PI*2);ctx.stroke();
+    ctx.globalAlpha=player.respawnFlash>0?0.4+0.6*Math.abs(Math.sin(player.respawnFlash*20)):1;
+  }
   // Home level kiwi glows golden
   const lvl=getLvl();
   if(lvl.theme==="home"){
@@ -1637,7 +1693,7 @@ function renderBonusRound(t){
   ctx.fillStyle="rgba(255,246,200,.8)";ctx.beginPath();ctx.arc(W*0.82-cameraX*0.1,90,60,0,Math.PI*2);ctx.fill();
  
   // Happy-face clouds
-  for(const c of BONUS_CLOUDS){
+  for(const c of bonusClouds){
     const x=c.x-cameraX,y=c.y-cameraY;
     if(x+c.w<-60||x>W+60)continue;
     const bob=Math.sin(t*1.4+c.x*0.01)*4;
