@@ -1243,6 +1243,11 @@ function update(dt){
   const targetCam=player.x-W*.35;
   cameraX+=(targetCam-cameraX)*Math.min(1,dt*5);
   cameraX=Math.max(0,Math.min(lvl.worldWidth-W,cameraX));
+  // Vertical camera only ever needs to move for flight (ground levels are a
+  // fixed vertical frame) - follows the player up, eases back to 0 once
+  // they're back down near normal ground height.
+  const targetCamY=Math.min(0,player.y-H*0.5);
+  cameraY+=(targetCamY-cameraY)*Math.min(1,dt*4);
   cameraShake*=Math.pow(0.001,dt);
  
   updateParticlesAndText(dt);
@@ -1373,7 +1378,7 @@ function drawPlatforms(t){
     if(p.gone)continue;
     const shakeX=p.crumbleT>=0?(Math.random()-0.5)*4*(1-p.crumbleT/0.45):0;
     const squishY=p.squish>0?p.squish*6:0;
-    const x=p.x-cameraX+shakeX,y=p.y+squishY;
+    const x=p.x-cameraX+shakeX,y=p.y+squishY-cameraY;
     if(x+p.w<-80||x>W+80)continue;
     ctx.globalAlpha=p.crumbleT>=0?0.4+0.6*(p.crumbleT/0.45):1;
  
@@ -1456,7 +1461,7 @@ function drawBerries(t){
   const color=getBerryColor(lvl.theme);
   for(const b of berries){
     if(b.taken)continue;
-    const x=b.x-cameraX,y=b.y+Math.sin(t*5+b.bob)*5;
+    const x=b.x-cameraX,y=b.y+Math.sin(t*5+b.bob)*5-cameraY;
     if(x<-40||x>W+40)continue;
     if(b.speedy){
       const pulse=1+Math.sin(t*4+b.bob)*0.1;
@@ -1504,7 +1509,7 @@ function drawBerries(t){
 function drawEnemies(t){
   const lvl=getLvl();
   for(const e of enemies){
-    const x=e.x-cameraX,y=e.y;
+    const x=e.x-cameraX,y=e.y-cameraY;
     if(x<-60||x>W+60)continue;
     if(!e.alive){
       if(e.bounce>0){ctx.globalAlpha=e.bounce;ctx.fillStyle=getEnemyColor(e.type||"normal");ctx.beginPath();ctx.arc(x+17,y+30,14,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;}
@@ -1545,7 +1550,7 @@ function drawFireflies(t){
   const visible=lvl.theme==="night"||lvl.theme==="cave"||lvl.theme==="ruins"||lvl.theme==="forest";
   if(!visible)return;
   for(const f of fireflies){
-    const x=(f.x-cameraX)%(W+200)-100,y=f.y+Math.sin(t*2+f.t)*8;
+    const x=(f.x-cameraX)%(W+200)-100,y=f.y+Math.sin(t*2+f.t)*8-cameraY;
     if(x<-20||x>W+20)continue;
     ctx.globalAlpha=(.5+.5*Math.sin(t*4+f.t))*f.s;
     ctx.fillStyle=lvl.theme==="cave"?"#a8ffff":lvl.theme==="ruins"?"#ffcc44":lvl.theme==="forest"?"#d9ff9e":"#fff6a8";
@@ -1600,7 +1605,7 @@ function drawPlayer(t){
  
 function drawSecretGem(t){
   if(secretGem.taken)return;
-  const x=secretGem.x-cameraX,y=secretGem.y+Math.sin(t*3)*4;
+  const x=secretGem.x-cameraX,y=secretGem.y+Math.sin(t*3)*4-cameraY;
   if(x<-40||x>W+40)return;
   ctx.globalAlpha=0.3+0.15*Math.sin(t*3);
   ctx.fillStyle="#e6a8ff";ctx.beginPath();ctx.arc(x,y,22,0,Math.PI*2);ctx.fill();
@@ -1615,7 +1620,7 @@ function drawSecretGem(t){
 
 function drawBonusRing(t){
   if(!bonusRing.active)return;
-  const x=bonusRing.x-cameraX,y=bonusRing.y+Math.sin(t*4)*6;
+  const x=bonusRing.x-cameraX,y=bonusRing.y+Math.sin(t*4)*6-cameraY;
   const fade=Math.min(1,bonusRing.life);
   ctx.globalAlpha=fade;
   ctx.strokeStyle="#ffe27a";ctx.lineWidth=5;
@@ -1629,7 +1634,7 @@ function drawBonusRing(t){
 
 function drawZipline(){
   if(!zipline)return;
-  const x1=zipline.x1-cameraX,y1=zipline.y1,x2=zipline.x2-cameraX,y2=zipline.y2;
+  const x1=zipline.x1-cameraX,y1=zipline.y1-cameraY,x2=zipline.x2-cameraX,y2=zipline.y2-cameraY;
   if(x2<-60||x1>W+60)return;
   // Anchor posts
   ctx.fillStyle="#6b4b2a";ctx.fillRect(x1-4,y1,8,60);ctx.fillRect(x2-4,y2,8,60);
@@ -1665,7 +1670,7 @@ function drawSkyBugs(t){
 
 function drawBlocks(t){
   for(const bl of blocks){
-    const x=bl.x-cameraX,y=bl.y-(bl.bounceT>0?Math.sin(bl.bounceT*Math.PI)*8:0);
+    const x=bl.x-cameraX,y=bl.y-cameraY-(bl.bounceT>0?Math.sin(bl.bounceT*Math.PI)*8:0);
     if(x+bl.w<-40||x>W+40)continue;
     if(bl.used){
       ctx.fillStyle="#6b5a48";roundRect(x,y,bl.w,bl.h,6);ctx.fill();
@@ -1687,7 +1692,7 @@ function drawBlocks(t){
 function drawPopBerries(t){
   for(const pb of bonusPopBerries){
     if(pb.taken)continue;
-    const x=pb.x-cameraX,y=pb.y;
+    const x=pb.x-cameraX,y=pb.y-cameraY;
     if(x<-30||x>W+30)continue;
     ctx.fillStyle="#ffd37a";ctx.beginPath();ctx.arc(x,y,9,0,Math.PI*2);ctx.fill();
     ctx.fillStyle="rgba(255,255,255,.6)";ctx.beginPath();ctx.arc(x-3,y-3,2.5,0,Math.PI*2);ctx.fill();
@@ -1695,7 +1700,7 @@ function drawPopBerries(t){
 }
 
 function drawCheckpoint(){
-  const x=checkpoint.x-cameraX,y=checkpoint.y+100;
+  const x=checkpoint.x-cameraX,y=checkpoint.y+100-cameraY;
   if(x<-60||x>W+60)return;
   const lit=checkpoint.reached;
   const bob=lit?Math.sin(timeAlive*3)*3:0;
@@ -1714,7 +1719,7 @@ function drawCheckpoint(){
 
 function drawGate(){
   const lvl=getLvl();
-  const x=lvl.gateX-cameraX,y=lvl.gateY;
+  const x=lvl.gateX-cameraX,y=lvl.gateY-cameraY;
   if(x<-100||x>W+100)return;
   const collected=berries.filter(b=>b.taken).length;
   const open=collected>=berries.length;
