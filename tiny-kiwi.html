@@ -610,7 +610,7 @@ function computeSecretGem(lvl){
   return {x:pick.x+pick.w/2,y:pick.y-46,taken:false};
 }
 
-let berries=[],enemies=[],particles=[],floatingTexts=[],platforms=[],blocks=[],bonusPopBerries=[];
+let berries=[],enemies=[],particles=[],floatingTexts=[],platforms=[],blocks=[],bonusPopBerries=[],skyBugs=[];
 let levelTransition=0,showingEnding=false,endingTimer=0;
 const fireflies=[];for(let i=0;i<80;i++)fireflies.push({x:Math.random()*6000,y:240+Math.random()*340,t:Math.random()*99,s:0.6+Math.random()*0.8});
 const snowflakes=[];for(let i=0;i<100;i++)snowflakes.push({x:Math.random()*700,y:Math.random()*H,s:0.5+Math.random()*1.5,sp:0.4+Math.random()*0.8});
@@ -711,6 +711,17 @@ function resetEntities(){
   platforms=lvl.platforms.map(p=>({...p,gone:false,crumbleT:-1,respawnT:0,squish:0}));
   tagSpecialPlatforms(lvl);
   particles.length=0;floatingTexts.length=0;bonusPopBerries.length=0;
+  // Flying bugs scattered high in the sky, only reachable during flight
+  skyBugs=[];
+  for(let i=0;i<7;i++){
+    skyBugs.push({
+      baseX:120+((i+0.5)/7)*(lvl.worldWidth-240),
+      baseY:-180-((i*53)%140),
+      phase:i*1.7,speed:0.5+((i*29)%10)/10,
+      rangeX:60+((i*17)%40),rangeY:30+((i*11)%25),
+      taken:false,respawnT:0
+    });
+  }
 }
  
 function computeCheckpoint(lvl){
@@ -837,18 +848,39 @@ function update(dt){
       // Free flight: hold jump to rise, release to glide down gently,
       // ignores gravity and (via skipping the platform loop below) ignores
       // ground collision entirely - sails straight over crumbling platforms.
+      // Floor is capped at normal ground level (not lower) so when the
+      // timer runs out you're always somewhere solid ground can catch you,
+      // never stranded underground in freefall.
       player.flyTimer-=dt;
       if(player.flyTimer<=0){
         player.flying=false;
         addFloatingText(player.x+player.w/2,player.y-10,"Wings fading...","#bfe8ff");
       }
-      const targetFlyVy=keys.jump?-320:170;
+      const targetFlyVy=keys.jump?-340:170;
       player.vy+=(targetFlyVy-player.vy)*Math.min(1,dt*6);
       player.x+=player.vx*dt;player.y+=player.vy*dt;
       player.x=Math.max(0,Math.min(lvl.worldWidth-player.w,player.x));
-      player.y=Math.max(-40,Math.min(860,player.y));
+      player.y=Math.max(-420,Math.min(560,player.y));
       keys.jumpPressed=false;keys.jumpReleased=false;
       if(Math.random()<dt*14)addParticles(player.x+player.w/2,player.y+player.h*0.7,1,"#eaf7ff",0.4);
+ 
+      // Flying bugs up in the high sky - catch them to refuel flight time
+      for(const bug of skyBugs){
+        if(bug.taken){
+          bug.respawnT-=dt;
+          if(bug.respawnT<=0)bug.taken=false;
+          continue;
+        }
+        const bx=bug.baseX+Math.sin(timeAlive*bug.speed+bug.phase)*bug.rangeX;
+        const by=bug.baseY+Math.cos(timeAlive*bug.speed*1.3+bug.phase)*bug.rangeY;
+        if(Math.hypot(player.x+player.w/2-bx,player.y+player.h/2-by)<26){
+          bug.taken=true;bug.respawnT=5+Math.random()*3;
+          player.flyTimer=Math.min(30,player.flyTimer+3);
+          addParticles(bx,by,16,"#fff4a8",0.9);
+          addFloatingText(bx,by-14,"Yum! +3s","#fff4a8");
+          sfx.berry();
+        }
+      }
     }else{
       if(player.grounded)player.coyote=0.1;else player.coyote=Math.max(0,player.coyote-dt);
       if(keys.jumpPressed)player.buffer=0.12;else player.buffer=Math.max(0,player.buffer-dt);
@@ -939,7 +971,7 @@ function update(dt){
         player.vy=120;
         shake(4);sfx.bounce();
         if(bl.kind==="flight"){
-          player.flying=true;player.flyTimer=10;
+          player.flying=true;player.flyTimer=18;
           addParticles(bl.x+bl.w/2,bl.y,40,"#bfe8ff",1.6);
           addFloatingText(bl.x+bl.w/2,bl.y-20,"YOU CAN FLY!","#bfe8ff");
           setMessage("Take to the sky! Hold jump to rise.");
@@ -1615,6 +1647,22 @@ function drawZipline(){
   }
 }
 
+function drawSkyBugs(t){
+  if(!player.flying)return;
+  for(const bug of skyBugs){
+    if(bug.taken)continue;
+    const bx=bug.baseX+Math.sin(timeAlive*bug.speed+bug.phase)*bug.rangeX-cameraX;
+    const by=bug.baseY+Math.cos(timeAlive*bug.speed*1.3+bug.phase)*bug.rangeY-cameraY;
+    if(bx<-30||bx>W+30||by<-30||by>H+30)continue;
+    const flap=Math.sin(t*20+bug.phase)*5;
+    ctx.fillStyle="#fff4a8";ctx.globalAlpha=0.85;
+    ctx.beginPath();ctx.ellipse(bx-6,by-flap,6,4,0.5,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.ellipse(bx+6,by+flap,6,4,-0.5,0,Math.PI*2);ctx.fill();
+    ctx.globalAlpha=1;
+    ctx.fillStyle="#f5c451";ctx.beginPath();ctx.arc(bx,by,3.5,0,Math.PI*2);ctx.fill();
+  }
+}
+
 function drawBlocks(t){
   for(const bl of blocks){
     const x=bl.x-cameraX,y=bl.y-(bl.bounceT>0?Math.sin(bl.bounceT*Math.PI)*8:0);
@@ -1869,7 +1917,7 @@ function render(t){
   if(inBonusRound){renderBonusRound(t);return;}
   const sx=(Math.random()-0.5)*cameraShake,sy=(Math.random()-0.5)*cameraShake;
   ctx.save();ctx.translate(sx,sy);
-  drawSky(t);drawWindZones();drawPlatforms(t);drawBlocks(t);drawPopBerries(t);drawZipline();drawBonusRing(t);drawCheckpoint();drawSecretGem(t);drawGate();
+  drawSky(t);drawWindZones();drawPlatforms(t);drawBlocks(t);drawPopBerries(t);drawSkyBugs(t);drawZipline();drawBonusRing(t);drawCheckpoint();drawSecretGem(t);drawGate();
   drawFireflies(t);drawBerries(t);drawEnemies(t);drawPlayer(t);drawParticles();drawFloatingTexts();
   drawVignette();
   ctx.restore();
