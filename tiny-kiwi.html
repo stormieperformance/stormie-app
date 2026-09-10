@@ -171,7 +171,15 @@ window.addEventListener("pointerup",joyEnd,{passive:false});
 window.addEventListener("pointercancel",joyEnd,{passive:false});
 window.addEventListener("blur",()=>{keys.left=keys.right=keys.jump=false;joy.active=false;joy.id=null;});
 document.addEventListener("visibilitychange",()=>{if(document.hidden){keys.left=keys.right=keys.jump=false;joy.active=false;}});
-addEventListener("keydown",e=>{if(e.repeat)return;if(e.key==="ArrowLeft"||e.key==="a"||e.key==="A")keys.left=true;if(e.key==="ArrowRight"||e.key==="d"||e.key==="D")keys.right=true;if(e.key===" "||e.key==="ArrowUp"||e.key==="w"||e.key==="W"){keys.jumpPressed=!keys.jump;keys.jump=true;e.preventDefault();}if(e.key==="r"||e.key==="R")restart();if(e.key==="m"||e.key==="M")setMuted(!muted);});
+addEventListener("keydown",e=>{if(e.repeat)return;if(e.key==="ArrowLeft"||e.key==="a"||e.key==="A")keys.left=true;if(e.key==="ArrowRight"||e.key==="d"||e.key==="D")keys.right=true;if(e.key===" "||e.key==="ArrowUp"||e.key==="w"||e.key==="W"){keys.jumpPressed=!keys.jump;keys.jump=true;e.preventDefault();}if(e.key==="r"||e.key==="R")restart();if(e.key==="m"||e.key==="M")setMuted(!muted);
+  if(e.key==="t"||e.key==="T"){
+    player.raging=true;player.rageTimer=4;player.rageDir=player.face;player.rageChangeT=0;
+    addParticles(player.x+player.w/2,player.y+player.h/2,20,"#ff5a3c",1.4);
+    addFloatingText(player.x+player.w/2,player.y-30,"TOO SOUR... FURIOUS!","#ff5a3c");
+    setMessage("[DEBUG] Rage triggered - press T anytime to re-test");
+    shake(5);sfx.hurt();
+  }
+});
 addEventListener("keyup",e=>{if(e.key==="ArrowLeft"||e.key==="a"||e.key==="A")keys.left=false;if(e.key==="ArrowRight"||e.key==="d"||e.key==="D")keys.right=false;if(e.key===" "||e.key==="ArrowUp"||e.key==="w"||e.key==="W"){keys.jumpReleased=true;keys.jump=false;}});
  
 /* ---------- LEVEL DEFINITIONS ---------- */
