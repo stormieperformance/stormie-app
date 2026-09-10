@@ -610,14 +610,14 @@ function computeSecretGem(lvl){
   return {x:pick.x+pick.w/2,y:pick.y-46,taken:false};
 }
 
-let berries=[],enemies=[],particles=[],floatingTexts=[],platforms=[],blocks=[],bonusPopBerries=[],skyBugs=[],skyPerches=[],friendlyBirds=[],preyBirds=[];
+let berries=[],enemies=[],particles=[],floatingTexts=[],platforms=[],blocks=[],bonusPopBerries=[],skyBugs=[],skyPerches=[],friendlyBirds=[],preyBirds=[],skyBlocks=[];
 let levelTransition=0,showingEnding=false,endingTimer=0;
 const fireflies=[];for(let i=0;i<80;i++)fireflies.push({x:Math.random()*6000,y:240+Math.random()*340,t:Math.random()*99,s:0.6+Math.random()*0.8});
 const snowflakes=[];for(let i=0;i<100;i++)snowflakes.push({x:Math.random()*700,y:Math.random()*H,s:0.5+Math.random()*1.5,sp:0.4+Math.random()*0.8});
 const stars=[];for(let i=0;i<180;i++)stars.push({x:Math.random()*6000,y:Math.random()*350,s:0.5+Math.random()*1.5,t:Math.random()*99});
 const rainDrops=[];for(let i=0;i<80;i++)rainDrops.push({x:Math.random()*700,y:Math.random()*H,s:0.5+Math.random()});
  
-const player={x:80,y:420,w:34,h:40,vx:0,vy:0,speed:400,jump:720,grounded:false,wasGrounded:false,face:1,won:false,squash:0,stretch:0,coyote:0,buffer:0,respawnFlash:0,deaths:0,windForce:0,big:false,bigTimer:0,scale:1,speedy:false,speedTimer:0,standingOn:null,iceTimer:0,onZip:null,zipT:0,bonusAirJumps:0,invincible:0,standingOnCloud:null,flying:false,flyTimer:0,napping:false,napTimer:0};
+const player={x:80,y:420,w:34,h:40,vx:0,vy:0,speed:400,jump:720,grounded:false,wasGrounded:false,face:1,won:false,squash:0,stretch:0,coyote:0,buffer:0,respawnFlash:0,deaths:0,windForce:0,big:false,bigTimer:0,scale:1,speedy:false,speedTimer:0,standingOn:null,iceTimer:0,onZip:null,zipT:0,bonusAirJumps:0,invincible:0,standingOnCloud:null,flying:false,flyTimer:0,napping:false,napTimer:0,raging:false,rageTimer:0,rageDir:1,rageChangeT:0};
 let comboCount=0,comboTimer=0;
 let noDeathMsgShown=false;
 let gateBlockedMsgShown=false;
@@ -670,7 +670,8 @@ function tagSpecialPlatforms(lvl){
   const crumbleIdx=[pickNear(0.4),pickNear(0.82)].filter(i=>i!==null);
   const movingIdx=[pickNear(0.13),pickNear(0.5)].filter(i=>i!==null);
   const onewayIdx=[pickNear(0.3),pickNear(0.68)].filter(i=>i!==null);
-  bounceIdx.forEach((i,n)=>{platforms[i].bouncy=true;if(n===0)platforms[i].bonusMushroom=true;});
+  const bonusHost=bounceIdx.length?bounceIdx[Math.floor(Math.random()*bounceIdx.length)]:null;
+  bounceIdx.forEach(i=>{platforms[i].bouncy=true;if(i===bonusHost)platforms[i].bonusMushroom=true;});
   crumbleIdx.forEach(i=>platforms[i].crumbly=true);
   movingIdx.forEach((i,n)=>{
     const p=platforms[i];
@@ -685,19 +686,43 @@ function tagSpecialPlatforms(lvl){
     iceIdx.forEach(i=>platforms[i].ice=true);
   }
  
-  // Bump blocks: mystery crates floating above stable ground, hit from
-  // below to reveal what's inside. One flight power (guaranteed), one
-  // enemy (risk), two small berry bonuses, plus a sleepy berry sitting
-  // right next to each berry block - identical from the outside.
-  const blockIdx=[pickNear(0.1),pickNear(0.36),pickNear(0.62),pickNear(0.9)].filter(i=>i!==null);
-  const blockTypes=["flight","enemy","berry","berry"];
-  blocks=blockIdx.map((i,n)=>{
-    const p=lvl.platforms[i];
-    return {x:p.x+p.w/2-18,y:p.y-105,w:36,h:30,used:false,kind:blockTypes[n]||"berry",bounceT:0};
-  });
-  blocks.filter(b=>b.kind==="berry").forEach(b=>{
-    blocks.push({x:b.x+50,y:b.y,w:36,h:30,used:false,kind:"sleepy",bounceT:0});
-  });
+  // Bump blocks: several clusters of 3-5 in a row per level, position,
+  // count and content mix all randomized per level so no two levels (and
+  // no two attempts) play out the same way. Exactly one flight block
+  // guaranteed somewhere in the mix, but never pinned to a fixed spot.
+  const clusterCount=3+Math.floor(Math.random()*2);
+  const kindPool=["berry","berry","sleepy","enemy","rage"];
+  blocks=[];
+  let flightPlaced=false;
+  for(let c=0;c<clusterCount;c++){
+    const frac=0.1+(c/clusterCount)*0.78+(Math.random()*0.08-0.04);
+    const anchorI=pickNear(frac);
+    if(anchorI===null)continue;
+    const p=lvl.platforms[anchorI];
+    const rowLen=3+Math.floor(Math.random()*3);
+    const startX=p.x+p.w/2-((rowLen-1)*46)/2;
+    for(let k=0;k<rowLen;k++){
+      let kind=kindPool[Math.floor(Math.random()*kindPool.length)];
+      if(!flightPlaced&&c===clusterCount-1&&k===rowLen-1){kind="flight";flightPlaced=true;}
+      blocks.push({x:startX+k*46-18,y:p.y-105,w:36,h:30,used:false,kind,bounceT:0});
+    }
+  }
+  if(!flightPlaced&&blocks.length)blocks[Math.floor(Math.random()*blocks.length)].kind="flight";
+ 
+  // Sky blocks: a handful floating up in the flight zone, only reachable
+  // (and bumpable) while flying - same surprise pool, minus flight itself.
+  const skyKindPool=["berry","berry","sleepy","rage"];
+  skyBlocks=[];
+  const skyBlockCount=4+Math.floor(Math.random()*2);
+  for(let i=0;i<skyBlockCount;i++){
+    skyBlocks.push({
+      x:100+((i+0.5)/skyBlockCount)*(lvl.worldWidth-200)+(Math.random()*80-40),
+      y:-80-Math.random()*300,
+      w:36,h:30,used:false,
+      kind:skyKindPool[Math.floor(Math.random()*skyKindPool.length)],
+      bounceT:0
+    });
+  }
 }
 
 function resetEntities(){
@@ -798,6 +823,7 @@ function respawnPlayer(soft){
   player.onZip=null;player.zipT=0;player.iceTimer=0;player.bonusAirJumps=0;player.invincible=0;
   player.flying=false;player.flyTimer=0;
   player.napping=false;player.napTimer=0;
+  player.raging=false;player.rageTimer=0;
   comboCount=0;comboTimer=0;
   if(!soft){const lvl=getLvl();setMessage(lvl.messages[0]);}
 }
@@ -863,6 +889,36 @@ function addFloatingText(x,y,text,color="#fff"){
 function shake(amount){cameraShake=Math.min(cameraShake+amount,16);}
  
 /* ---------- UPDATE ---------- */
+function triggerBlock(bl){
+  if(bl.kind==="flight"){
+    player.flying=true;player.flyTimer=18;
+    addParticles(bl.x+bl.w/2,bl.y,40,"#bfe8ff",1.6);
+    addFloatingText(bl.x+bl.w/2,bl.y-20,"YOU CAN FLY!","#bfe8ff");
+    setMessage("Take to the sky! Hold jump to rise.");
+    sfx.grow();
+  }else if(bl.kind==="enemy"){
+    const type=["normal","crystal","ghost","ice","storm"][Math.floor(Math.random()*5)];
+    enemies.push({x:bl.x+bl.w/2-17,y:bl.y+bl.h,w:34,h:32,vx:70,min:bl.x-90,max:bl.x+90,
+      type,alive:true,bounce:0,baseY:bl.y+bl.h,pauseT:0,dashT:0,spawnT:1});
+    addParticles(bl.x+bl.w/2,bl.y+bl.h,20,"#ff8a8a",1);
+    addFloatingText(bl.x+bl.w/2,bl.y-14,"Uh oh!","#ff8a8a");
+    shake(6);sfx.bounce();
+  }else if(bl.kind==="sleepy"){
+    bonusPopBerries.push({x:bl.x+bl.w/2,y:bl.y,vx:0,vy:-220,t:0,taken:false,sleepy:true});
+    addFloatingText(bl.x+bl.w/2,bl.y-16,"...zzz?","#c9a8ff");
+    sfx.bounce();
+  }else if(bl.kind==="rage"){
+    bonusPopBerries.push({x:bl.x+bl.w/2,y:bl.y,vx:0,vy:-220,t:0,taken:false,rageBerry:true});
+    addFloatingText(bl.x+bl.w/2,bl.y-16,"...uh oh?","#ff5a3c");
+    sfx.bounce();
+  }else{
+    const n=1+Math.floor(Math.random()*2);
+    for(let k=0;k<n;k++)bonusPopBerries.push({x:bl.x+bl.w/2,y:bl.y,vx:(k-0.5)*90,vy:-260,t:0,taken:false});
+    addFloatingText(bl.x+bl.w/2,bl.y-16,`+${n} bonus!`,"#ffd37a");
+    sfx.berry();
+  }
+}
+
 function update(dt){
   if(!gameStarted)return;
   if(showingEnding){endingTimer+=dt;return;}
@@ -886,6 +942,28 @@ function update(dt){
       if(player.napTimer<=0){
         player.napping=false;
         addFloatingText(player.x+player.w/2,player.y-20,"...huh? Awake!","#c9a8ff");
+        shake(3);sfx.jump();
+      }
+    }
+ 
+    // Raging: a sour berry set you off - thrashing around with no real
+    // control, direction flips randomly and it occasionally throws in a
+    // jump on its own. Genuinely risky near edges/crumbling platforms/
+    // enemies since you can't steer away from any of it.
+    if(player.raging){
+      player.rageTimer-=dt;
+      player.rageChangeT-=dt;
+      jumpPressedThisFrame=false;keys.jumpPressed=false;
+      if(player.rageChangeT<=0){
+        player.rageDir=Math.random()<0.5?-1:1;
+        player.rageChangeT=0.2+Math.random()*0.3;
+        if(player.grounded&&Math.random()<0.55)player.buffer=0.12;
+      }
+      move=player.rageDir;
+      if(Math.random()<dt*10)addParticles(player.x+player.w/2+player.rageDir*10,player.y-2,1,"#ff8a5a",0.5);
+      if(player.rageTimer<=0){
+        player.raging=false;
+        addFloatingText(player.x+player.w/2,player.y-20,"...phew, calm now.","#ffb37a");
         shake(3);sfx.jump();
       }
     }
@@ -950,6 +1028,18 @@ function update(dt){
         if(player.vy>=0&&player.x+player.w>perch.x&&player.x<perch.x+perch.w&&
            player.y+player.h>=perch.y-6&&player.y+player.h<=perch.y+16){
           player.y=perch.y-player.h;player.vy=0;
+        }
+      }
+ 
+      // Sky blocks - same mystery-crate bump, but only reachable in the air
+      for(const bl of skyBlocks){
+        if(bl.used){if(bl.bounceT>0)bl.bounceT=Math.max(0,bl.bounceT-dt*3);continue;}
+        if(player.vy<0&&player.x+player.w>bl.x&&player.x<bl.x+bl.w&&
+           player.y<=bl.y+bl.h&&player.y-player.vy*dt>bl.y+bl.h-10){
+          bl.used=true;bl.bounceT=1;
+          player.vy=90;
+          shake(4);sfx.bounce();
+          triggerBlock(bl);
         }
       }
  
@@ -1077,29 +1167,7 @@ function update(dt){
         bl.used=true;bl.bounceT=1;
         player.vy=120;
         shake(4);sfx.bounce();
-        if(bl.kind==="flight"){
-          player.flying=true;player.flyTimer=18;
-          addParticles(bl.x+bl.w/2,bl.y,40,"#bfe8ff",1.6);
-          addFloatingText(bl.x+bl.w/2,bl.y-20,"YOU CAN FLY!","#bfe8ff");
-          setMessage("Take to the sky! Hold jump to rise.");
-          sfx.grow();
-        }else if(bl.kind==="enemy"){
-          const type=["normal","crystal","ghost","ice","storm"][Math.floor(Math.random()*5)];
-          enemies.push({x:bl.x+bl.w/2-17,y:bl.y+bl.h,w:34,h:32,vx:70,min:bl.x-90,max:bl.x+90,
-            type,alive:true,bounce:0,baseY:bl.y+bl.h,pauseT:0,dashT:0,spawnT:1});
-          addParticles(bl.x+bl.w/2,bl.y+bl.h,20,"#ff8a8a",1);
-          addFloatingText(bl.x+bl.w/2,bl.y-14,"Uh oh!","#ff8a8a");
-          shake(6);sfx.bounce();
-        }else if(bl.kind==="sleepy"){
-          bonusPopBerries.push({x:bl.x+bl.w/2,y:bl.y,vx:0,vy:-220,t:0,taken:false,sleepy:true});
-          addFloatingText(bl.x+bl.w/2,bl.y-16,"...zzz?","#c9a8ff");
-          sfx.bounce();
-        }else{
-          const n=1+Math.floor(Math.random()*2);
-          for(let k=0;k<n;k++)bonusPopBerries.push({x:bl.x+bl.w/2,y:bl.y,vx:(k-0.5)*90,vy:-260,t:0,taken:false});
-          addFloatingText(bl.x+bl.w/2,bl.y-16,`+${n} bonus!`,"#ffd37a");
-          sfx.berry();
-        }
+        triggerBlock(bl);
       }
     }
  
@@ -1160,6 +1228,12 @@ function update(dt){
             addFloatingText(player.x+player.w/2,player.y-30,"Uh oh, too many... NAP TIME!","#c9a8ff");
             setMessage("Zzz... watch out for enemies while you're out cold!");
             shake(3);sfx.hurt();
+          }else if(pb.rageBerry){
+            player.raging=true;player.rageTimer=4;player.rageDir=player.face;player.rageChangeT=0;
+            addParticles(pb.x,pb.y,20,"#ff5a3c",1.4);
+            addFloatingText(player.x+player.w/2,player.y-30,"TOO SOUR... FURIOUS!","#ff5a3c");
+            setMessage("You've lost it! Ride it out...");
+            shake(5);sfx.hurt();
           }else{
             addParticles(pb.x,pb.y,10,"#ffd37a");sfx.berry();
           }
@@ -1752,12 +1826,17 @@ function drawPlayer(t){
   if(lvl.theme==="home"){
     ctx.globalAlpha*=0.3;ctx.fillStyle="#ffcc44";ctx.beginPath();ctx.arc(0,2,28,0,Math.PI*2);ctx.fill();ctx.globalAlpha=player.respawnFlash>0?0.4+0.6*Math.abs(Math.sin(player.respawnFlash*20)):1;
   }
-  ctx.fillStyle="#57b86f";ctx.beginPath();ctx.arc(0,2,20,0,Math.PI*2);ctx.fill();
-  ctx.fillStyle="#2f7d55";ctx.beginPath();ctx.ellipse(-2,6,19,15,0,0,Math.PI*2);ctx.fill();
-  ctx.fillStyle="#77d989";ctx.beginPath();ctx.arc(player.face*16,-7,13,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle=player.raging?"#e0453a":"#57b86f";ctx.beginPath();ctx.arc(0,2,20,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle=player.raging?"#a5261e":"#2f7d55";ctx.beginPath();ctx.ellipse(-2,6,19,15,0,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle=player.raging?"#ff8a7a":"#77d989";ctx.beginPath();ctx.arc(player.face*16,-7,13,0,Math.PI*2);ctx.fill();
   if(player.napping){
     ctx.strokeStyle="#183224";ctx.lineWidth=2;ctx.lineCap="round";
     ctx.beginPath();ctx.arc(player.face*20,-10,3,Math.PI*0.1,Math.PI*0.9);ctx.stroke();
+  }else if(player.raging){
+    ctx.fillStyle="white";ctx.beginPath();ctx.ellipse(player.face*20,-10,4,4,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle="#5a0e08";ctx.beginPath();ctx.ellipse(player.face*21,-10,2.2,2.2,0,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle="#5a0e08";ctx.lineWidth=2;ctx.lineCap="round";
+    ctx.beginPath();ctx.moveTo(player.face*13,-17);ctx.lineTo(player.face*26,-14);ctx.stroke();
   }else{
     const blink=(Math.sin(t*0.5)+1)*0.5<0.04?0.2:1;
     ctx.fillStyle="white";ctx.beginPath();ctx.ellipse(player.face*20,-10,4,4*blink,0,0,Math.PI*2);ctx.fill();
@@ -1927,8 +2006,13 @@ function drawPreyBirds(t){
   }
 }
 
-function drawBlocks(t){
-  for(const bl of blocks){
+function drawSkyBlocks(t){
+  if(!player.flying)return;
+  drawBlocks(t,skyBlocks);
+}
+
+function drawBlocks(t,arr){
+  for(const bl of (arr||blocks)){
     const x=bl.x-cameraX,y=bl.y-cameraY-(bl.bounceT>0?Math.sin(bl.bounceT*Math.PI)*8:0);
     if(x+bl.w<-40||x>W+40)continue;
     if(bl.used){
@@ -2192,7 +2276,7 @@ function render(t){
   if(inBonusRound){renderBonusRound(t);return;}
   const sx=(Math.random()-0.5)*cameraShake,sy=(Math.random()-0.5)*cameraShake;
   ctx.save();ctx.translate(sx,sy);
-  drawSky(t);drawWindZones();drawPlatforms(t);drawBlocks(t);drawPopBerries(t);drawSkyPerches(t);drawSkyBugs(t);drawFriendlyBirds(t);drawPreyBirds(t);drawZipline();drawBonusRing(t);drawReturnPortal(t);drawCheckpoint();drawSecretGem(t);drawGate();
+  drawSky(t);drawWindZones();drawPlatforms(t);drawBlocks(t);drawSkyBlocks(t);drawPopBerries(t);drawSkyPerches(t);drawSkyBugs(t);drawFriendlyBirds(t);drawPreyBirds(t);drawZipline();drawBonusRing(t);drawReturnPortal(t);drawCheckpoint();drawSecretGem(t);drawGate();
   drawFireflies(t);drawBerries(t);drawEnemies(t);drawPlayer(t);drawParticles();drawFloatingTexts();
   drawVignette();
   ctx.restore();
