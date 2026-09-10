@@ -1515,7 +1515,7 @@ function update(dt){
       if(!returnPortal.active){
         const missed=berries.filter(b=>!b.taken).sort((a,b)=>a.x-b.x)[0];
         if(missed){
-          returnPortal={active:true,x:gate.x+90,y:gate.y+20,targetX:Math.max(40,missed.x-60),targetY:missed.y-70};
+          returnPortal={active:true,x:gate.x-90,y:gate.y+20,targetX:Math.max(40,missed.x-60),targetY:missed.y-70};
         }
       }
     }
