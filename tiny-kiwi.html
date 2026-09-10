@@ -728,7 +728,7 @@ function tagSpecialPlatforms(lvl){
   // Guarantee coverage: force one random block into each required kind,
   // overwriting whatever random pick landed there (won't collide with
   // each other since we shuffle the index order first).
-  const required=["flight","berry","sleepy","enemy","rage"];
+  const required=["flight","flight","berry","sleepy","enemy","rage"];
   if(blocks.length){
     const slots=[...Array(blocks.length).keys()].sort(()=>Math.random()-0.5);
     required.forEach((kind,i)=>{blocks[slots[i%slots.length]].kind=kind;});
@@ -920,16 +920,18 @@ function shake(amount){cameraShake=Math.min(cameraShake+amount,16);}
 /* ---------- UPDATE ---------- */
 function triggerBlock(bl){
   if(bl.kind==="flight"){
-    player.flying=true;player.flyTimer=18;
+    const dur=player.canPoop?32:18;
+    player.flying=true;player.flyTimer=Math.max(player.flyTimer,dur);
     addParticles(bl.x+bl.w/2,bl.y,40,"#bfe8ff",1.6);
-    addFloatingText(bl.x+bl.w/2,bl.y-20,"YOU CAN FLY!","#bfe8ff");
+    addFloatingText(bl.x+bl.w/2,bl.y-20,player.canPoop?"YOU CAN FLY! (extra long!)":"YOU CAN FLY!","#bfe8ff");
     setMessage("Take to the sky! Hold jump to rise.");
     sfx.grow();
   }else if(bl.kind==="poop"){
     player.canPoop=true;
+    player.flying=true;player.flyTimer=Math.max(player.flyTimer,28);
     addParticles(bl.x+bl.w/2,bl.y,36,"#a07850",1.4);
     addFloatingText(bl.x+bl.w/2,bl.y-20,"POOPING UNLOCKED!","#d4a56a");
-    setMessage("Now you can bomb enemies from above while flying!");
+    setMessage("Now you can bomb enemies from above while flying - and your wings just got a lot stronger!");
     sfx.grow();
   }else if(bl.kind==="enemy"){
     const type=["normal","crystal","ghost","ice","storm"][Math.floor(Math.random()*5)];
