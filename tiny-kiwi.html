@@ -610,7 +610,7 @@ function computeSecretGem(lvl){
   return {x:pick.x+pick.w/2,y:pick.y-46,taken:false};
 }
 
-let berries=[],enemies=[],particles=[],floatingTexts=[],platforms=[],blocks=[],bonusPopBerries=[],skyBugs=[];
+let berries=[],enemies=[],particles=[],floatingTexts=[],platforms=[],blocks=[],bonusPopBerries=[],skyBugs=[],skyPerches=[],friendlyBirds=[],preyBirds=[];
 let levelTransition=0,showingEnding=false,endingTimer=0;
 const fireflies=[];for(let i=0;i<80;i++)fireflies.push({x:Math.random()*6000,y:240+Math.random()*340,t:Math.random()*99,s:0.6+Math.random()*0.8});
 const snowflakes=[];for(let i=0;i<100;i++)snowflakes.push({x:Math.random()*700,y:Math.random()*H,s:0.5+Math.random()*1.5,sp:0.4+Math.random()*0.8});
@@ -726,6 +726,45 @@ function resetEntities(){
       phase:i*1.7,speed:0.5+((i*29)%10)/10,
       rangeX:60+((i*17)%40),rangeY:30+((i*11)%25),
       taken:false,respawnT:0
+    });
+  }
+ 
+  // Sky perches: little branch-and-leaf platforms to rest on mid-flight,
+  // collision only active while flying (ground platforms already cover
+  // the normal game).
+  skyPerches=[];
+  for(let i=0;i<5;i++){
+    skyPerches.push({
+      x:80+((i+0.5)/5)*(lvl.worldWidth-160)-45,
+      y:-100-((i*71)%260),
+      w:90,h:14
+    });
+  }
+ 
+  // Friendly birds: purely charming, chirp and puff a little heart when
+  // you fly near one, no gameplay effect.
+  friendlyBirds=[];
+  for(let i=0;i<5;i++){
+    friendlyBirds.push({
+      baseX:200+((i+0.3)/5)*(lvl.worldWidth-400),
+      baseY:-90-((i*61)%230),
+      phase:i*2.3,speed:0.4+((i*19)%10)/10,
+      rangeX:70+((i*13)%30),rangeY:26+((i*7)%20),
+      greeted:false,cooldown:0
+    });
+  }
+ 
+  // Birds of prey: real danger up here. Patrol a stretch of sky and dive
+  // at you if you get close - touching one while flying is a death like
+  // any ground enemy.
+  preyBirds=[];
+  for(let i=0;i<2;i++){
+    preyBirds.push({
+      baseX:400+i*(lvl.worldWidth-800),
+      baseY:-260-((i*97)%120),
+      x:0,y:0,phase:i*3.1,speed:0.35,
+      rangeX:220,rangeY:60,
+      diveT:0,alive:true,bounce:0
     });
   }
 }
@@ -902,6 +941,51 @@ function update(dt){
           addParticles(bx,by,16,"#fff4a8",0.9);
           addFloatingText(bx,by-14,"Yum! +3s","#fff4a8");
           sfx.berry();
+        }
+      }
+ 
+      // Sky perches - land and rest anytime without ending your flight,
+      // just press jump again to lift back off.
+      for(const perch of skyPerches){
+        if(player.vy>=0&&player.x+player.w>perch.x&&player.x<perch.x+perch.w&&
+           player.y+player.h>=perch.y-6&&player.y+player.h<=perch.y+16){
+          player.y=perch.y-player.h;player.vy=0;
+        }
+      }
+ 
+      // Friendly birds - purely charming, no effect besides a chirp
+      for(const fb of friendlyBirds){
+        if(fb.cooldown>0){fb.cooldown-=dt;continue;}
+        const fx=fb.baseX+Math.sin(timeAlive*fb.speed+fb.phase)*fb.rangeX;
+        const fy=fb.baseY+Math.cos(timeAlive*fb.speed*1.2+fb.phase)*fb.rangeY;
+        if(Math.hypot(player.x+player.w/2-fx,player.y+player.h/2-fy)<40){
+          fb.cooldown=3;
+          addParticles(fx,fy,10,"#ffb3d9",0.6);
+          addFloatingText(fx,fy-14,"Chirp!","#ffb3d9");
+          sfx.berry();
+        }
+      }
+ 
+      // Birds of prey - wander, then dive at you if you get close. Real
+      // danger: touching one is a death, same as a ground enemy.
+      for(const pb of preyBirds){
+        const wanderX=pb.baseX+Math.sin(timeAlive*pb.speed+pb.phase)*pb.rangeX;
+        const wanderY=pb.baseY+Math.sin(timeAlive*pb.speed*1.4+pb.phase)*pb.rangeY;
+        if(pb.diveT>0){
+          pb.diveT-=dt;
+          pb.x+=((player.x-pb.x))*Math.min(1,dt*3);
+          pb.y+=((player.y-pb.y))*Math.min(1,dt*3);
+        }else{
+          const distToPlayer=Math.hypot(player.x-wanderX,player.y-wanderY);
+          if(distToPlayer<260&&Math.random()<dt*0.5)pb.diveT=1.1;
+          pb.x=wanderX;pb.y=wanderY;
+        }
+        if(Math.hypot(player.x+player.w/2-(pb.x+15),player.y+player.h/2-(pb.y+12))<24){
+          setMessage("A hawk got you! Back to the checkpoint.");
+          addParticles(player.x+player.w/2,player.y+player.h/2,30,"#ffffff");
+          shake(10);sfx.hurt();player.deaths++;player.flying=false;player.flyTimer=0;
+          respawnPlayer(true);
+          break;
         }
       }
     }else{
@@ -1790,6 +1874,59 @@ function drawSkyBugs(t){
   }
 }
 
+function drawSkyPerches(t){
+  if(!player.flying)return;
+  for(const perch of skyPerches){
+    const x=perch.x-cameraX,y=perch.y-cameraY;
+    if(x+perch.w<-40||x>W+40)continue;
+    ctx.strokeStyle="#8a6a42";ctx.lineWidth=6;ctx.lineCap="round";
+    ctx.beginPath();ctx.moveTo(x,y+7);ctx.lineTo(x+perch.w,y+7);ctx.stroke();
+    ctx.fillStyle="#5fc26e";
+    for(let i=8;i<perch.w-8;i+=18){
+      ctx.beginPath();ctx.ellipse(x+i,y+2,6,3,-0.3,0,Math.PI*2);ctx.fill();
+    }
+  }
+}
+
+function drawFriendlyBirds(t){
+  if(!player.flying)return;
+  for(const fb of friendlyBirds){
+    const x=fb.baseX+Math.sin(timeAlive*fb.speed+fb.phase)*fb.rangeX-cameraX;
+    const y=fb.baseY+Math.cos(timeAlive*fb.speed*1.2+fb.phase)*fb.rangeY-cameraY;
+    if(x<-30||x>W+30||y<-30||y>H+30)continue;
+    const flap=Math.sin(t*10+fb.phase)*7;
+    ctx.fillStyle="#7ec4ff";
+    ctx.beginPath();ctx.ellipse(x-8,y-flap,9,5,0.4,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.ellipse(x+8,y+flap,9,5,-0.4,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle="#fff6da";ctx.beginPath();ctx.arc(x,y,6,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle="#f5a623";ctx.beginPath();ctx.moveTo(x+5,y);ctx.lineTo(x+11,y-2);ctx.lineTo(x+5,y+3);ctx.closePath();ctx.fill();
+    if(fb.cooldown>2.5){
+      ctx.fillStyle="rgba(255,179,217,.9)";ctx.font="10px system-ui";ctx.textAlign="center";
+      ctx.fillText("♪",x,y-16-Math.sin(t*4)*3);
+    }
+  }
+}
+
+function drawPreyBirds(t){
+  if(!player.flying)return;
+  for(const pb of preyBirds){
+    const x=pb.x-cameraX,y=pb.y-cameraY;
+    if(x<-40||x>W+40||y<-40||y>H+40)continue;
+    const flap=pb.diveT>0?2:Math.sin(t*7+pb.phase)*8;
+    ctx.fillStyle=pb.diveT>0?"#8a2020":"#5a3018";
+    ctx.beginPath();ctx.ellipse(x-14,y-flap,15,6,pb.diveT>0?0.1:0.5,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.ellipse(x+14,y+flap,15,6,pb.diveT>0?-0.1:-0.5,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle=pb.diveT>0?"#a83030":"#7a4522";
+    ctx.beginPath();ctx.ellipse(x,y,10,7,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle="#f5c451";ctx.beginPath();ctx.moveTo(x+8,y-2);ctx.lineTo(x+16,y);ctx.lineTo(x+8,y+3);ctx.closePath();ctx.fill();
+    ctx.fillStyle="#1a1010";ctx.beginPath();ctx.arc(x+4,y-2,1.8,0,Math.PI*2);ctx.fill();
+    if(pb.diveT>0){
+      ctx.strokeStyle="rgba(255,80,80,.4)";ctx.lineWidth=2;
+      ctx.beginPath();ctx.moveTo(x-20,y-20);ctx.lineTo(x,y);ctx.stroke();
+    }
+  }
+}
+
 function drawBlocks(t){
   for(const bl of blocks){
     const x=bl.x-cameraX,y=bl.y-cameraY-(bl.bounceT>0?Math.sin(bl.bounceT*Math.PI)*8:0);
@@ -2055,7 +2192,7 @@ function render(t){
   if(inBonusRound){renderBonusRound(t);return;}
   const sx=(Math.random()-0.5)*cameraShake,sy=(Math.random()-0.5)*cameraShake;
   ctx.save();ctx.translate(sx,sy);
-  drawSky(t);drawWindZones();drawPlatforms(t);drawBlocks(t);drawPopBerries(t);drawSkyBugs(t);drawZipline();drawBonusRing(t);drawReturnPortal(t);drawCheckpoint();drawSecretGem(t);drawGate();
+  drawSky(t);drawWindZones();drawPlatforms(t);drawBlocks(t);drawPopBerries(t);drawSkyPerches(t);drawSkyBugs(t);drawFriendlyBirds(t);drawPreyBirds(t);drawZipline();drawBonusRing(t);drawReturnPortal(t);drawCheckpoint();drawSecretGem(t);drawGate();
   drawFireflies(t);drawBerries(t);drawEnemies(t);drawPlayer(t);drawParticles();drawFloatingTexts();
   drawVignette();
   ctx.restore();
