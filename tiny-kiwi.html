@@ -620,6 +620,8 @@ const rainDrops=[];for(let i=0;i<80;i++)rainDrops.push({x:Math.random()*700,y:Ma
 const player={x:80,y:420,w:34,h:40,vx:0,vy:0,speed:400,jump:720,grounded:false,wasGrounded:false,face:1,won:false,squash:0,stretch:0,coyote:0,buffer:0,respawnFlash:0,deaths:0,windForce:0,big:false,bigTimer:0,scale:1,speedy:false,speedTimer:0,standingOn:null,iceTimer:0,onZip:null,zipT:0,bonusAirJumps:0,invincible:0,standingOnCloud:null,flying:false,flyTimer:0};
 let comboCount=0,comboTimer=0;
 let noDeathMsgShown=false;
+let gateBlockedMsgShown=false;
+let returnPortal={active:false,x:0,y:0,targetX:0,targetY:0};
  
 function getLvl(){return LEVELS[currentLevel];}
  
@@ -707,7 +709,7 @@ function resetEntities(){
     const pickSpeed=byX[Math.min(Math.floor(byX.length*0.3),byX.length-1)];
     if(pickSpeed!==pick)pickSpeed.speedy=true;
   }
-  enemies=lvl.enemies.map(e=>({...e,w:34,h:32,alive:true,bounce:0,baseY:e.y,pauseT:0,dashT:0}));
+  enemies=lvl.enemies.map(e=>({...e,w:34,h:32,alive:true,bounce:0,baseY:e.y,pauseT:0,dashT:0,spawnT:0}));
   platforms=lvl.platforms.map(p=>({...p,gone:false,crumbleT:-1,respawnT:0,squish:0}));
   tagSpecialPlatforms(lvl);
   particles.length=0;floatingTexts.length=0;bonusPopBerries.length=0;
@@ -769,6 +771,8 @@ function loadLevel(idx,fresh){
   resetEntities();respawnPlayer(false);
   cameraX=0;cameraShake=0;player.deaths=0;
   noDeathMsgShown=false;
+  gateBlockedMsgShown=false;
+  returnPortal={active:false,x:0,y:0,targetX:0,targetY:0};
   showBanner(lvl.title,lvl.subtitle);
   if(fresh)setMessage(lvl.messages[0]);
 }
@@ -979,10 +983,10 @@ function update(dt){
         }else if(bl.kind==="enemy"){
           const type=["normal","crystal","ghost","ice","storm"][Math.floor(Math.random()*5)];
           enemies.push({x:bl.x+bl.w/2-17,y:bl.y+bl.h,w:34,h:32,vx:70,min:bl.x-90,max:bl.x+90,
-            type,alive:true,bounce:0,baseY:bl.y+bl.h,pauseT:0,dashT:0});
+            type,alive:true,bounce:0,baseY:bl.y+bl.h,pauseT:0,dashT:0,spawnT:1});
           addParticles(bl.x+bl.w/2,bl.y+bl.h,20,"#ff8a8a",1);
           addFloatingText(bl.x+bl.w/2,bl.y-14,"Uh oh!","#ff8a8a");
-          shake(6);sfx.hurt();
+          shake(6);sfx.bounce();
         }else{
           const n=1+Math.floor(Math.random()*2);
           for(let k=0;k<n;k++)bonusPopBerries.push({x:bl.x+bl.w/2,y:bl.y,vx:(k-0.5)*90,vy:-260,t:0,taken:false});
@@ -1110,6 +1114,13 @@ function update(dt){
     if(comboTimer>0){comboTimer-=dt;if(comboTimer<=0)comboCount=0;}
     for(const e of enemies){
       if(!e.alive){e.bounce=Math.max(0,e.bounce-dt);continue;}
+      if(e.spawnT>0){
+        // Fresh out of a block: hovers in place, harmless, clearly visible
+        // for a moment before it becomes a real threat - a fair look at
+        // what you're dealing with instead of an instant unavoidable hit.
+        e.spawnT-=dt;
+        continue;
+      }
       const etype=e.type||"normal";
       if(etype==="crystal"){
         // Sharp and deliberate: pauses at each end of its patrol instead of
@@ -1236,7 +1247,31 @@ function update(dt){
         }
       },1400);
     }else if(rects(player,gate)){
-      setMessage(`The gate wants all ${berries.length} berries first.`);
+      if(!gateBlockedMsgShown){
+        gateBlockedMsgShown=true;
+        setMessage(`Uh oh! You need all ${berries.length} berries before this gate will open.`);
+        addFloatingText(player.x+player.w/2,player.y-30,"MISSING BERRIES!","#ff8a8a");
+        shake(4);sfx.hurt();
+      }
+      if(!returnPortal.active){
+        const missed=berries.filter(b=>!b.taken).sort((a,b)=>a.x-b.x)[0];
+        if(missed){
+          returnPortal={active:true,x:gate.x+90,y:gate.y+20,targetX:Math.max(40,missed.x-60),targetY:missed.y-70};
+        }
+      }
+    }
+ 
+    // Return portal: only appears once you've been turned away at the gate
+    // for missing berries. Steps you back to right before the earliest one
+    // you skipped, instead of a long walk back from the checkpoint.
+    if(returnPortal.active&&rects(player,{x:returnPortal.x-26,y:returnPortal.y-40,w:52,h:80})){
+      returnPortal.active=false;gateBlockedMsgShown=false;
+      addParticles(player.x+player.w/2,player.y+player.h/2,36,"#bfa8ff",1.4);
+      player.x=returnPortal.targetX;player.y=returnPortal.targetY;player.vx=0;player.vy=0;
+      cameraX=Math.max(0,player.x-W*0.35);
+      addParticles(player.x+player.w/2,player.y+player.h/2,36,"#bfa8ff",1.4);
+      shake(6);sfx.win();
+      setMessage("Back you go - grab that berry!");
     }
   }
  
@@ -1517,6 +1552,17 @@ function drawEnemies(t){
     }
     const wob=Math.sin(t*6+e.x*0.01)*2;
     const type=e.type||"normal";
+    ctx.globalAlpha=1;
+ 
+    if(e.spawnT>0){
+      // Warning telegraph while it's harmless and can't hurt you yet
+      const warnPulse=0.6+0.4*Math.sin(t*10);
+      ctx.strokeStyle=`rgba(255,90,90,${warnPulse})`;ctx.lineWidth=2.5;
+      ctx.beginPath();ctx.arc(x+17,y+16,24,0,Math.PI*2);ctx.stroke();
+      ctx.fillStyle=`rgba(255,90,90,${warnPulse})`;ctx.font="900 16px system-ui";ctx.textAlign="center";
+      ctx.fillText("!",x+17,y-14+Math.sin(t*8)*2);
+      ctx.globalAlpha=0.75;
+    }
  
     if(type==="ghost"){
       ctx.globalAlpha=0.7+0.2*Math.sin(t*3+e.x);
@@ -1543,6 +1589,7 @@ function drawEnemies(t){
       ctx.fillStyle="#3b1f18";const eyeDir=e.vx>0?1:-1;ctx.beginPath();ctx.arc(x+10+eyeDir,y+22,1.5,0,Math.PI*2);ctx.arc(x+24+eyeDir,y+22,1.5,0,Math.PI*2);ctx.fill();ctx.fillRect(x+11,y+27,12,2);
     }
   }
+  ctx.globalAlpha=1;
 }
  
 function drawFireflies(t){
@@ -1672,19 +1719,41 @@ function drawBlocks(t){
   for(const bl of blocks){
     const x=bl.x-cameraX,y=bl.y-cameraY-(bl.bounceT>0?Math.sin(bl.bounceT*Math.PI)*8:0);
     if(x+bl.w<-40||x>W+40)continue;
+    const cx=x+bl.w/2,cy=y+bl.h/2+4;
     if(bl.used){
-      ctx.fillStyle="#6b5a48";roundRect(x,y,bl.w,bl.h,6);ctx.fill();
-      ctx.fillStyle="rgba(0,0,0,.2)";roundRect(x+4,y+4,bl.w-8,bl.h-8,4);ctx.fill();
+      // Spent pod: cracked open husk, dull and still
+      ctx.fillStyle="#8a7458";
+      ctx.beginPath();ctx.ellipse(cx-6,cy+3,13,15,-0.25,0,Math.PI*2);ctx.fill();
+      ctx.beginPath();ctx.ellipse(cx+8,cy+5,11,13,0.3,0,Math.PI*2);ctx.fill();
+      ctx.strokeStyle="rgba(0,0,0,.25)";ctx.lineWidth=1.5;
+      ctx.beginPath();ctx.moveTo(cx,cy-10);ctx.lineTo(cx-2,cy+2);ctx.lineTo(cx+3,cy+12);ctx.stroke();
     }else{
-      const pulse=1+Math.sin(t*3+bl.x*0.02)*0.04;
-      ctx.fillStyle="#e8a23e";roundRect(x,y,bl.w,bl.h,6);ctx.fill();
-      ctx.strokeStyle="#8a5a20";ctx.lineWidth=2;roundRect(x+2,y+2,bl.w-4,bl.h-4,4);ctx.stroke();
-      ctx.fillStyle="#fff6da";ctx.font="900 16px system-ui";ctx.textAlign="center";
-      ctx.save();ctx.translate(x+bl.w/2,y+bl.h/2+6);ctx.scale(pulse,pulse);
-      ctx.fillText("?",0,0);ctx.restore();
-      ctx.globalAlpha=0.4+0.3*Math.sin(t*4+bl.x*0.03);
-      ctx.strokeStyle="#ffe9b0";ctx.lineWidth=1.5;roundRect(x-2,y-2,bl.w+4,bl.h+4,8);ctx.stroke();
+      // Mystery seed pod: glowing, gently pulsing, sprouting a little leaf -
+      // fits the berry/forest world instead of a generic crate.
+      const pulse=1+Math.sin(t*2.6+bl.x*0.02)*0.06;
+      ctx.globalAlpha=0.28+0.16*Math.sin(t*2.6+bl.x*0.02);
+      ctx.fillStyle="#ffe9a8";ctx.beginPath();ctx.arc(cx,cy,24*pulse,0,Math.PI*2);ctx.fill();
       ctx.globalAlpha=1;
+      ctx.save();ctx.translate(cx,cy);ctx.scale(pulse,pulse);
+      const grad=ctx.createLinearGradient(0,-16,0,16);
+      grad.addColorStop(0,"#8fe07a");grad.addColorStop(1,"#3f9a5c");
+      ctx.fillStyle=grad;
+      ctx.beginPath();ctx.moveTo(0,-17);
+      ctx.bezierCurveTo(11,-14,15,4,0,17);
+      ctx.bezierCurveTo(-15,4,-11,-14,0,-17);
+      ctx.closePath();ctx.fill();
+      ctx.strokeStyle="rgba(255,255,255,.35)";ctx.lineWidth=1.5;
+      ctx.beginPath();ctx.moveTo(0,-13);ctx.lineTo(0,13);ctx.stroke();
+      // Leaf sprout on top
+      ctx.fillStyle="#5fc26e";
+      ctx.beginPath();ctx.moveTo(0,-17);ctx.quadraticCurveTo(8,-26,3,-30);ctx.quadraticCurveTo(-4,-24,0,-17);ctx.closePath();ctx.fill();
+      // Sparkle swirl inside, hints something's in there
+      ctx.globalAlpha=0.6+0.4*Math.sin(t*5+bl.x*0.05);
+      ctx.fillStyle="#fff6d8";
+      ctx.beginPath();ctx.arc(-3,-2,2.2,0,Math.PI*2);ctx.fill();
+      ctx.beginPath();ctx.arc(4,4,1.6,0,Math.PI*2);ctx.fill();
+      ctx.globalAlpha=1;
+      ctx.restore();
     }
   }
 }
