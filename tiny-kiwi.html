@@ -269,8 +269,8 @@ const LEVELS=[
     messages:["Move, jump, collect berries, stomp grumpy mushrooms.","The forest rustles. Something watches.","A hidden cave glows under the roots.","Rain begins to fall. Keep going.","Level complete. The meadow glows at night."]
   },
   {
-    name:"Level 2 · Moonlit Meadow",
-    title:"MOONLIT MEADOW",subtitle:"The stars come out to wander",
+    name:"Level 2 · Starlit Meadow",
+    title:"STARLIT MEADOW",subtitle:"The stars come out to wander",
     worldWidth:5800,gravity:1800,
     bgTop:"#0d1b3e",bgMid:"#1a3a5c",bgBot:"#243b2a",
     theme:"night",
@@ -294,7 +294,7 @@ const LEVELS=[
       {x:5060,y:480,vx:95,min:5000,max:5560},{x:4220,y:410,vx:75,min:4160,max:4320}
     ],
     gateX:5680,gateY:430,
-    messages:["The meadow shimmers silver under stars.","Moonflowers glow where fireflies dance.","Up here the moon seems close enough to touch.","Gravity feels lighter at night, somehow.","Moonlit Meadow cleared. The crystals call."]
+    messages:["The meadow shimmers silver under stars.","Moonflowers glow where fireflies dance.","Up here the moon seems close enough to touch.","Gravity feels lighter at night, somehow.","Starlit Meadow cleared. The crystals call."]
   },
   {
     name:"Level 3 · Crystal Caverns",
@@ -356,7 +356,7 @@ const LEVELS=[
     ],
     gateX:5680,gateY:430,
     slippery:true,
-    messages:["Your feet slide on the frozen stone.","Snow drifts down from somewhere above.","Ice berries — cold to the touch, sweet inside.","One wrong step and you'll slide off the edge.","Peaks conquered! Ancient stone awaits."]
+    messages:["Your feet slide on the frozen stone.","Snow drifts down from somewhere above.","Ice berries, cold to the touch, sweet inside.","One wrong step and you'll slide off the edge.","Peaks conquered! Ancient stone awaits."]
   },
   {
     name:"Level 5 · Ancient Ruins",
@@ -386,7 +386,7 @@ const LEVELS=[
       {x:5000,y:480,vx:80,min:4920,max:5780,type:"ghost"},{x:3180,y:330,vx:60,min:3100,max:3560,type:"ghost"}
     ],
     gateX:5780,gateY:430,
-    messages:["Old stone. Old silence. Old watching.","These ruins remember a kiwi long ago.","Ghost mushrooms — they flinch from your shadow.","Something carved into the wall. A tiny bird.","Ruins behind you. The sky opens up."]
+    messages:["Old stone. Old silence. Old watching.","These ruins remember a kiwi long ago.","Ghost mushrooms, they flinch from your shadow.","Something carved into the wall. A tiny bird.","Ruins behind you. The sky opens up."]
   },
   {
     name:"Level 6 · Storm Clouds",
@@ -954,12 +954,12 @@ const storyEl=document.getElementById("story"),storyArt=document.getElementById(
   storySkip=document.getElementById("storySkip");
 
 const STORY_SLIDES=[
-  {art:"🥝🌲",title:"Tiny",text:"In the Whispering Forest lived a small kiwi named Tiny \u2014 round, curious, and always looking up."},
+  {art:"🥝🌲",title:"Tiny",text:"In the Whispering Forest lived a small kiwi named Tiny, round, curious, and always looking up."},
   {art:"🐦\u2601\ufe0f",title:"The Wish",text:"Kiwis can't fly. But every day Tiny watched the birds soar overhead, and wished more than anything he could join them."},
   {art:"\ud83e\udee2\u2728",title:"The Berry",text:"One night, a strange glowing berry rolled past his nest, whispering of magic hidden across distant lands."},
-  {art:"\ud83c\udf47\u2744\ufe0f\ud83c\udfd4\ufe0f",title:"The Journey",text:"Tiny followed it \u2014 through moonlit meadows, crystal caves, and frosted peaks \u2014 gathering berries, and hoping."},
+  {art:"\ud83c\udf47\u2744\ufe0f\ud83c\udfd4\ufe0f",title:"The Journey",text:"Tiny followed it through starlit meadows, crystal caves, and frosted peaks, gathering berries, and hoping."},
   {art:"\ud83d\ude34\ud83d\ude21",title:"Not All Berries Are Kind",text:"Some berries made him awfully sleepy. Others made him furious for no reason at all. Still, he kept going."},
-  {art:"\ud83d\udd4a\ufe0f\ud83c\udfe0",title:"Home",text:"Somewhere out there, he'd heard, was a berry that could make a flightless bird fly. Help Tiny find his way home \u2014 and maybe, just maybe, help him touch the sky."}
+  {art:"\ud83d\udd4a\ufe0f\ud83c\udfe0",title:"Home",text:"Somewhere out there, he'd heard, was a berry that could make a flightless bird fly. Help Tiny find his way home, and maybe, just maybe, help him touch the sky."}
 ];
 let storyIdx=0;
 function renderStory(){
