@@ -127,6 +127,7 @@ button{border-radius:999px;border:2px solid rgba(255,255,255,.7);background:rgba
     <div style="font-size:11px;opacity:.35;letter-spacing:2px;margin-top:1px">by Stormie Games</div>
     <p>Wander. Collect every berry. Boop the grumpy mushrooms. Find the gate.</p>
     <div class="level-grid" id="levelGrid"></div>
+    <button class="skip-link" id="replayStoryBtn" style="position:static;display:inline-block;margin-bottom:8px;color:rgba(255,255,255,.6)">📖 Watch the story again</button>
     <div class="hint">Touch left side to move · Tap JUMP · Keyboard: ← → / Space</div>
   </div>
 </div>
@@ -985,6 +986,13 @@ storyNextBtn.addEventListener("click",e=>{
   else finishStory();
 });
 storySkip.addEventListener("click",e=>{e.stopPropagation();finishStory();});
+const replayStoryBtn=document.getElementById("replayStoryBtn");
+replayStoryBtn.addEventListener("click",e=>{
+  e.stopPropagation();unlockAudio();
+  storyIdx=0;renderStory();
+  menuEl.classList.add("hidden");
+  storyEl.classList.remove("hidden");
+});
 renderStory();
 
 try{
