@@ -686,10 +686,26 @@
         radial-gradient(1.5px 1.5px at 40% 8%, rgba(255,255,255,0.35), transparent),
         radial-gradient(1.5px 1.5px at 10% 40%, rgba(255,255,255,0.3), transparent);
     }
-    .sc-tinykiwi-emoji {
-      position: absolute; right: 18px; bottom: 18px; font-size: 46px;
+    .sc-tinykiwi-bird {
+      position: absolute; right: 26px; bottom: 20px; width: 52px; height: 44px;
       filter: drop-shadow(0 6px 10px rgba(0,0,0,0.4));
-      opacity: 0.9;
+      opacity: 0.95;
+    }
+    .sc-tinykiwi-bird::before {
+      /* round body */
+      content: ''; position: absolute; left: 8px; top: 4px; width: 40px; height: 36px;
+      background: radial-gradient(circle at 35% 30%, #6fcb85, #3f9a5c 70%);
+      border-radius: 50%;
+    }
+    .sc-tinykiwi-bird::after {
+      /* pointed beak */
+      content: ''; position: absolute; left: -6px; top: 18px; width: 0; height: 0;
+      border-top: 4px solid transparent; border-bottom: 4px solid transparent;
+      border-right: 16px solid #f0c85e;
+    }
+    .sc-tinykiwi-bird span {
+      position: absolute; left: 18px; top: 14px; width: 5px; height: 5px;
+      background: #16301f; border-radius: 50%;
     }
     .sc-tinykiwi-label {
       position: absolute; left: 20px; bottom: 20px; display: flex; flex-direction: column; gap: 6px;
@@ -1197,7 +1213,7 @@
             `<div class="sc-tinykiwi-poster">` +
               `<div class="sc-tinykiwi-sky"></div>` +
               `<div class="sc-tinykiwi-stars"></div>` +
-              `<span class="sc-tinykiwi-emoji">🥝</span>` +
+              `<div class="sc-tinykiwi-bird"><span></span></div>` +
               `<div class="sc-tinykiwi-label">` +
                 `<span class="sc-tinykiwi-sub">A TINY KIWI ADVENTURE</span>` +
                 `<span class="sc-tinykiwi-title">TINY<br>KIWI</span>` +
