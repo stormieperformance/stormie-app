@@ -669,6 +669,39 @@
     }
     @keyframes pulse { 0%,100%{box-shadow:0 0 0 0 rgba(111,216,138,0.5)} 50%{box-shadow:0 0 0 7px rgba(111,216,138,0)} }
     .sc-coming-soon-name { font-family: var(--pixel); font-size: 12px; font-weight: 400; color: var(--text); line-height: 1.5; }
+    .sc-tinykiwi-poster {
+      position: absolute; inset: 0; overflow: hidden;
+      background: linear-gradient(180deg, #0f2a1c 0%, #163b26 55%, #0c1f15 100%);
+    }
+    .sc-tinykiwi-sky {
+      position: absolute; inset: 0;
+      background: radial-gradient(circle at 70% 15%, rgba(232,208,138,0.16), transparent 55%);
+    }
+    .sc-tinykiwi-stars {
+      position: absolute; inset: 0;
+      background-image:
+        radial-gradient(1.5px 1.5px at 20% 20%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1.5px 1.5px at 65% 12%, rgba(255,255,255,0.4), transparent),
+        radial-gradient(1.5px 1.5px at 85% 30%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1.5px 1.5px at 40% 8%, rgba(255,255,255,0.35), transparent),
+        radial-gradient(1.5px 1.5px at 10% 40%, rgba(255,255,255,0.3), transparent);
+    }
+    .sc-tinykiwi-emoji {
+      position: absolute; right: 18px; bottom: 18px; font-size: 46px;
+      filter: drop-shadow(0 6px 10px rgba(0,0,0,0.4));
+      opacity: 0.9;
+    }
+    .sc-tinykiwi-label {
+      position: absolute; left: 20px; bottom: 20px; display: flex; flex-direction: column; gap: 6px;
+    }
+    .sc-tinykiwi-sub {
+      font-family: var(--sans); font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase;
+      color: var(--gold);
+    }
+    .sc-tinykiwi-title {
+      font-family: var(--pixel); font-size: 20px; line-height: 1.4; color: var(--text);
+      text-shadow: 0 3px 8px rgba(0,0,0,0.4);
+    }
     .sc-fallback {
       position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
       text-align: center; padding: 24px;
@@ -1124,7 +1157,7 @@
         },
         {
           name: 'Tiny Kiwi', href: 'https://stormie.app/tiny-kiwi.html', frame: 'https://stormie.app/tiny-kiwi.html', comingSoon: false,
-          cat: 'Adventure · Pixel art', desc: 'Wander, collect every berry, boop the grumpy mushrooms, and find the gate.', link: 'Play →'
+          cat: 'Adventure · Pixel art', desc: 'A flightless kiwi chases a glowing berry across seven strange worlds, bouncing off mushrooms, dodging sour surprises, and searching for the one berry that might finally teach him to fly.', link: 'Play →', customPoster: true
         },
         {
           name: 'Forest Gathering', href: 'https://forestgathering.stormie.app', frame: 'https://forestgathering.stormie.app', comingSoon: true,
@@ -1159,6 +1192,18 @@
                 `<span class="sc-coming-soon-name">${item.name}</span>` +
               `</div>` +
             `</div>`;
+        } else if (item.customPoster) {
+          el.innerHTML =
+            `<div class="sc-tinykiwi-poster">` +
+              `<div class="sc-tinykiwi-sky"></div>` +
+              `<div class="sc-tinykiwi-stars"></div>` +
+              `<span class="sc-tinykiwi-emoji">🥝</span>` +
+              `<div class="sc-tinykiwi-label">` +
+                `<span class="sc-tinykiwi-sub">A TINY KIWI ADVENTURE</span>` +
+                `<span class="sc-tinykiwi-title">TINY<br>KIWI</span>` +
+              `</div>` +
+            `</div>` +
+            `<div class="tilt-shine"></div>`;
         } else {
           el.innerHTML =
             `<div class="sc-fallback">${item.name}</div>` +
