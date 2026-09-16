@@ -548,10 +548,7 @@ function drawBoard(){
       ctx.save();
       ctx.translate(px, py);
       ctx.rotate((1-p) * 0.6);
-      ctx.font = '30px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(o.icon, 0, 0);
+      drawDropObject(o.shape, 32);
       ctx.restore();
     });
     fallingObjects = fallingObjects.filter(o => (now - o.start) < o.dur);
@@ -1326,15 +1323,85 @@ const AOE_DEFS = {
 
 // Object variants — damage matches the reference weights (axe/anvil/piano).
 const DROP_VARIANTS = [
-  {name:'a heavy axe', icon:'🪓', dmg:25, weight:5},
-  {name:'a one-ton anvil', icon:'⚓', dmg:35, weight:3},
-  {name:'an upright piano', icon:'🎹', dmg:50, weight:1}
+  {name:'a heavy axe', shape:'axe', dmg:25, weight:5},
+  {name:'a one-ton anvil', shape:'anvil', dmg:35, weight:3},
+  {name:'an upright piano', shape:'piano', dmg:50, weight:1}
 ];
 function pickDropVariant(){
   const total = DROP_VARIANTS.reduce((s,v)=>s+v.weight,0);
   let r = Math.random()*total;
   for(const v of DROP_VARIANTS){ r -= v.weight; if(r<=0) return v; }
   return DROP_VARIANTS[0];
+}
+
+// Original readable sprites for the three Random Drop objects — drawn with
+// canvas shapes rather than emoji, centered on (0,0) at the given size.
+function drawDropObject(shape, size){
+  ctx.save();
+  const s = size/32; // scale factor against a 32px base design
+  ctx.scale(s, s);
+  if(shape === 'axe'){
+    // handle
+    ctx.fillStyle = '#8a5a2e';
+    roundRect(-3, -2, 6, 26, 2);
+    ctx.fill();
+    // blade
+    ctx.fillStyle = '#c9ced6';
+    ctx.beginPath();
+    ctx.moveTo(-2,-18);
+    ctx.lineTo(16,-14);
+    ctx.lineTo(16,-2);
+    ctx.lineTo(-2,-6);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,0.35)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    // blade edge highlight
+    ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(14,-13); ctx.lineTo(14,-3); ctx.stroke();
+  } else if(shape === 'anvil'){
+    ctx.fillStyle = '#3a3d44';
+    // base
+    roundRect(-10,10,20,7,2); ctx.fill();
+    // body
+    roundRect(-9,-2,18,10,2); ctx.fill();
+    // horn + top face (classic anvil silhouette)
+    ctx.beginPath();
+    ctx.moveTo(-9,-2);
+    ctx.lineTo(-20,-6);
+    ctx.lineTo(-16,-9);
+    ctx.lineTo(-9,-8);
+    ctx.closePath();
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(9,-2);
+    ctx.lineTo(13,-10);
+    ctx.lineTo(-9,-10);
+    ctx.lineTo(-9,-2);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,0.4)';
+    ctx.lineWidth = 1.2;
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,0.18)';
+    ctx.fillRect(-8,-9,14,2);
+  } else if(shape === 'piano'){
+    // upright piano: dark body + fallboard + a strip of keys
+    ctx.fillStyle = '#1c1712';
+    roundRect(-16,-16,32,26,3); ctx.fill();
+    ctx.fillStyle = '#2b241c';
+    ctx.fillRect(-16,-16,32,6); // top lid
+    ctx.fillStyle = '#efe9df';
+    ctx.fillRect(-14,6,28,5); // key bed (white keys)
+    ctx.fillStyle = '#1c1712';
+    for(let i=-13;i<14;i+=4) ctx.fillRect(i,6,2,3.2); // black keys
+    ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(-16,-16,32,26);
+  }
+  ctx.restore();
 }
 
 // Random Drop: pick one opponent, grow a shadow under them, drop the object,
@@ -1357,11 +1424,12 @@ function detonateRandomDrop(j, done){
 
   setTimeout(()=>{
     const fallDur = 260;
-    spawnFallingObject(variant.icon, target.x, target.y, fallDur);
-    playSfx('shift');
+    spawnFallingObject(variant.shape, target.x, target.y, fallDur);
+    playSfx('whistle');
     setTimeout(()=>{
       announce(`${j.name} dropped ${variant.name} on ${target.name}!`);
-      playSfx('explosion');
+      if(variant.shape === 'piano') playSfx('pianoCrash');
+      else playSfx('explosion');
       const px = boardToPx(target.px)+CELL/2, py = boardToPx(target.py)+CELL/2;
       addShockwave(px, py, tdef.color, 50);
       burst(px, py, tdef.color, 24);
@@ -1377,7 +1445,7 @@ function detonateRandomDrop(j, done){
   }, shadowDur);
 }
 function spawnDropShadow(x,y,dur){ dropShadows.push({x,y,start:performance.now(),dur}); }
-function spawnFallingObject(icon,targetX,targetY,dur){ fallingObjects.push({icon,targetX,targetY,start:performance.now(),dur}); }
+function spawnFallingObject(shape,targetX,targetY,dur){ fallingObjects.push({shape,targetX,targetY,start:performance.now(),dur}); }
 
 // Tracked squares so drawBoard can flash the exact tiles the explosion
 // covered — this is what makes the blast feel like it happened on the
@@ -1756,6 +1824,18 @@ function playSfx(name){
     case 'clack': beep(320,0.04,'square',0.16); break;
     case 'slap': beep(150,0.09,'sine',0.12); break;
     case 'wobble': beep(700,0.05,'triangle',0.06); beep(600,0.05,'triangle',0.05,0.05); break;
+    case 'whistle':
+      // descending whistle as the Random Drop object falls
+      beep(1100,0.09,'sine',0.08,0.00);
+      beep(900,0.09,'sine',0.08,0.06);
+      beep(700,0.09,'sine',0.08,0.12);
+      beep(520,0.11,'sine',0.09,0.18);
+      break;
+    case 'pianoCrash':
+      // a broken, dissonant cluster of piano notes
+      [220,233,262,311,349,415].forEach((f,i)=> beep(f, 0.5, 'triangle', 0.1, i*0.02));
+      beep(110, 0.6, 'sine', 0.14, 0.02);
+      break;
     case 'shift': beep(300,0.1,'sine',0.1); beep(260,0.12,'sine',0.08,0.05); break;
     case 'tick': beep(200+Math.random()*300,0.04,'square',0.06); break;
     case 'settle': beep(660,0.1,'square',0.14); beep(880,0.14,'square',0.16,0.08); break;
