@@ -696,6 +696,30 @@ function drawBoard(){
   weaponBanners.forEach(b=> b.life -= 0.02);
   weaponBanners = weaponBanners.filter(b=>b.life > 0);
 
+  // Nuke countdown — a big "3, 2, 1" centered over the board.
+  if(nukeCountdown){
+    const age = now - nukeCountdown.start;
+    const life = Math.max(0, 1 - age/200);
+    if(life > 0){
+      ctx.save();
+      ctx.globalAlpha = Math.min(1, life*1.5);
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.translate(canvas.width/2, canvas.height/2);
+      const pop = 1 + (1-life)*0.5;
+      ctx.scale(pop, pop);
+      ctx.font = 'bold 64px sans-serif';
+      ctx.fillStyle = 'rgba(0,0,0,0.55)';
+      ctx.fillText(String(nukeCountdown.value), 4, 4);
+      ctx.fillStyle = '#ff4d4d';
+      ctx.strokeStyle = 'rgba(0,0,0,0.8)';
+      ctx.lineWidth = 4;
+      ctx.strokeText(String(nukeCountdown.value), 0, 0);
+      ctx.fillText(String(nukeCountdown.value), 0, 0);
+      ctx.restore();
+    }
+  }
+
   if(screenFlash.alpha > 0.01){
     ctx.save();
     ctx.globalAlpha = screenFlash.alpha;
@@ -703,6 +727,17 @@ function drawBoard(){
     ctx.fillRect(0,0,canvas.width,canvas.height);
     ctx.restore();
     screenFlash.alpha *= 0.82;
+  }
+
+  // lingering scorch overlay after a Nuke — fades slowly over ~1.8s
+  if(scorchUntil > now){
+    const remaining = scorchUntil - now;
+    const alpha = Math.min(0.28, remaining/1800 * 0.28);
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = '#1a0f08';
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.restore();
   }
 }
 
@@ -801,6 +836,11 @@ function drawJelly(cx,cy,j){
   }
   // in-air jump squash/stretch from resolveJump (compress before launch, stretch mid-arc)
   if(j.jumpSquish && j.jumpSquish !== 1) squish *= j.jumpSquish;
+  // frightened trembling for everyone while a Nuke counts down
+  if(j.alive && now < panicUntil){
+    cxOffset += Math.sin(now/35 + j.wobble*10) * 2.2;
+    cyOffset += Math.cos(now/28 + j.wobble*7) * 1.4;
+  }
   cy += cyOffset;
   cx += cxOffset;
 
@@ -1390,8 +1430,9 @@ function dirBetween(a, b){
 // pulled out of the generic AoE path just like Random Drop.
 // Laser gets its own charge → beam sequence (see detonateLaser) — pulled out
 // of the generic AoE path just like Random Drop and Air Strike.
+// Nuke gets its own siren/countdown/flash sequence (see detonateNuke) —
+// pulled out of the generic AoE path just like the other special weapons.
 const AOE_DEFS = {
-  nuke:       {dmg:30, radius:99,  shape:'square', label:'Nuke'},
   blast:      {radius:4,  shape:'square', label:'Blast',
                dmgFn: (dist) => dist<=1 ? 40 : dist<=2 ? 30 : 20}
 };
@@ -1644,6 +1685,62 @@ function detonateLaser(j, done){
   }, chargeDur);
 }
 
+// Nuke: the most theatrical weapon in the game — warning, panic, a quick
+// countdown, a full-board flash with a beat of near-silence, then the deep
+// detonation. Every unshielded opponent gets launched. Capped near 2.5s total.
+let nukeCountdown = null; // {value, start}
+let panicUntil = 0;       // every jelly trembles while this is in the future
+let scorchUntil = 0;      // lingering dark overlay after the blast
+
+function detonateNuke(j, done){
+  const tdef = TILE_DEFS.nuke;
+  spawnWeaponBanner('NUKE', tdef.color);
+  playSfx('alarm');
+  panicUntil = performance.now() + 700;
+  drawBoard();
+
+  let count = 3;
+  function tickCountdown(){
+    if(count <= 0){
+      nukeCountdown = null;
+      flashScreen('#ffffff', 0.92);
+      const cx = canvas.width/2, cy = canvas.height/2;
+      addShockwave(cx, cy, tdef.color, 240);
+      addShockwave(cx, cy, '#ffffff', 280);
+      shake(30); // stronger than any other weapon
+      playSfx('nukeFlash');
+      drawBoard();
+      setTimeout(()=>{
+        // near-silence beat, then the deep detonation
+        playSfx('explosion');
+        scorchUntil = performance.now() + 1800;
+        const hits = otherJellies(j);
+        announce(hits.length
+          ? `${j.name} triggers a NUKE — ${hits.map(h=>h.name).join(', ')} caught in the blast!`
+          : `${j.name} triggers a NUKE, but no one else is around.`);
+        let idx = 0;
+        function hitNext(){
+          if(idx >= hits.length){ j.rageCharge = false; done(); return; }
+          const target = hits[idx];
+          damageJelly(j, target, 30, 'nukeLaunch', dirBetween(j, target), 1);
+          renderSidebar();
+          drawBoard();
+          idx++;
+          setTimeout(hitNext, 130);
+        }
+        hitNext();
+      }, 150);
+      return;
+    }
+    nukeCountdown = {value: count, start: performance.now()};
+    playSfx('countdownBeep');
+    drawBoard();
+    count--;
+    setTimeout(tickCountdown, 200);
+  }
+  tickCountdown();
+}
+
 // Tracked squares so drawBoard can flash the exact tiles the explosion
 // covered — this is what makes the blast feel like it happened on the
 // board itself, not just to whoever was standing in it.
@@ -1798,11 +1895,6 @@ function detonate(j, type, done){
         hitType = 'blastKnockback';
         forceDir = dirBetween(j, target);
         severity = dist<=1 ? 1 : dist<=2 ? 0.7 : 0.4; // closer victims travel farther
-      } else if(type === 'nuke'){
-        dmg = def.dmg;
-        hitType = 'nukeLaunch';
-        forceDir = dirBetween(j, target);
-        severity = 1;
       } else {
         dmg = def.dmgFn ? def.dmgFn() : def.dmg;
         hitType = 'launch';
@@ -1835,6 +1927,10 @@ function applyTileEffect(j, done){
   }
   if(type === 'laser'){
     detonateLaser(j, done);
+    return;
+  }
+  if(type === 'nuke'){
+    detonateNuke(j, done);
     return;
   }
   if(AOE_DEFS[type]){
@@ -2051,6 +2147,13 @@ function playSfx(name){
       for(let i=0;i<5;i++) beep(150+Math.random()*400, 0.03, 'sawtooth', 0.06, i*0.03);
       beep(90, 0.08, 'square', 0.14, 0.15);
       break;
+    case 'alarm':
+      // short up-down siren warning a Nuke is coming
+      beep(500,0.12,'square',0.1); beep(700,0.12,'square',0.1,0.14);
+      beep(500,0.12,'square',0.1,0.28); beep(700,0.12,'square',0.1,0.42);
+      break;
+    case 'countdownBeep': beep(880,0.09,'square',0.14); break;
+    case 'nukeFlash': beep(2200,0.1,'square',0.2); beep(1600,0.12,'sawtooth',0.16,0.02); break;
     case 'shift': beep(300,0.1,'sine',0.1); beep(260,0.12,'sine',0.08,0.05); break;
     case 'tick': beep(200+Math.random()*300,0.04,'square',0.06); break;
     case 'settle': beep(660,0.1,'square',0.14); beep(880,0.14,'square',0.16,0.08); break;
