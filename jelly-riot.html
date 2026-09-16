@@ -391,6 +391,9 @@ function shiftTilesDown(){
 function boardToPx(x){ return PAD + x*CELL; }
 
 function drawBoard(){
+  // Hit-stop: hold the current frame exactly as-is for a beat on impact,
+  // rather than continuing to animate through the moment of contact.
+  if(performance.now() < hitStopUntil) return;
   const now = performance.now();
   ctx.clearRect(0,0,canvas.width,canvas.height);
   ctx.save();
@@ -710,21 +713,14 @@ function drawJelly(cx,cy,j){
   const r = 20;
   const now = performance.now();
 
-  const hitAge = j.hitPunch ? now - j.hitPunch : Infinity;
-  const hitDur = j.hitStyle === 'flatten' ? 480 : 300;
-  let cyOffset = 0;
-  let inHit = hitAge < hitDur;
-  if(inHit){
-    const p = hitAge / hitDur;
-    if(j.hitStyle === 'flatten'){
-      // Random Drop: squashed nearly flat under the object, slowly reforming
-      squish *= 1 - (1-p) * 0.78;
-    } else {
-      // knockback pop — a quick upward launch that falls back and settles
-      cyOffset = -Math.sin(p*Math.PI) * 11;
-      squish *= 1 - (1-p) * 0.4;
-    }
-  } else {
+  const rx = playReactionFrame(j, now); // {cxOffset, cyOffset, squishMult, rotation, tintColor, tintAlpha}
+  let cyOffset = rx.cyOffset, cxOffset = rx.cxOffset;
+  squish *= rx.squishMult;
+  const reactionRotation = rx.rotation;
+  const reactionTint = rx.tintColor;
+  const reactionTintAlpha = rx.tintAlpha;
+
+  if(!rx.active){
     const landAge = j.landPunch ? now - j.landPunch : Infinity;
     if(landAge < 420){
       // rebound + diminishing wobbles, riding on top of the ambient jiggle
@@ -736,6 +732,7 @@ function drawJelly(cx,cy,j){
   // in-air jump squash/stretch from resolveJump (compress before launch, stretch mid-arc)
   if(j.jumpSquish && j.jumpSquish !== 1) squish *= j.jumpSquish;
   cy += cyOffset;
+  cx += cxOffset;
 
   if(j.isPlayer){
     const pulse = 1 + Math.sin(performance.now()/260)*0.12;
@@ -766,7 +763,8 @@ function drawJelly(cx,cy,j){
 
   ctx.save();
   ctx.translate(cx,cy);
-  if(j.jumpTilt) ctx.rotate(j.jumpTilt);
+  const totalTilt = (j.jumpTilt||0) + (reactionRotation||0);
+  if(totalTilt) ctx.rotate(totalTilt);
   ctx.scale(1/squish, squish);
 
   // wobbly blob outline instead of a perfect circle
@@ -791,11 +789,11 @@ function drawJelly(cx,cy,j){
   ctx.lineWidth = 1.5;
   ctx.stroke();
 
-  // red/splat hit-flash tint over the same silhouette, fading out
-  if(inHit){
-    const p = hitAge / hitDur;
-    ctx.globalAlpha = (1-p) * (j.hitStyle === 'flatten' ? 0.55 : 0.65);
-    ctx.fillStyle = j.hitStyle === 'flatten' ? '#7a3a1a' : '#ff2b2b';
+  // hit-flash tint over the same silhouette, fading out — color/style set by
+  // the active reaction type (red for damage, dark splat for flatten, etc)
+  if(rx.active && reactionTintAlpha > 0){
+    ctx.globalAlpha = reactionTintAlpha;
+    ctx.fillStyle = reactionTint;
     ctx.fill();
     ctx.globalAlpha = 1;
   }
@@ -1131,7 +1129,7 @@ function resolveHandbagSwings(list, i, done){
       setTimeout(()=> resolveHandbagSwings(list, i+1, done), 300);
       return;
     }
-    damageJelly(j, targets[idx], 35);
+    damageJelly(j, targets[idx], 35, 'sideWhack', dirBetween(j, targets[idx]), 1);
     renderSidebar();
     drawBoard();
     idx++;
@@ -1280,12 +1278,15 @@ function spawnWeaponBanner(label, color){
   weaponBanners.push({label: label.toUpperCase(), color, life:1});
 }
 
-function damageJelly(source, target, amt, style){
+function damageJelly(source, target, amt, hitType, forceDir, severity){
   if(target.shielded){
     target.shielded = false;
     announce(`${target.name}'s shield absorbed the hit!`);
     const px = boardToPx(target.px) + CELL/2, py = boardToPx(target.py) + CELL/2;
     spawnFloatText(px, py-30, 'BLOCKED', '#e8b23d');
+    addShockwave(px, py, '#e8b23d', 40);
+    burst(px, py, '#e8b23d', 16); // shield cracking and shattering
+    playSfx('clash');
     return;
   }
   const wasInvisible = target.invisible;
@@ -1295,13 +1296,17 @@ function damageJelly(source, target, amt, style){
   }
   const dmg = source.rageCharge ? amt*2 : amt;
   target.hp -= dmg;
-  target.hitPunch = performance.now();
-  target.hitStyle = style || 'normal';
+  playHitReaction(target, hitType || 'launch', forceDir, severity);
   announce(`${source.name}'s attack hit ${target.name}${wasInvisible ? ' — revealing them' : ''} (-${dmg} HP).`, 'hit');
   playSfx('explosion');
   const px = boardToPx(target.px) + CELL/2, py = boardToPx(target.py) + CELL/2;
   burst(px, py, '#ff4d4d', 14);
   spawnFloatText(px, py-32, `-${dmg} HEALTH`, '#ff3b3b', true);
+}
+
+// direction helper: unit-ish {-1,0,1} step from a to b on each axis
+function dirBetween(a, b){
+  return { x: Math.sign(b.x - a.x), y: Math.sign(b.y - a.y) };
 }
 
 // Weapon tiles explode outward from the tile the jelly lands on, in a square
@@ -1377,6 +1382,73 @@ function spawnFallingObject(icon,targetX,targetY,dur){ fallingObjects.push({icon
 // Tracked squares so drawBoard can flash the exact tiles the explosion
 // covered — this is what makes the blast feel like it happened on the
 // board itself, not just to whoever was standing in it.
+// ── Reusable physical hit-reaction system ──────────────────────────────
+// Every weapon gets its own recognizable victim reaction instead of one
+// generic red-flash-and-bounce. playHitReaction() sets the reaction state;
+// playReactionFrame() is read by drawJelly() every frame to deform the body.
+let hitStopUntil = 0;
+function triggerHitStop(ms){ hitStopUntil = Math.max(hitStopUntil, performance.now()+ms); }
+
+const REACTION_DEFS = {
+  // Generic knockback pop — Air Strike and anything without a bespoke reaction.
+  launch: { dur: 300, render(p,dx,dy,sev){
+    const kick = Math.sin(p*Math.PI);
+    return { cxOffset:0, cyOffset:-kick*11*sev, squishMult:1-(1-p)*0.4*sev, rotation:0, tintColor:'#ff2b2b', tintAlpha:(1-p)*0.65 };
+  }},
+  // Random Drop — squashed nearly flat, slow reform.
+  flatten: { dur: 480, render(p){
+    return { cxOffset:0, cyOffset:0, squishMult:1-(1-p)*0.78, rotation:0, tintColor:'#7a3a1a', tintAlpha:(1-p)*0.55 };
+  }},
+  // Handbag — knocked sideways in the swing direction.
+  sideWhack: { dur: 340, render(p,dx,dy,sev){
+    const kick = Math.sin(p*Math.PI);
+    return { cxOffset:dx*kick*16*sev, cyOffset:-kick*3, squishMult:1-(1-p)*0.3, rotation:dx*kick*0.25, tintColor:'#ff2b2b', tintAlpha:(1-p)*0.6 };
+  }},
+  // Laser — pale flash, convulsive jitter, stretched rather than squashed.
+  laserShock: { dur: 320, render(p,dx,dy){
+    const kick = Math.sin(p*Math.PI);
+    return { cxOffset:dx*kick*5, cyOffset:dy*kick*5-kick*2, squishMult:1+kick*0.18, rotation:(Math.random()-0.5)*0.06*kick, tintColor:'#e8ffff', tintAlpha:(1-p)*0.7 };
+  }},
+  // Blast — pushed away from the explosion center; closer = travels farther (severity).
+  blastKnockback: { dur: 380, render(p,dx,dy,sev){
+    const kick = Math.sin(p*Math.PI);
+    return { cxOffset:dx*kick*24*sev, cyOffset:dy*kick*24*sev-kick*6, squishMult:1-(1-p)*0.3, rotation:dx*kick*0.15*sev, tintColor:'#ff7a3d', tintAlpha:(1-p)*0.6 };
+  }},
+  // Mine — small self-inflicted jolt, less dramatic.
+  minePop: { dur: 220, render(p){
+    const kick = Math.sin(p*Math.PI);
+    return { cxOffset:0, cyOffset:-kick*6, squishMult:1-(1-p)*0.25, rotation:0, tintColor:'#ffb347', tintAlpha:(1-p)*0.5 };
+  }},
+  // Nuke — the biggest reaction in the game: launched, scorched, spinning.
+  nukeLaunch: { dur: 520, render(p,dx,dy,sev){
+    const kick = Math.sin(p*Math.PI);
+    const spin = dx || 1;
+    return { cxOffset:dx*kick*8, cyOffset:-kick*22*sev, squishMult:1-(1-p)*0.45, rotation:kick*0.35*spin, tintColor:'#fff6d9', tintAlpha:(1-p)*0.8 };
+  }}
+};
+
+function playReactionFrame(j, now){
+  const idle = {active:false, cxOffset:0, cyOffset:0, squishMult:1, rotation:0, tintColor:'#ff2b2b', tintAlpha:0};
+  const r = j.reaction;
+  if(!r) return idle;
+  const def = REACTION_DEFS[r.type] || REACTION_DEFS.launch;
+  const age = now - r.start;
+  if(age >= def.dur) return idle;
+  const out = def.render(age/def.dur, r.dirX||0, r.dirY||0, r.severity==null?1:r.severity);
+  out.active = true;
+  return out;
+}
+
+// Call this instead of touching hp/reaction fields directly. hitType is one
+// of the REACTION_DEFS keys; forceDir is {x,y} (roughly -1/0/1 per axis);
+// severity scales the reaction's intensity (used by Blast's distance falloff).
+function playHitReaction(target, hitType, forceDir, severity){
+  forceDir = forceDir || {x:0,y:0};
+  const sev = severity==null ? 1 : severity;
+  triggerHitStop(Math.round(60 + 50*sev)); // ~60-110ms hit-stop before the reaction reads
+  target.reaction = { type: hitType, start: performance.now(), dirX: forceDir.x, dirY: forceDir.y, severity: sev };
+}
+
 let explosionCells = [];
 // Random Drop's signature tell: a growing shadow under the victim, then the
 // Destination key briefly flashing/depressing when a jelly lands on it.
@@ -1452,16 +1524,30 @@ function detonate(j, type, done){
     function hitNext(){
       if(idx >= hits.length){ j.rageCharge = false; done(); return; }
       const target = hits[idx];
-      let dmg;
+      let dmg, hitType, forceDir, severity;
       if(type === 'blast'){
         const dist = Math.max(Math.abs(target.x-j.x), Math.abs(target.y-j.y));
         dmg = def.dmgFn(dist);
-      } else if(def.dmgFn){
+        hitType = 'blastKnockback';
+        forceDir = dirBetween(j, target);
+        severity = dist<=1 ? 1 : dist<=2 ? 0.7 : 0.4; // closer victims travel farther
+      } else if(type === 'laser'){
         dmg = def.dmgFn();
-      } else {
+        hitType = 'laserShock';
+        forceDir = target.x === j.x ? {x:0, y:Math.sign(target.y-j.y)||1} : {x:Math.sign(target.x-j.x)||1, y:0};
+        severity = 1;
+      } else if(type === 'nuke'){
         dmg = def.dmg;
+        hitType = 'nukeLaunch';
+        forceDir = dirBetween(j, target);
+        severity = 1;
+      } else {
+        dmg = def.dmgFn ? def.dmgFn() : def.dmg;
+        hitType = 'launch';
+        forceDir = {x:0,y:0};
+        severity = 1;
       }
-      damageJelly(j, target, dmg);
+      damageJelly(j, target, dmg, hitType, forceDir, severity);
       renderSidebar();
       drawBoard();
       idx++;
@@ -1551,8 +1637,7 @@ function applyTileEffect(j, done){
     case 'mine': {
       const dmg = 20 + Math.floor(Math.random()*30); // 20–49
       j.hp -= dmg;
-      j.hitPunch = performance.now();
-      j.hitStyle = 'normal';
+      playHitReaction(j, 'minePop', {x:0,y:0}, 0.7);
       announce(`${j.name} stepped on a mine (-${dmg} HP).`, 'hit');
       playSfx('explosion');
       spawnFloatText(boardToPx(j.px)+CELL/2, boardToPx(j.py)+CELL/2-32, `-${dmg} HEALTH`, '#ff3b3b', true);
