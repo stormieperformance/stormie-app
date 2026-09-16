@@ -634,12 +634,29 @@ function drawJelly(cx,cy,j){
   const t = performance.now()/300 + j.wobble;
   let squish = 1 + Math.sin(t)*0.07;
   const r = 20;
+  const now = performance.now();
 
-  const hitAge = j.hitPunch ? performance.now() - j.hitPunch : Infinity;
-  if(hitAge < 220){
-    // sharp squash-and-flash on impact, easing back out
-    squish *= 1 - (1 - hitAge/220) * 0.4;
+  const hitAge = j.hitPunch ? now - j.hitPunch : Infinity;
+  const hitDur = j.hitStyle === 'flatten' ? 480 : 300;
+  let cyOffset = 0;
+  let inHit = hitAge < hitDur;
+  if(inHit){
+    const p = hitAge / hitDur;
+    if(j.hitStyle === 'flatten'){
+      // Random Drop: squashed nearly flat under the object, slowly reforming
+      squish *= 1 - (1-p) * 0.78;
+    } else {
+      // knockback pop — a quick upward launch that falls back and settles
+      cyOffset = -Math.sin(p*Math.PI) * 11;
+      squish *= 1 - (1-p) * 0.4;
+    }
+  } else {
+    const landAge = j.landPunch ? now - j.landPunch : Infinity;
+    if(landAge < 240){
+      squish *= 1 - (1 - landAge/240) * 0.18;
+    }
   }
+  cy += cyOffset;
 
   if(j.isPlayer){
     const pulse = 1 + Math.sin(performance.now()/260)*0.12;
@@ -694,10 +711,11 @@ function drawJelly(cx,cy,j){
   ctx.lineWidth = 1.5;
   ctx.stroke();
 
-  // red hit-flash tint over the same silhouette, fading out fast
-  if(hitAge < 220){
-    ctx.globalAlpha = (1 - hitAge/220) * 0.65;
-    ctx.fillStyle = '#ff2b2b';
+  // red/splat hit-flash tint over the same silhouette, fading out
+  if(inHit){
+    const p = hitAge / hitDur;
+    ctx.globalAlpha = (1-p) * (j.hitStyle === 'flatten' ? 0.55 : 0.65);
+    ctx.fillStyle = j.hitStyle === 'flatten' ? '#7a3a1a' : '#ff2b2b';
     ctx.fill();
     ctx.globalAlpha = 1;
   }
@@ -901,7 +919,9 @@ function resolveJump(){
         if(!j.alive) return;
         j.x = j.targetX; j.y = j.targetY;
         j.px = j.x; j.py = j.y;
+        j.landPunch = performance.now();
       });
+      playSfx('settle');
       afterLanding();
     }
   }
@@ -921,10 +941,11 @@ function landingPriority(j){
 
 function resolveSingleLandings(list, i, done){
   if(i >= list.length){ done(); return; }
-  applyTileEffect(list[i]);
-  renderSidebar();
-  drawBoard();
-  setTimeout(()=> resolveSingleLandings(list, i+1, done), 550);
+  applyTileEffect(list[i], () => {
+    renderSidebar();
+    drawBoard();
+    setTimeout(()=> resolveSingleLandings(list, i+1, done), 400);
+  });
 }
 
 function afterLanding(){
@@ -1091,7 +1112,7 @@ function spawnWeaponBanner(label, color){
   weaponBanners.push({label: label.toUpperCase(), color, life:1});
 }
 
-function damageJelly(source, target, amt){
+function damageJelly(source, target, amt, style){
   if(target.invisible){
     announce(`${target.name} was invisible and dodged the attack!`);
     return;
@@ -1106,6 +1127,7 @@ function damageJelly(source, target, amt){
   const dmg = source.rageCharge ? amt*2 : amt;
   target.hp -= dmg;
   target.hitPunch = performance.now();
+  target.hitStyle = style || 'normal';
   announce(`${source.name}'s attack hit ${target.name} (-${dmg} HP).`, 'hit');
   playSfx('explosion');
   const px = boardToPx(target.px) + CELL/2, py = boardToPx(target.py) + CELL/2;
@@ -1151,7 +1173,9 @@ function cellsInLine(cx, cy){
   return out;
 }
 
-function detonate(j, type){
+// Telegraph, then detonate, then stagger the individual hits — a weapon
+// should be recognizable and watchable, not an instant silent number change.
+function detonate(j, type, done){
   const def = AOE_DEFS[type];
   const tdef = TILE_DEFS[type];
   let cells;
@@ -1165,31 +1189,52 @@ function detonate(j, type){
     cells = cellsInSquare(cx, cy, def.radius);
   }
 
-  markExplosion(cells, tdef.color);
-  const px = boardToPx(j.px)+CELL/2, py = boardToPx(j.py)+CELL/2;
-  addShockwave(px, py, tdef.color, 40 + cells.length*3);
-  burst(px, py, tdef.color, Math.min(40, 14 + cells.length));
-  flashScreen(tdef.color, def.radius >= 2 ? 0.5 : 0.2);
-  shake(6 + Math.min(20, cells.length));
-  playSfx('explosion');
+  // Telegraph: the weapon name announces itself and the danger zone flashes
+  // white/warning before anything actually goes off.
   spawnWeaponBanner(def.label, tdef.color);
+  markExplosion(cells, '#ffffff');
+  playSfx('telegraph');
+  drawBoard();
 
-  const cellKeys = new Set(cells.map(c=>c.x+','+c.y));
-  const hits = otherJellies(j).filter(k => cellKeys.has(k.x+','+k.y));
-  announce(hits.length
-    ? `${j.name}'s ${def.label} exploded across the board and hit ${hits.map(h=>h.name).join(', ')}!`
-    : `${j.name}'s ${def.label} exploded across the board, but no one was caught in it.`);
-  hits.forEach(k => damageJelly(j, k, def.dmg));
+  setTimeout(()=>{
+    markExplosion(cells, tdef.color);
+    const px = boardToPx(j.px)+CELL/2, py = boardToPx(j.py)+CELL/2;
+    addShockwave(px, py, tdef.color, 40 + cells.length*3);
+    burst(px, py, tdef.color, Math.min(40, 14 + cells.length));
+    flashScreen(tdef.color, def.radius >= 2 ? 0.5 : 0.2);
+    shake(6 + Math.min(20, cells.length));
+    playSfx('explosion');
+
+    const cellKeys = new Set(cells.map(c=>c.x+','+c.y));
+    const hits = otherJellies(j).filter(k => cellKeys.has(k.x+','+k.y));
+    announce(hits.length
+      ? `${j.name}'s ${def.label} exploded across the board and hit ${hits.map(h=>h.name).join(', ')}!`
+      : `${j.name}'s ${def.label} exploded across the board, but no one was caught in it.`);
+
+    // Stagger multi-target hits so each impact is its own visible beat
+    // instead of every victim reacting on the exact same frame.
+    const style = type === 'randomdrop' ? 'flatten' : 'normal';
+    let idx = 0;
+    function hitNext(){
+      if(idx >= hits.length){ done(); return; }
+      damageJelly(j, hits[idx], def.dmg, style);
+      renderSidebar();
+      drawBoard();
+      idx++;
+      setTimeout(hitNext, 130);
+    }
+    hitNext();
+  }, 220);
 }
 
-function applyTileEffect(j){
+function applyTileEffect(j, done){
   const t = tileAt(j.x, j.y);
-  if(t.type === 'plain') return;
+  if(t.type === 'plain'){ done(); return; }
   const type = t.type;
   t.type = 'plain';
 
   if(AOE_DEFS[type]){
-    detonate(j, type);
+    detonate(j, type, done);
     return;
   }
   triggerIconEffect(type, j);
@@ -1252,8 +1297,12 @@ function applyTileEffect(j){
     // ── Hazard tile ──
     case 'mine':
       j.hp -= 10;
+      j.hitPunch = performance.now();
+      j.hitStyle = 'normal';
       announce(`${j.name} stepped on a mine (-10 HP).`, 'hit');
       playSfx('explosion');
+      spawnFloatText(boardToPx(j.px)+CELL/2, boardToPx(j.py)+CELL/2-32, '-10 HEALTH', '#ff3b3b', true);
+      shake(10);
       break;
 
     // ── Health tiles ──
@@ -1273,6 +1322,7 @@ function applyTileEffect(j){
 
   // A used attack clears the attacker's own rage charge.
   if(TILE_DEFS[type] && TILE_DEFS[type].cat === 'weapon' && j.rageCharge) j.rageCharge = false;
+  done();
 }
 
 function checkWin(){
@@ -1365,6 +1415,7 @@ function playSfx(name){
     case 'settle': beep(660,0.1,'square',0.14); beep(880,0.14,'square',0.16,0.08); break;
     case 'clash': beep(180,0.15,'sawtooth',0.15); beep(140,0.15,'sawtooth',0.1,0.05); break;
     case 'hit': beep(110,0.2,'square',0.18); break;
+    case 'telegraph': beep(420,0.05,'square',0.09); beep(520,0.06,'square',0.1,0.07); break;
     case 'explosion':
       beep(90,0.35,'sawtooth',0.22);
       beep(60,0.4,'square',0.18,0.03);
