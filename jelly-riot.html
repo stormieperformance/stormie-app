@@ -141,6 +141,8 @@
   }
   .overlay.show{display:flex;}
   .rules-list{text-align:left;font-size:12px;color:var(--text-dim);line-height:1.7;margin:0 0 20px;padding-left:18px;}
+  .diff-btn{flex:1;padding:8px 4px;background:var(--panel-2);border:1px solid var(--gold-dim);color:var(--text-dim);border-radius:2px;font-size:12px;cursor:pointer;letter-spacing:0.5px;}
+  .diff-btn.is-active{background:var(--gold-dim);color:#0f0d0a;border-color:var(--gold);font-weight:700;}
   .rules-list li{margin-bottom:6px;}
   .rules-list b{color:var(--gold);}
   .overlay-card{
@@ -218,17 +220,22 @@
   <div class="overlay-card" style="max-width:400px;">
     <h2>How to Play</h2>
     <ul class="rules-list">
-      <li><b>Goal:</b> be the last jelly wobbling. 3 rivals, 1 arena.</li>
-      <li>Each turn, click a tile within <b>2 squares</b> of you to jump there.</li>
-      <li>16 special tiles, 5 kinds: <b>Weapon</b> tiles explode the instant you land on them, <b>Status</b> tiles buff you or debuff nearby rivals, <b>Teleport</b> flings you somewhere random, <b>Hazard</b> tiles hurt you, and <b>Health</b> tiles heal you.</li>
-      <li>Land on a weapon tile and it goes off right there on the board: a <b>Bomb-type Blast</b> or <b>Handbag</b> hits a 3×3 area around you, <b>Laser</b> sweeps your whole row and column, and <b>Nuke</b> hits the entire arena.</li>
-      <li>Icons drift <b>south</b> every turn and fall off the map, so aim for where one is <i>heading</i>, not where it sits now.</li>
-      <li>Land on the <b>same tile</b> as a rival and it's a <b>Jelly Off</b>, and everyone rolls, the winner holds the tile and punches the rest away.</li>
-      <li>Get punched off the edge of the board and you're <b>out</b>.</li>
+      <li><b>Goal:</b> be the last jelly with HP remaining. 3 rivals, 1 arena.</li>
+      <li>All four jellies choose a tile within <b>2 squares</b> and jump <b>simultaneously</b> each turn.</li>
+      <li>Icons shift <b>one row south</b> right before everyone lands, so aim one key below the item you actually want.</li>
+      <li><b>Handbag</b> isn't instant: it grants <b>3 future turns</b> of automatic close-range swings at whoever's adjacent.</li>
+      <li><b>Blast</b> does distance-based damage (hardest up close, weaker further out). <b>Laser</b> hits your whole row and column. <b>Air Strike</b> launches several random missiles. <b>Nuke</b> hits every unshielded rival at once. <b>Random Drop</b> crushes one rival you can see.</li>
+      <li>Land on the <b>same tile</b> as a rival for a <b>Jelly Off</b>: everyone rolls, the winner holds the key, and losers get knocked onto a nearby open tile.</li>
     </ul>
     <label style="display:block;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim);margin-bottom:6px;">Name your jelly</label>
     <input id="playerNameInput" type="text" maxlength="14" placeholder="Your jelly's name" value="You"
-      style="width:100%;padding:9px 10px;margin-bottom:18px;background:var(--panel-2);border:1px solid var(--gold-dim);color:var(--text);border-radius:2px;font-size:13px;">
+      style="width:100%;padding:9px 10px;margin-bottom:14px;background:var(--panel-2);border:1px solid var(--gold-dim);color:var(--text);border-radius:2px;font-size:13px;">
+    <label style="display:block;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim);margin-bottom:6px;">Rival difficulty</label>
+    <div id="difficultyPicker" style="display:flex;gap:6px;margin-bottom:18px;">
+      <button type="button" class="diff-btn" data-diff="easy">Easy</button>
+      <button type="button" class="diff-btn is-active" data-diff="normal">Normal</button>
+      <button type="button" class="diff-btn" data-diff="hard">Hard</button>
+    </div>
     <button class="primary" id="rulesStartBtn">Got it, Start Battle</button>
   </div>
 </div>
@@ -292,6 +299,7 @@ let jellies = [];
 let tiles = [];
 let turnNumber = 0;
 let phase = 'idle'; // idle, picking, resolving, gameover
+let difficulty = 'normal'; // easy | normal | hard — set from the start modal
 let selectedTile = null;
 let timerId = null;
 let timerDuration = 8000;
@@ -1162,6 +1170,90 @@ canvas.addEventListener('click', (e)=>{
   commitPlayerMove({x:gx,y:gy});
 });
 
+// What tile will actually occupy (x,y) once shiftTilesDown() runs before the
+// jump. Row 0 is freshly generated and unknowable in advance.
+function predictTileAt(x, y){
+  if(y <= 0) return {type:'plain'};
+  return tileAt(x, y-1);
+}
+
+// Scores one possible destination for an AI jelly. useCorrectShift decides
+// whether it reads the post-shift tile (accurate) or the current one
+// (a misjudged guess) — this is what separates the difficulty tiers.
+function scoreDestination(mover, x, y, useCorrectShift, opponents){
+  let score = 0;
+  const predicted = useCorrectShift ? predictTileAt(x, y) : tileAt(x, y);
+  const type = predicted.type;
+  const def = type !== 'plain' ? TILE_DEFS[type] : null;
+
+  if(def){
+    if(def.cat === 'weapon'){
+      const rivalsNearby = opponents.filter(o => Math.max(Math.abs(o.x-x),Math.abs(o.y-y)) <= 3).length;
+      score += type==='nuke' ? 90 : (rivalsNearby>=2 ? 70 : 45);
+    } else if(type === 'health'){
+      score += mover.hp < 60 ? 60 : 15;
+    } else if(type === 'superjelly'){
+      score += mover.hp < 70 ? 85 : 20;
+    } else if(type === 'shield'){
+      score += mover.shielded ? 5 : 55;
+    } else if(type === 'rage'){
+      score += mover.rageCharge ? 5 : 40;
+    } else if(type === 'triplejump'){
+      score += mover.tripleJump ? 5 : 25;
+    } else if(type === 'mine'){
+      score -= 70;
+    } else if(type === 'freeze' || type === 'debonus'){
+      score += 25;
+    } else if(type === 'invisible'){
+      score += mover.invisible ? 5 : 30;
+    } else if(type === 'teleport'){
+      score += mover.hp < 40 ? 20 : -5;
+    } else if(type === 'handbag'){
+      score += 35;
+    }
+  }
+
+  // Landing on another jelly risks a Jelly Off.
+  const occupant = opponents.find(o => o.x===x && o.y===y);
+  if(occupant) score += mover.hp > occupant.hp ? 10 : -20;
+
+  // Danger zones: close range (Blast/Handbag) or aligned (Laser).
+  opponents.forEach(o=>{
+    const dist = Math.max(Math.abs(o.x-x), Math.abs(o.y-y));
+    if(dist <= 1) score -= 15;
+    else if(dist <= 2) score -= 6;
+    if(o.x === x || o.y === y) score -= 8;
+  });
+
+  return score;
+}
+
+// Picks a move for one AI jelly according to the selected difficulty.
+// Also used to decide whether Random Drop / deliberate targeting should
+// avoid an invisible jelly (item 8's "AI should not intentionally target").
+function chooseAiMove(j, opts, opponents){
+  if(difficulty === 'easy'){
+    // Mostly random; only sometimes even tries to read the (often wrong) tile.
+    if(Math.random() < 0.25){
+      const scored = opts.map(o => ({o, s: scoreDestination(j, o.x, o.y, false, opponents)}));
+      scored.sort((a,b)=>b.s-a.s);
+      return scored[0].o;
+    }
+    return opts[Math.floor(Math.random()*opts.length)];
+  }
+  if(difficulty === 'hard'){
+    const scored = opts.map(o => ({o, s: scoreDestination(j, o.x, o.y, true, opponents)}));
+    scored.sort((a,b)=>b.s-a.s);
+    return Math.random() < 0.1 ? opts[Math.floor(Math.random()*opts.length)] : scored[0].o;
+  }
+  // normal
+  const correctShift = Math.random() < 0.8; // "correctly predicts most of the time"
+  const scored = opts.map(o => ({o, s: scoreDestination(j, o.x, o.y, correctShift, opponents)}));
+  scored.sort((a,b)=>b.s-a.s);
+  const topN = scored.slice(0, Math.min(3, scored.length));
+  return topN[Math.floor(Math.random()*topN.length)].o;
+}
+
 function commitPlayerMove(tile){
   clearInterval(timerId);
   document.getElementById('timerFill').style.width='0%';
@@ -1183,17 +1275,8 @@ function commitPlayerMove(tile){
       continue;
     }
     const opts = reachableTiles(j.x, j.y, moveRangeFor(j));
-    let choice = opts[Math.floor(Math.random()*opts.length)];
-    // bias: chase player, or go for special tiles
-    const special = opts.find(o => tileAt(o.x,o.y).type !== 'plain');
-    if(special && Math.random() < 0.55) choice = special;
-    else if(Math.random() < 0.3){
-      const towardPlayer = opts.reduce((best,o)=>{
-        const d = Math.hypot(o.x-player.x, o.y-player.y);
-        return d < best.d ? {o,d} : best;
-      }, {o:choice, d:Infinity});
-      choice = towardPlayer.o;
-    }
+    const opponents = otherJellies(j).filter(o => o.alive);
+    const choice = chooseAiMove(j, opts, opponents);
     j.targetX = choice.x; j.targetY = choice.y;
   }
 
@@ -2232,6 +2315,12 @@ function checkWin(){
   return false;
 }
 
+document.querySelectorAll('.diff-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    difficulty = btn.dataset.diff;
+    document.querySelectorAll('.diff-btn').forEach(b=> b.classList.toggle('is-active', b===btn));
+  });
+});
 document.getElementById('startBtn').addEventListener('click', ()=>{
   initAudio();
   document.getElementById('rulesOverlay').classList.remove('show');
