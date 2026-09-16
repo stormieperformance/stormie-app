@@ -508,19 +508,46 @@ function drawBoard(){
   // floating damage/heal numbers punching upward off the hit jelly
   floatTexts.forEach(f=>{
     ctx.globalAlpha = Math.max(0, f.life);
-    ctx.font = 'bold 15px sans-serif';
+    ctx.font = f.big ? 'bold 20px sans-serif' : 'bold 15px sans-serif';
     ctx.textAlign = 'center';
     ctx.fillStyle = f.color;
-    ctx.strokeStyle = 'rgba(0,0,0,0.55)';
-    ctx.lineWidth = 3;
+    ctx.strokeStyle = 'rgba(0,0,0,0.7)';
+    ctx.lineWidth = f.big ? 4 : 3;
     ctx.strokeText(f.text, f.x, f.y);
     ctx.fillText(f.text, f.x, f.y);
     ctx.globalAlpha = 1;
   });
-  floatTexts.forEach(f=>{ f.y -= 0.7; f.life -= 0.018; });
+  floatTexts.forEach(f=>{ f.y -= (f.big ? 0.45 : 0.7); f.life -= (f.big ? 0.011 : 0.018); });
   floatTexts = floatTexts.filter(f=>f.life > 0);
 
   ctx.restore();
+
+  // big bold weapon-name callout — "NUKE", "BLAST", etc. — drawn outside the
+  // shake transform so it reads clearly while the board underneath rattles
+  if(weaponBanners.length){
+    ctx.save();
+    weaponBanners.forEach(b=>{
+      const life = b.life;
+      const scale = life > 0.85 ? (1 - life)/0.15 : 1; // quick pop-in
+      ctx.globalAlpha = Math.min(1, life * 1.6);
+      ctx.textAlign = 'center';
+      ctx.translate(canvas.width/2, 46);
+      ctx.scale(0.7 + scale*0.3, 0.7 + scale*0.3);
+      ctx.font = 'bold 30px sans-serif';
+      ctx.fillStyle = 'rgba(0,0,0,0.6)';
+      ctx.fillText(b.label, 3, 3);
+      ctx.fillStyle = b.color;
+      ctx.strokeStyle = 'rgba(0,0,0,0.8)';
+      ctx.lineWidth = 3;
+      ctx.strokeText(b.label, 0, 0);
+      ctx.fillText(b.label, 0, 0);
+      ctx.setTransform(1,0,0,1,0,0);
+    });
+    ctx.globalAlpha = 1;
+    ctx.restore();
+  }
+  weaponBanners.forEach(b=> b.life -= 0.02);
+  weaponBanners = weaponBanners.filter(b=>b.life > 0);
 
   if(screenFlash.alpha > 0.01){
     ctx.save();
@@ -1053,8 +1080,15 @@ function jelliesInLine(j){
 // Damage a target, respecting Shield (absorbs one hit) and Invisible (dodges entirely).
 function announce(msg, cls){ logMsg(msg, cls); setBanner(msg); }
 let floatTexts = [];
-function spawnFloatText(x, y, text, color){
-  floatTexts.push({x, y, text, color, life:1});
+function spawnFloatText(x, y, text, color, big){
+  floatTexts.push({x, y, text, color, life:1, big:!!big});
+}
+
+// A big bold weapon-name callout, like "NUKE" flashing over the board when
+// it goes off — this is what actually sells the hit, not just the number.
+let weaponBanners = [];
+function spawnWeaponBanner(label, color){
+  weaponBanners.push({label: label.toUpperCase(), color, life:1});
 }
 
 function damageJelly(source, target, amt){
@@ -1076,7 +1110,7 @@ function damageJelly(source, target, amt){
   playSfx('explosion');
   const px = boardToPx(target.px) + CELL/2, py = boardToPx(target.py) + CELL/2;
   burst(px, py, '#ff4d4d', 14);
-  spawnFloatText(px, py-30, `-${dmg}`, '#ff5d5d');
+  spawnFloatText(px, py-32, `-${dmg} HEALTH`, '#ff3b3b', true);
 }
 
 // Weapon tiles explode outward from the tile the jelly lands on, in a square
@@ -1138,6 +1172,7 @@ function detonate(j, type){
   flashScreen(tdef.color, def.radius >= 2 ? 0.5 : 0.2);
   shake(6 + Math.min(20, cells.length));
   playSfx('explosion');
+  spawnWeaponBanner(def.label, tdef.color);
 
   const cellKeys = new Set(cells.map(c=>c.x+','+c.y));
   const hits = otherJellies(j).filter(k => cellKeys.has(k.x+','+k.y));
@@ -1226,13 +1261,13 @@ function applyTileEffect(j){
       j.hp = 100;
       announce(`${j.name} found a Super Jelly and is fully restored!`, 'heal');
       playSfx('heal');
-      spawnFloatText(boardToPx(j.px)+CELL/2, boardToPx(j.py)+CELL/2-30, 'FULL HEAL', '#5ee08a');
+      spawnFloatText(boardToPx(j.px)+CELL/2, boardToPx(j.py)+CELL/2-32, 'FULL HEAL', '#5ee08a', true);
       break;
     case 'health':
       j.hp = Math.min(100, j.hp + 12);
       announce(`${j.name} snacked on some jelly (+12 HP).`, 'heal');
       playSfx('heal');
-      spawnFloatText(boardToPx(j.px)+CELL/2, boardToPx(j.py)+CELL/2-30, '+12', '#5ee08a');
+      spawnFloatText(boardToPx(j.px)+CELL/2, boardToPx(j.py)+CELL/2-32, '+12 HEALTH', '#5ee08a', true);
       break;
   }
 
