@@ -1,0 +1,1110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jelly Riot — Stormie Games</title>
+<style>
+  :root{
+    --gold:#e8b23d;
+    --gold-dim:#8a6a24;
+    --bg:#0b0d12;
+    --panel:#12161f;
+    --panel-2:#171c27;
+    --text:#e9e6da;
+    --text-dim:#8b93a3;
+    --p1:#3ad6d9;
+    --p2:#ff4e88;
+    --p3:#ff9d3d;
+    --p4:#8dff6b;
+    --danger:#ff4d4d;
+    --heal:#5ee08a;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;overflow-x:hidden;}
+  body{
+    min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:24px 14px 50px;
+    position:relative;
+    background:
+      radial-gradient(ellipse 900px 600px at 20% -10%, #1c3a2e 0%, transparent 60%),
+      radial-gradient(ellipse 900px 600px at 85% 10%, #3a1c3e 0%, transparent 55%),
+      var(--bg);
+    overflow:hidden;
+  }
+  .blob-bg{position:fixed;border-radius:50%;filter:blur(60px);opacity:.35;z-index:0;pointer-events:none;animation:drift 14s ease-in-out infinite;}
+  .blob-bg.b1{width:340px;height:340px;background:#3ad6d9;top:-80px;left:-100px;animation-delay:0s;}
+  .blob-bg.b2{width:280px;height:280px;background:#f2d33c;bottom:-60px;right:-60px;animation-delay:3s;}
+  .blob-bg.b3{width:220px;height:220px;background:#a259ff;top:40%;right:8%;animation-delay:6s;}
+  @keyframes drift{
+    0%,100%{transform:translate(0,0) scale(1);}
+    50%{transform:translate(20px,-24px) scale(1.08);}
+  }
+  .stage, h1, .subtitle, footer, .marquee{position:relative;z-index:1;}
+
+  .marquee{
+    width:100%;max-width:1040px;
+    background:linear-gradient(90deg, transparent, var(--gold-dim), transparent);
+    height:2px;margin-bottom:18px;opacity:.7;
+  }
+
+  h1{
+    font-size:clamp(28px,5vw,44px);
+    letter-spacing:2px;
+    margin:0 0 4px;
+    text-transform:uppercase;
+    background:linear-gradient(180deg,#fff6da,var(--gold));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    text-shadow:0 2px 18px rgba(232,178,61,.25);
+    clip-path:polygon(0 0,98% 0,100% 20%,100% 100%,2% 100%,0 80%);
+    padding:4px 10px;
+    display:inline-block;
+    animation:titleWobble 3.2s ease-in-out infinite;
+  }
+  @keyframes titleWobble{
+    0%,100%{transform:scale(1) rotate(0deg);}
+    25%{transform:scale(1.015) rotate(-0.6deg);}
+    75%{transform:scale(0.99) rotate(0.6deg);}
+  }
+  .subtitle{color:var(--text-dim);font-size:13px;letter-spacing:1px;text-transform:uppercase;margin-bottom:22px;}
+
+  .stage{
+    display:flex;gap:20px;flex-wrap:wrap;justify-content:center;width:100%;max-width:1040px;
+  }
+
+  .hud-card{
+    background:var(--panel);
+    border:1px solid #26304099;
+    clip-path:polygon(0 10px,10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%);
+    position:relative;
+  }
+  .hud-card::before{
+    content:"";position:absolute;top:0;left:0;width:16px;height:16px;
+    border-top:2px solid var(--gold);border-left:2px solid var(--gold);
+  }
+  .hud-card::after{
+    content:"";position:absolute;bottom:0;right:0;width:16px;height:16px;
+    border-bottom:2px solid var(--gold);border-right:2px solid var(--gold);
+  }
+
+  .board-wrap{padding:16px;}
+  #board{display:block;background:radial-gradient(circle at 50% 30%,#1c2b22,#0d1118 75%);border-radius:8px;}
+
+  .side{
+    width:260px;padding:16px;display:flex;flex-direction:column;gap:14px;
+  }
+  .side h2{
+    font-size:12px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);
+    margin:0 0 8px;border-bottom:1px solid #2a3242;padding-bottom:6px;
+  }
+
+  .jelly-row{display:flex;align-items:center;gap:8px;margin-bottom:10px;opacity:1;transition:opacity .4s;padding:5px 6px;border-radius:4px;}
+  .jelly-row.is-player{background:rgba(232,178,61,0.1);box-shadow:inset 0 0 0 1px rgba(232,178,61,0.4);}
+  .jelly-row.dead{opacity:.3;}
+  .jelly-dot{width:14px;height:14px;border-radius:50%;flex:none;box-shadow:0 0 8px currentColor;}
+  .jelly-info{flex:1;min-width:0;}
+  .jelly-name{font-size:12px;font-weight:600;display:flex;justify-content:space-between;}
+  .hp-track{height:6px;background:#232a38;border-radius:3px;overflow:hidden;margin-top:3px;}
+  .hp-fill{height:100%;background:linear-gradient(90deg,#5ee08a,#3ad6d9);transition:width .35s ease;}
+  .weapon-tag{font-size:9px;color:var(--gold);letter-spacing:1px;text-transform:uppercase;}
+
+  .log{
+    font-size:11px;color:var(--text-dim);line-height:1.6;
+    max-height:110px;overflow-y:auto;padding-right:4px;
+  }
+  .log div{border-left:2px solid #2a3242;padding-left:7px;margin-bottom:4px;}
+  .log div.hit{border-color:var(--danger);color:#ffb3b3;}
+  .log div.heal{border-color:var(--heal);color:#b8ffd0;}
+  .log div.win{border-color:var(--gold);color:var(--gold);}
+
+  .controls{display:flex;gap:8px;flex-wrap:wrap;}
+  button{
+    background:var(--panel-2);color:var(--text);border:1px solid var(--gold-dim);
+    padding:9px 14px;font-size:11px;letter-spacing:1px;text-transform:uppercase;
+    cursor:pointer;border-radius:2px;transition:.15s;
+  }
+  button:hover{background:#232c3c;border-color:var(--gold);color:var(--gold);}
+  button:disabled{opacity:.35;cursor:default;}
+  button.primary{background:var(--gold);color:#20180a;border-color:var(--gold);font-weight:700;}
+  button.primary:hover{background:#f5c65a;}
+
+  .banner{
+    text-align:center;font-size:13px;letter-spacing:1px;text-transform:uppercase;
+    color:var(--gold);min-height:18px;margin-top:4px;
+  }
+  .timer-track{width:100%;height:4px;background:#1c2330;margin-top:8px;border-radius:2px;overflow:hidden;}
+  .timer-fill{height:100%;background:var(--gold);width:100%;}
+
+  .overlay{
+    position:fixed;inset:0;background:rgba(6,7,10,.88);display:none;align-items:center;justify-content:center;z-index:50;
+  }
+  .overlay.show{display:flex;}
+  .rules-list{text-align:left;font-size:12px;color:var(--text-dim);line-height:1.7;margin:0 0 20px;padding-left:18px;}
+  .rules-list li{margin-bottom:6px;}
+  .rules-list b{color:var(--gold);}
+  .overlay-card{
+    background:var(--panel);border:1px solid var(--gold-dim);padding:34px 40px;text-align:center;max-width:360px;
+    clip-path:polygon(0 12px,12px 0,100% 0,100% calc(100% - 12px),calc(100% - 12px) 100%,0 100%);
+  }
+  .overlay-card h2{color:var(--gold);letter-spacing:2px;text-transform:uppercase;margin:0 0 10px;}
+  .overlay-card p{color:var(--text-dim);font-size:13px;line-height:1.6;margin-bottom:20px;}
+
+  footer{margin-top:30px;font-size:11px;color:#4a5164;letter-spacing:1px;text-transform:uppercase;}
+
+  .jellyoff-overlay{
+    position:fixed;inset:0;background:rgba(4,5,8,0);display:none;align-items:center;justify-content:center;z-index:60;
+    transition:background .25s;
+  }
+  .jellyoff-overlay.show{display:flex;background:rgba(4,5,8,.82);}
+  .jellyoff-title{
+    position:absolute;top:18%;left:50%;transform:translateX(-50%);
+    font-size:22px;letter-spacing:3px;text-transform:uppercase;color:var(--gold);
+    text-shadow:0 0 18px rgba(232,178,61,.6);
+    opacity:0;animation:jofIn .3s ease forwards;
+  }
+  @keyframes jofIn{ to{opacity:1; transform:translateX(-50%) translateY(-6px);} }
+  .jellyoff-row{display:flex;gap:36px;justify-content:center;flex-wrap:wrap;max-width:640px;}
+  .jof-jelly{display:flex;flex-direction:column;align-items:center;gap:10px;opacity:0;transform:scale(.6);animation:jofPop .35s ease forwards;}
+  @keyframes jofPop{ to{opacity:1;transform:scale(1);} }
+  .jof-dot{width:56px;height:56px;border-radius:50%;box-shadow:0 0 24px currentColor;}
+  .jof-num{font-size:38px;font-weight:800;min-width:60px;text-align:center;font-variant-numeric:tabular-nums;}
+  .jof-name{font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim);}
+  .jof-jelly.winner .jof-num{color:var(--gold);text-shadow:0 0 16px rgba(232,178,61,.7);}
+  .jof-jelly.winner .jof-dot{box-shadow:0 0 34px 6px currentColor;}
+  .jof-jelly.loser{opacity:.55;}
+  .jof-jelly.loser .jof-num{color:var(--danger);}
+  .jof-shrink{animation:jofShrink .5s ease forwards;}
+  @keyframes jofShrink{ to{opacity:0; transform:scale(.5) translateY(20px);} }
+</style>
+</head>
+<body>
+<div class="blob-bg b1"></div>
+<div class="blob-bg b2"></div>
+<div class="blob-bg b3"></div>
+
+<div class="marquee"></div>
+<h1>Jelly Riot</h1>
+<div class="subtitle">Last jelly wobbling wins · a Stormie Games original</div>
+
+<div class="stage">
+  <div class="hud-card board-wrap">
+    <canvas id="board" width="486" height="486"></canvas>
+    <div class="banner" id="banner">Press Start to jump in</div>
+    <div class="timer-track"><div class="timer-fill" id="timerFill"></div></div>
+  </div>
+
+  <div class="hud-card side">
+    <div>
+      <h2>Jellies</h2>
+      <div id="jellyList"></div>
+    </div>
+    <div>
+      <h2>Battle Log</h2>
+      <div class="log" id="log"></div>
+    </div>
+    <div class="controls">
+      <button class="primary" id="startBtn">Start Battle</button>
+      <button id="rulesBtn">How to Play</button>
+      <button id="muteBtn">Music: Off</button>
+      <button id="restartBtn" disabled>Restart</button>
+    </div>
+  </div>
+</div>
+
+<footer>stormie.app — jelly riot</footer>
+
+<div class="overlay show" id="rulesOverlay">
+  <div class="overlay-card" style="max-width:400px;">
+    <h2>How to Play</h2>
+    <ul class="rules-list">
+      <li><b>Goal:</b> be the last jelly wobbling. 3 rivals, 1 arena.</li>
+      <li>Each turn, click a tile within <b>2 squares</b> of you to jump there.</li>
+      <li>Icons on the board do something big when you land on them — grab a <b>bomb</b> and the whole tile explodes, snack on <b>fruit</b> to heal, and more.</li>
+      <li>Icons drift <b>south</b> every turn and fall off the map, so aim for where one is <i>heading</i>, not where it sits now.</li>
+      <li>Land on the <b>same tile</b> as a rival and it's a <b>Jelly Off</b> — everyone rolls, the winner holds the tile and punches the rest away.</li>
+      <li>Get punched off the edge of the board and you're <b>out</b>.</li>
+    </ul>
+    <label style="display:block;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim);margin-bottom:6px;">Name your jelly</label>
+    <input id="playerNameInput" type="text" maxlength="14" placeholder="Your jelly's name" value="You"
+      style="width:100%;padding:9px 10px;margin-bottom:18px;background:var(--panel-2);border:1px solid var(--gold-dim);color:var(--text);border-radius:2px;font-size:13px;">
+    <button class="primary" id="rulesStartBtn">Got it — Start Battle</button>
+  </div>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="overlay-card">
+    <h2 id="overlayTitle">You Win!</h2>
+    <p id="overlayText">Every rival jelly has been wobbled out of the arena.</p>
+    <button class="primary" id="overlayBtn">Play Again</button>
+  </div>
+</div>
+
+<div class="jellyoff-overlay" id="jofOverlay">
+  <div class="jellyoff-title">Jelly Off!</div>
+  <div class="jellyoff-row" id="jofRow"></div>
+</div>
+
+<script>
+/* =========================================================
+   JELLY BATTLE — Stormie Games remake
+   Grid free-for-all, simultaneous turns, Jelly Off tiebreaks.
+   ========================================================= */
+
+const GRID = 7;
+const CELL = 66;
+const PAD = 12;
+let shakeAmt = 0;
+let particles = [];
+let shockwaves = [];
+let screenFlash = { alpha: 0, color: '#fff' };
+const canvas = document.getElementById('board');
+const ctx = canvas.getContext('2d');
+
+const COLORS = {
+  p1: '#3ad6d9', p2: '#a259ff', p3: '#ff9d3d', p4: '#f2d33c'
+};
+const NAMES = { p1:'You', p2:'Glob', p3:'Squish', p4:'Ooze' };
+
+let jellies = [];
+let tiles = [];
+let turnNumber = 0;
+let phase = 'idle'; // idle, picking, resolving, gameover
+let selectedTile = null;
+let timerId = null;
+let timerDuration = 3600;
+let timerStart = 0;
+const TIMER_TICK = 60;
+
+function idx(x,y){ return y*GRID+x; }
+function inBounds(x,y){ return x>=0 && y>=0 && x<GRID && y<GRID; }
+
+// Real Jelly Battle move range: any square within 2 tiles (any direction),
+// including your own square.
+function reachableTiles(x,y){
+  const out=[];
+  for(let dy=-2; dy<=2; dy++){
+    for(let dx=-2; dx<=2; dx++){
+      const nx=x+dx, ny=y+dy;
+      if(inBounds(nx,ny)) out.push({x:nx,y:ny});
+    }
+  }
+  return out;
+}
+
+function makeTiles(){
+  tiles = [];
+  for(let y=0;y<GRID;y++){
+    for(let x=0;x<GRID;x++){
+      tiles.push({x,y,type:'plain'});
+    }
+  }
+  const specialCount = 10;
+  const types = ['fruit','fruit','weapon','weapon','trap','trap','trap','teleport','shield','shield'];
+  const pool = tiles.slice();
+  for(let i=0;i<specialCount;i++){
+    const pick = Math.floor(Math.random()*pool.length);
+    const t = pool.splice(pick,1)[0];
+    t.type = types[i];
+  }
+}
+
+function spawnJellies(){
+  const corners = [
+    {x:0,y:0},{x:GRID-1,y:0},{x:0,y:GRID-1},{x:GRID-1,y:GRID-1}
+  ];
+  const playerNameInput = document.getElementById('playerNameInput');
+  const playerName = (playerNameInput && playerNameInput.value.trim()) || 'You';
+  const names = { p1:playerName, p2:NAMES.p2, p3:NAMES.p3, p4:NAMES.p4 };
+  jellies = ['p1','p2','p3','p4'].map((id,i)=>({
+    id, name:names[id], color:COLORS[id],
+    x:corners[i].x, y:corners[i].y,
+    px:corners[i].x, py:corners[i].y, // render pos (for animation)
+    hp:100, alive:true, weaponCharge:false,
+    isPlayer: id==='p1',
+    wobble: Math.random()*Math.PI*2
+  }));
+}
+
+function tileAt(x,y){ return tiles[idx(x,y)]; }
+
+// The signature Jelly Battle twist: right before everyone jumps, all icons
+// scroll one row south. Icons that fall off the bottom vanish; fresh icons
+// spawn in the north row. You have to predict where an icon is heading.
+let shiftFlash = 0;
+function shiftTilesDown(){
+  const grid = [];
+  for(let y=0;y<GRID;y++){
+    grid.push(tiles.slice(y*GRID,(y+1)*GRID).map(t=>t.type));
+  }
+  const shifted = [];
+  const iconTypes = ['fruit','weapon','trap','teleport','shield'];
+  for(let y=0;y<GRID;y++){
+    if(y===0){
+      // new row: mostly empty, occasional fresh icon
+      const row = [];
+      for(let x=0;x<GRID;x++){
+        row.push(Math.random() < 0.16 ? iconTypes[Math.floor(Math.random()*iconTypes.length)] : 'plain');
+      }
+      shifted.push(row);
+    } else {
+      shifted.push(grid[y-1]);
+    }
+  }
+  for(let y=0;y<GRID;y++){
+    for(let x=0;x<GRID;x++){
+      tileAt(x,y).type = shifted[y][x];
+    }
+  }
+  shiftFlash = 1;
+}
+
+/* ---------------- Rendering ---------------- */
+function boardToPx(x){ return PAD + x*CELL; }
+
+function drawBoard(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.save();
+  if(shakeAmt > 0.2){
+    ctx.translate((Math.random()-0.5)*shakeAmt, (Math.random()-0.5)*shakeAmt);
+    shakeAmt *= 0.88;
+  } else {
+    shakeAmt = 0;
+  }
+
+  for(const t of tiles){
+    const px = boardToPx(t.x), py = boardToPx(t.y);
+    const isSel = selectedTile && selectedTile.x===t.x && selectedTile.y===t.y;
+    const isReach = phase==='picking' && reachableSet.has(t.x+','+t.y);
+
+    ctx.save();
+    const grad = ctx.createLinearGradient(px,py,px+CELL,py+CELL);
+    grad.addColorStop(0, isSel ? '#3a3220' : '#161c28');
+    grad.addColorStop(1, isSel ? '#241f14' : '#0f131c');
+    ctx.fillStyle = grad;
+    roundRect(px+2,py+2,CELL-4,CELL-4,6);
+    ctx.fill();
+
+    ctx.strokeStyle = isReach ? 'rgba(232,178,61,0.55)' : 'rgba(60,70,90,0.35)';
+    ctx.lineWidth = isReach ? 2 : 1;
+    roundRect(px+2,py+2,CELL-4,CELL-4,6);
+    ctx.stroke();
+
+    if(t.type !== 'plain'){
+      const glowColor = t.type==='fruit' ? '#5ee08a' : t.type==='weapon' ? '#ff9d3d' : t.type==='trap' ? '#ff4d4d' : t.type==='teleport' ? '#3ad6d9' : '#e8b23d';
+      const glow = ctx.createRadialGradient(px+CELL/2,py+CELL/2,2, px+CELL/2,py+CELL/2, CELL*0.55);
+      glow.addColorStop(0, glowColor+'55');
+      glow.addColorStop(1, glowColor+'00');
+      ctx.fillStyle = glow;
+      ctx.beginPath();
+      ctx.arc(px+CELL/2, py+CELL/2, CELL*0.55, 0, Math.PI*2);
+      ctx.fill();
+
+      ctx.font = '24px sans-serif';
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      const icon = t.type==='fruit' ? '🍇' : t.type==='weapon' ? '⚔️' : t.type==='trap' ? '💣' : t.type==='teleport' ? '🌀' : '🛡️';
+      ctx.fillText(icon, px+CELL/2, py+CELL/2);
+      // ghost preview one row below — where this icon is heading after the scroll (vanishes off the bottom edge)
+      if(t.y+1 < GRID){
+        const gpx = boardToPx(t.x), gpy = boardToPx(t.y+1);
+        ctx.globalAlpha = 0.22;
+        ctx.font = '15px sans-serif';
+        ctx.fillText(icon, gpx+CELL/2, gpy+CELL-14);
+        ctx.globalAlpha = 1;
+      }
+    }
+    ctx.restore();
+  }
+
+  if(shiftFlash > 0.02){
+    ctx.strokeStyle = `rgba(232,178,61,${shiftFlash})`;
+    ctx.lineWidth = 3;
+    ctx.strokeRect(4,4,canvas.width-8,canvas.height-8);
+    shiftFlash *= 0.9;
+  }
+
+  // jellies
+  for(const j of jellies){
+    if(!j.alive) continue;
+    const px = boardToPx(j.px) + CELL/2;
+    const py = boardToPx(j.py) + CELL/2;
+    drawJelly(px,py,j);
+  }
+
+  // particles
+  particles.forEach(p=>{
+    ctx.globalAlpha = Math.max(0, p.life);
+    ctx.fillStyle = p.color;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  });
+  particles = particles.filter(p=>p.life > 0);
+  particles.forEach(p=>{ p.x += p.vx; p.y += p.vy; p.vy += 0.15; p.life -= 0.03; });
+
+  shockwaves.forEach(s=>{
+    ctx.globalAlpha = Math.max(0, s.alpha);
+    ctx.strokeStyle = s.color;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, s.radius, 0, Math.PI*2);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+    s.radius += (s.maxRadius - s.radius) * 0.18 + 1.5;
+    s.alpha -= 0.045;
+  });
+  shockwaves = shockwaves.filter(s=>s.alpha > 0.02);
+
+  ctx.restore();
+
+  if(screenFlash.alpha > 0.01){
+    ctx.save();
+    ctx.globalAlpha = screenFlash.alpha;
+    ctx.fillStyle = screenFlash.color;
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.restore();
+    screenFlash.alpha *= 0.82;
+  }
+}
+
+function burst(x, y, color, count){
+  for(let i=0;i<count;i++){
+    const ang = Math.random()*Math.PI*2;
+    const speed = 1 + Math.random()*3;
+    particles.push({
+      x, y, vx:Math.cos(ang)*speed, vy:Math.sin(ang)*speed,
+      size: 2+Math.random()*3, life: 1, color
+    });
+  }
+}
+function shake(amt){ shakeAmt = amt; }
+function addShockwave(x,y,color,maxRadius){
+  shockwaves.push({x,y,radius:6,maxRadius:maxRadius||70,color,alpha:1});
+}
+function flashScreen(color, alpha){
+  screenFlash.color = color;
+  screenFlash.alpha = alpha;
+}
+
+// Big, obvious feedback for grabbing something — this is the whole point
+// of picking a tile, so it needs to actually read as an event.
+function triggerIconEffect(type, j){
+  const px = boardToPx(j.px) + CELL/2, py = boardToPx(j.py) + CELL/2;
+  if(type === 'fruit'){
+    addShockwave(px, py, '#5ee08a', 60);
+    burst(px, py, '#5ee08a', 26);
+    burst(px, py, '#bdffcf', 14);
+    flashScreen('#5ee08a', 0.18);
+    shake(4);
+  } else if(type === 'weapon'){
+    addShockwave(px, py, '#ff9d3d', 55);
+    burst(px, py, '#ff9d3d', 22);
+    burst(px, py, '#ffd39c', 12);
+    flashScreen('#ff9d3d', 0.16);
+    shake(5);
+  } else if(type === 'trap'){
+    // full explosion — this is the moment that should feel huge
+    addShockwave(px, py, '#ffb347', 100);
+    addShockwave(px, py, '#ff4d4d', 130);
+    burst(px, py, '#ff4d4d', 40);
+    burst(px, py, '#ffb347', 26);
+    burst(px, py, '#ffffff', 14);
+    flashScreen('#ff8a3d', 0.55);
+    shake(20);
+  } else if(type === 'teleport'){
+    addShockwave(px, py, '#3ad6d9', 50);
+    addShockwave(px, py, '#a259ff', 70);
+    burst(px, py, '#3ad6d9', 24);
+    flashScreen('#a259ff', 0.2);
+    shake(3);
+  } else if(type === 'shield'){
+    addShockwave(px, py, '#e8b23d', 45);
+    burst(px, py, '#e8b23d', 18);
+    flashScreen('#e8b23d', 0.14);
+  }
+}
+
+function roundRect(x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r);
+  ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);
+  ctx.arcTo(x,y,x+w,y,r);
+  ctx.closePath();
+}
+
+function drawJelly(cx,cy,j){
+  const t = performance.now()/300 + j.wobble;
+  const squish = 1 + Math.sin(t)*0.07;
+  const r = 20;
+
+  if(j.isPlayer){
+    const pulse = 1 + Math.sin(performance.now()/260)*0.12;
+    ctx.save();
+    ctx.strokeStyle = 'rgba(232,178,61,0.9)';
+    ctx.lineWidth = 2.5;
+    ctx.setLineDash([4,3]);
+    ctx.beginPath();
+    ctx.arc(cx, cy, (r+9)*pulse, 0, Math.PI*2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
+
+    ctx.save();
+    ctx.font = 'bold 10px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#e8b23d';
+    ctx.fillText((j.name||'').toUpperCase(), cx, cy - r - 16);
+    ctx.restore();
+  } else {
+    ctx.save();
+    ctx.font = '9px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = 'rgba(233,230,218,0.75)';
+    ctx.fillText(j.name, cx, cy - r - 12);
+    ctx.restore();
+  }
+
+  ctx.save();
+  ctx.translate(cx,cy);
+  ctx.scale(1/squish, squish);
+
+  // wobbly blob outline instead of a perfect circle
+  const points = 10;
+  ctx.beginPath();
+  for(let i=0;i<=points;i++){
+    const ang = (i/points)*Math.PI*2;
+    const wob = Math.sin(ang*3 + t*1.4) * 1.8 + Math.sin(ang*5 - t*0.8) * 1.1;
+    const rad = r + wob;
+    const px = Math.cos(ang)*rad, py = Math.sin(ang)*rad*0.94 + r*0.06;
+    if(i===0) ctx.moveTo(px,py); else ctx.lineTo(px,py);
+  }
+  ctx.closePath();
+
+  const grad = ctx.createRadialGradient(-r*0.35,-r*0.4,2, 0,0,r*1.15);
+  grad.addColorStop(0, lighten(j.color, 0.55));
+  grad.addColorStop(0.55, j.color);
+  grad.addColorStop(1, lighten(j.color, -0.15));
+  ctx.fillStyle = grad;
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  // glossy highlight
+  ctx.beginPath();
+  ctx.ellipse(-r*0.35, -r*0.45, r*0.32, r*0.18, -0.5, 0, Math.PI*2);
+  ctx.fillStyle = 'rgba(255,255,255,0.35)';
+  ctx.fill();
+
+  // face
+  ctx.fillStyle = '#10131a';
+  ctx.beginPath(); ctx.arc(-6,-2,2.2,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(6,-2,2.2,0,Math.PI*2); ctx.fill();
+  ctx.beginPath();
+  ctx.arc(0,4,5,0,Math.PI,false);
+  ctx.stroke();
+  ctx.restore();
+
+  if(j.weaponCharge){
+    ctx.font='13px sans-serif';
+    ctx.textAlign='center';
+    ctx.fillText('⚔️', cx+16, cy-18);
+  }
+  if(j.shielded){
+    ctx.font='13px sans-serif';
+    ctx.textAlign='center';
+    ctx.fillText('🛡️', cx-16, cy-18);
+  }
+}
+
+function lighten(hex, amt){
+  const c = hex.replace('#','');
+  const num = parseInt(c,16);
+  let r=(num>>16)+Math.round(255*amt);
+  let g=((num>>8)&0xff)+Math.round(255*amt);
+  let b=(num&0xff)+Math.round(255*amt);
+  r=Math.min(255,Math.max(0,r)); g=Math.min(255,Math.max(0,g)); b=Math.min(255,Math.max(0,b));
+  return `rgb(${r},${g},${b})`;
+}
+
+/* ---------------- Game flow ---------------- */
+let reachableSet = new Set();
+
+function setBanner(msg){ document.getElementById('banner').textContent = msg; }
+
+function logMsg(msg, cls){
+  const log = document.getElementById('log');
+  const div = document.createElement('div');
+  if(cls) div.className = cls;
+  div.textContent = msg;
+  log.prepend(div);
+  while(log.children.length > 40) log.removeChild(log.lastChild);
+}
+
+function renderSidebar(){
+  const list = document.getElementById('jellyList');
+  list.innerHTML = '';
+  for(const j of jellies){
+    const row = document.createElement('div');
+    row.className = 'jelly-row' + (j.alive ? '' : ' dead') + (j.isPlayer ? ' is-player' : '');
+    row.innerHTML = `
+      <div class="jelly-dot" style="background:${j.color};color:${j.color}"></div>
+      <div class="jelly-info">
+        <div class="jelly-name"><span>${j.name}</span><span>${j.alive ? Math.max(0,Math.round(j.hp)) : 'OUT'}</span></div>
+        <div class="hp-track"><div class="hp-fill" style="width:${Math.max(0,j.hp)}%"></div></div>
+        ${j.weaponCharge ? '<div class="weapon-tag">Weapon Charged</div>' : ''}
+        ${j.shielded ? '<div class="weapon-tag">Shielded</div>' : ''}
+      </div>`;
+    list.appendChild(row);
+  }
+}
+
+function startGame(){
+  makeTiles();
+  spawnJellies();
+  turnNumber = 0;
+  document.getElementById('overlay').classList.remove('show');
+  document.getElementById('restartBtn').disabled = false;
+  document.getElementById('startBtn').disabled = true;
+  document.getElementById('log').innerHTML = '';
+  logMsg('The arena forms. Four jellies enter...');
+  startMusic();
+  nextTurn();
+}
+
+function nextTurn(){
+  turnNumber++;
+  const player = jellies.find(j=>j.isPlayer);
+  if(!player.alive || checkWin()) return;
+
+  phase = 'picking';
+  selectedTile = null;
+  reachableSet = new Set(reachableTiles(player.x, player.y).map(t=>t.x+','+t.y));
+  setBanner(`Turn ${turnNumber} — choose your jump`);
+  renderSidebar();
+  drawBoard();
+
+  timerStart = performance.now();
+  clearInterval(timerId);
+  timerId = setInterval(()=>{
+    const elapsed = performance.now() - timerStart;
+    const pct = Math.max(0, 1 - elapsed/timerDuration);
+    const fill = document.getElementById('timerFill');
+    fill.style.width = (pct*100)+'%';
+    fill.style.background = pct > 0.5 ? 'var(--gold)' : pct > 0.22 ? '#e8912e' : '#ff4d4d';
+    if(elapsed >= timerDuration){
+      clearInterval(timerId);
+      if(phase==='picking'){
+        // auto-pick random reachable tile
+        const opts = [...reachableSet];
+        const pick = opts[Math.floor(Math.random()*opts.length)].split(',').map(Number);
+        commitPlayerMove({x:pick[0], y:pick[1]});
+      }
+    }
+  }, TIMER_TICK);
+}
+
+canvas.addEventListener('click', (e)=>{
+  if(phase !== 'picking') return;
+  const rect = canvas.getBoundingClientRect();
+  const mx = (e.clientX-rect.left) * (canvas.width/rect.width);
+  const my = (e.clientY-rect.top) * (canvas.height/rect.height);
+  const gx = Math.floor((mx-PAD)/CELL);
+  const gy = Math.floor((my-PAD)/CELL);
+  if(!reachableSet.has(gx+','+gy)) return;
+  commitPlayerMove({x:gx,y:gy});
+});
+
+function commitPlayerMove(tile){
+  clearInterval(timerId);
+  document.getElementById('timerFill').style.width='0%';
+  selectedTile = tile;
+  phase = 'resolving';
+  setBanner('Rivals are choosing...');
+
+  const player = jellies.find(j=>j.isPlayer);
+  player.targetX = tile.x; player.targetY = tile.y;
+
+  // AI picks
+  for(const j of jellies){
+    if(!j.alive || j.isPlayer) continue;
+    const opts = reachableTiles(j.x, j.y);
+    let choice = opts[Math.floor(Math.random()*opts.length)];
+    // bias: chase player, or go for special tiles
+    const special = opts.find(o => tileAt(o.x,o.y).type !== 'plain');
+    if(special && Math.random() < 0.55) choice = special;
+    else if(Math.random() < 0.3){
+      const towardPlayer = opts.reduce((best,o)=>{
+        const d = Math.hypot(o.x-player.x, o.y-player.y);
+        return d < best.d ? {o,d} : best;
+      }, {o:choice, d:Infinity});
+      choice = towardPlayer.o;
+    }
+    j.targetX = choice.x; j.targetY = choice.y;
+  }
+
+  setTimeout(()=>{
+    shiftTilesDown();
+    setBanner('Tiles shift down!');
+    playSfx('shift');
+    drawBoard();
+    setTimeout(resolveJump, 380);
+  }, 280);
+}
+
+function resolveJump(){
+  const start = performance.now();
+  const dur = 420;
+  const froms = jellies.map(j=>({x:j.x,y:j.y}));
+
+  function animate(){
+    const t = Math.min(1, (performance.now()-start)/dur);
+    const ease = t<0.5 ? 2*t*t : -1+(4-2*t)*t;
+    jellies.forEach((j,i)=>{
+      if(!j.alive) return;
+      j.px = froms[i].x + (j.targetX - froms[i].x)*ease;
+      j.py = froms[i].y + (j.targetY - froms[i].y)*ease;
+    });
+    drawBoard();
+    if(t<1) requestAnimationFrame(animate);
+    else{
+      jellies.forEach(j=>{
+        if(!j.alive) return;
+        j.x = j.targetX; j.y = j.targetY;
+        j.px = j.x; j.py = j.y;
+      });
+      afterLanding();
+    }
+  }
+  requestAnimationFrame(animate);
+  playSfx('jump');
+}
+
+function afterLanding(){
+  // group by tile
+  const groups = {};
+  for(const j of jellies){
+    if(!j.alive) continue;
+    const key = j.x+','+j.y;
+    (groups[key] = groups[key]||[]).push(j);
+  }
+
+  const jellyOffGroups = [];
+  for(const key in groups){
+    const group = groups[key];
+    if(group.length >= 2) jellyOffGroups.push(group);
+    else applyTileEffect(group[0]);
+  }
+
+  renderSidebar();
+  drawBoard();
+
+  runJellyOffQueue(jellyOffGroups, 0, finishTurnResolution);
+}
+
+function runJellyOffQueue(queue, i, done){
+  if(i >= queue.length){ done(); return; }
+  runJellyOffAnimation(queue[i]).then(()=> runJellyOffQueue(queue, i+1, done));
+}
+
+function finishTurnResolution(){
+  jellies.forEach(j=>{
+    if(j.alive && j.hp <= 0){
+      j.alive = false;
+      logMsg(`${j.name} wobbled apart and is out of the battle!`, 'hit');
+      playSfx('out');
+    }
+  });
+
+  renderSidebar();
+  drawBoard();
+
+  if(checkWin()) return;
+
+  phase = 'idle';
+  setTimeout(nextTurn, 500);
+}
+
+function delay(ms){ return new Promise(res=>setTimeout(res,ms)); }
+
+// Computes the roll outcome (pure-ish: consumes weapon charges) without
+// touching HP/position yet, so the animation can show it first.
+function rollJellyOff(group){
+  const rolls = group.map(j=>{
+    let r = 1 + Math.floor(Math.random()*10);
+    if(j.weaponCharge){ r += 3; j.weaponCharge = false; }
+    return {jelly:j, roll:r};
+  });
+  rolls.sort((a,b)=>b.roll-a.roll);
+  return rolls;
+}
+
+// Applies the real gameplay consequences of a resolved jelly-off.
+function applyJellyOffOutcome(rolls){
+  const winner = rolls[0];
+  logMsg(`Jelly Off! ${rolls.map(r=>r.jelly.name).join(' vs ')}`);
+  logMsg(`${winner.jelly.name} rolled ${winner.roll} and holds the tile.`);
+  shake(10);
+  const cx = boardToPx(winner.jelly.px) + CELL/2, cy = boardToPx(winner.jelly.py) + CELL/2;
+  burst(cx, cy, '#e8b23d', 18);
+  for(let i=1;i<rolls.length;i++){
+    const loser = rolls[i].jelly;
+    if(loser.shielded){
+      loser.shielded = false;
+      logMsg(`${loser.name}'s shield absorbed the punch!`, 'heal');
+      continue;
+    }
+    loser.hp -= 15;
+    logMsg(`${loser.name} took a hit (-15 HP).`, 'hit');
+    burst(cx, cy, loser.color, 12);
+    const dx = Math.sign(loser.x - winner.jelly.x) || (Math.random()<0.5?-1:1);
+    const dy = Math.sign(loser.y - winner.jelly.y) || (Math.random()<0.5?-1:1);
+    const nx = loser.x + dx, ny = loser.y + dy;
+    if(!inBounds(nx,ny)){
+      loser.hp = 0;
+      logMsg(`${loser.name} was knocked off the map!`, 'hit');
+    } else {
+      loser.x = nx; loser.y = ny; loser.px = nx; loser.py = ny;
+    }
+  }
+}
+
+// The spotlight moment: dims the arena, shows every contender's dot spinning
+// through random numbers before landing on their real roll, highlights the
+// winner, then applies the outcome and fades back into the board.
+async function runJellyOffAnimation(group){
+  playSfx('clash');
+  const rolls = rollJellyOff(group);
+  const overlay = document.getElementById('jofOverlay');
+  const row = document.getElementById('jofRow');
+  row.innerHTML = rolls.map((r,i)=>`
+    <div class="jof-jelly" id="jofJ${i}" style="animation-delay:${i*0.07}s;color:${r.jelly.color}">
+      <div class="jof-dot" style="background:${r.jelly.color}"></div>
+      <div class="jof-num" id="jofNum${i}">–</div>
+      <div class="jof-name">${r.jelly.name}</div>
+    </div>`).join('');
+  overlay.classList.add('show');
+
+  // spin numbers
+  const spinFrames = 9;
+  for(let f=0; f<spinFrames; f++){
+    rolls.forEach((r,i)=>{
+      document.getElementById('jofNum'+i).textContent = 1+Math.floor(Math.random()*10);
+    });
+    playSfx('tick');
+    await delay(60 + f*8);
+  }
+  // settle to real rolls, fastest for the winner
+  rolls.forEach((r,i)=>{
+    document.getElementById('jofNum'+i).textContent = r.roll;
+  });
+  rolls.forEach((r,i)=>{
+    const el = document.getElementById('jofJ'+i);
+    el.classList.add(i===0 ? 'winner' : 'loser');
+  });
+  playSfx('settle');
+  shake(6);
+  await delay(700);
+
+  applyJellyOffOutcome(rolls);
+  renderSidebar();
+
+  row.querySelectorAll('.jof-jelly').forEach(el=>el.classList.add('jof-shrink'));
+  await delay(350);
+  overlay.classList.remove('show');
+  await delay(120);
+}
+
+function applyTileEffect(j){
+  const t = tileAt(j.x, j.y);
+  if(t.type !== 'plain') triggerIconEffect(t.type, j);
+  if(t.type === 'fruit'){
+    j.hp = Math.min(100, j.hp + 12);
+    logMsg(`${j.name} snacked on fruit (+12 HP).`, 'heal');
+    playSfx('heal');
+    t.type = 'plain';
+  } else if(t.type === 'weapon'){
+    j.weaponCharge = true;
+    logMsg(`${j.name} grabbed a weapon shard.`);
+    playSfx('pickup');
+    t.type = 'plain';
+  } else if(t.type === 'trap'){
+    j.hp -= 10;
+    logMsg(`${j.name} triggered a bomb (-10 HP).`, 'hit');
+    playSfx('explosion');
+    t.type = 'plain';
+  } else if(t.type === 'teleport'){
+    const open = tiles.filter(o => !jellies.some(k=>k.alive && k.x===o.x && k.y===o.y));
+    if(open.length){
+      const dest = open[Math.floor(Math.random()*open.length)];
+      j.x = dest.x; j.y = dest.y; j.px = dest.x; j.py = dest.y;
+      logMsg(`${j.name} teleported across the arena!`);
+      playSfx('pickup');
+    }
+    t.type = 'plain';
+  } else if(t.type === 'shield'){
+    j.shielded = true;
+    logMsg(`${j.name} raised a shield.`);
+    playSfx('pickup');
+    t.type = 'plain';
+  }
+}
+
+function checkWin(){
+  const alive = jellies.filter(j=>j.alive);
+  const player = jellies.find(j=>j.isPlayer);
+  if(alive.length <= 1 || !player.alive){
+    phase = 'gameover';
+    clearInterval(timerId);
+    stopMusic();
+    const overlay = document.getElementById('overlay');
+    const title = document.getElementById('overlayTitle');
+    const text = document.getElementById('overlayText');
+    if(player.alive && alive.length===1 && alive[0].isPlayer){
+      title.textContent = 'You Win!';
+      text.textContent = 'Every rival jelly has been wobbled out of the arena.';
+      logMsg('VICTORY! You are the last jelly standing.', 'win');
+      playSfx('win');
+    } else {
+      title.textContent = 'Wobbled Out';
+      text.textContent = `${alive[0] ? alive[0].name : 'A rival'} claims the arena this time.`;
+      logMsg('Defeat. Better luck next battle.', 'hit');
+      playSfx('lose');
+    }
+    overlay.classList.add('show');
+    setBanner('Battle over');
+    document.getElementById('startBtn').disabled = false;
+    return true;
+  }
+  return false;
+}
+
+document.getElementById('startBtn').addEventListener('click', ()=>{
+  initAudio();
+  document.getElementById('rulesOverlay').classList.remove('show');
+  startGame();
+});
+document.getElementById('rulesStartBtn').addEventListener('click', ()=>{
+  initAudio();
+  document.getElementById('rulesOverlay').classList.remove('show');
+  startGame();
+});
+document.getElementById('rulesBtn').addEventListener('click', ()=>{
+  document.getElementById('rulesOverlay').classList.add('show');
+});
+document.getElementById('restartBtn').addEventListener('click', startGame);
+document.getElementById('overlayBtn').addEventListener('click', startGame);
+
+/* idle render loop for jelly wobble even between turns */
+function idleLoop(){
+  if(phase !== 'resolving') drawBoard();
+  requestAnimationFrame(idleLoop);
+}
+requestAnimationFrame(idleLoop);
+
+/* ---------------- Audio: original procedural chiptune (no external files) ---------------- */
+let actx = null;
+let musicGain = null;
+let musicTimer = null;
+let muted = false;
+
+function initAudio(){
+  if(actx) return;
+  actx = new (window.AudioContext || window.webkitAudioContext)();
+  musicGain = actx.createGain();
+  musicGain.gain.value = 0.18;
+  musicGain.connect(actx.destination);
+}
+
+function beep(freq, dur, type='square', gainVal=0.15, when=0){
+  if(!actx || muted) return;
+  const osc = actx.createOscillator();
+  const gain = actx.createGain();
+  osc.type = type;
+  osc.frequency.value = freq;
+  gain.gain.value = gainVal;
+  osc.connect(gain); gain.connect(actx.destination);
+  const t0 = actx.currentTime + when;
+  gain.gain.setValueAtTime(gainVal, t0);
+  gain.gain.exponentialRampToValueAtTime(0.001, t0+dur);
+  osc.start(t0);
+  osc.stop(t0+dur);
+}
+
+function playSfx(name){
+  if(!actx) return;
+  switch(name){
+    case 'jump': beep(520,0.08,'square',0.12); break;
+    case 'shift': beep(300,0.1,'sine',0.1); beep(260,0.12,'sine',0.08,0.05); break;
+    case 'tick': beep(200+Math.random()*300,0.04,'square',0.06); break;
+    case 'settle': beep(660,0.1,'square',0.14); beep(880,0.14,'square',0.16,0.08); break;
+    case 'clash': beep(180,0.15,'sawtooth',0.15); beep(140,0.15,'sawtooth',0.1,0.05); break;
+    case 'hit': beep(110,0.2,'square',0.18); break;
+    case 'explosion':
+      beep(90,0.35,'sawtooth',0.22);
+      beep(60,0.4,'square',0.18,0.03);
+      beep(140,0.15,'sawtooth',0.15,0.02);
+      beep(45,0.5,'sine',0.16,0.06);
+      break;
+    case 'heal': beep(660,0.12,'triangle',0.14); beep(880,0.12,'triangle',0.12,0.08); break;
+    case 'pickup': beep(740,0.08,'square',0.13); beep(980,0.1,'square',0.13,0.06); break;
+    case 'out': beep(160,0.3,'sawtooth',0.16); beep(90,0.4,'sawtooth',0.14,0.1); break;
+    case 'win': [523,659,784,1046].forEach((f,i)=>beep(f,0.2,'square',0.16,i*0.14)); break;
+    case 'lose': [392,349,293].forEach((f,i)=>beep(f,0.3,'sawtooth',0.14,i*0.18)); break;
+  }
+}
+
+// Soft generative ambience, built from scratch (not the original soundtrack).
+// Off by default and deliberately non-repeating: notes are picked with light
+// randomness from a scale each pass, so it never loops identically.
+const scale = [261.63,293.66,329.63,392.00,440.00,523.25,587.33]; // C major-ish, airy
+let musicOn = false;
+
+function playPad(freq){
+  if(!actx || muted || !musicOn) return;
+  const osc = actx.createOscillator();
+  const osc2 = actx.createOscillator();
+  const gain = actx.createGain();
+  osc.type = 'sine'; osc2.type = 'sine';
+  osc.frequency.value = freq;
+  osc2.frequency.value = freq * 1.003; // gentle detune, no harsh beating
+  gain.gain.value = 0;
+  osc.connect(gain); osc2.connect(gain); gain.connect(actx.destination);
+  const t0 = actx.currentTime;
+  const dur = 2.4 + Math.random()*1.2;
+  gain.gain.linearRampToValueAtTime(0.05, t0+0.6);
+  gain.gain.linearRampToValueAtTime(0, t0+dur);
+  osc.start(t0); osc2.start(t0);
+  osc.stop(t0+dur); osc2.stop(t0+dur);
+}
+
+function scheduleNextNote(){
+  if(!musicOn) return;
+  const note = scale[Math.floor(Math.random()*scale.length)] * (Math.random()<0.3 ? 0.5 : 1);
+  playPad(note);
+  const wait = 1400 + Math.random()*1600;
+  musicTimer = setTimeout(scheduleNextNote, wait);
+}
+
+function startMusic(){
+  if(!musicOn) return;
+  clearTimeout(musicTimer);
+  scheduleNextNote();
+}
+function stopMusic(){
+  clearTimeout(musicTimer);
+  musicTimer = null;
+}
+
+document.getElementById('muteBtn').addEventListener('click', (e)=>{
+  musicOn = !musicOn;
+  e.target.textContent = musicOn ? 'Music: On' : 'Music: Off';
+  if(musicOn && phase !== 'gameover' && phase !== 'idle') startMusic();
+  else stopMusic();
+});
+
+drawBoard();
+</script>
+</body>
+</html>
