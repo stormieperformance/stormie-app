@@ -649,9 +649,9 @@ function drawJelly(cx,cy,j){
   if(j.rageCharge) badges.push('☣️');
   if(j.tripleJump) badges.push('↗️');
   if(badges.length){
-    ctx.font='13px sans-serif';
+    ctx.font='16px sans-serif';
     ctx.textAlign='center';
-    badges.forEach((b,i)=> ctx.fillText(b, cx-16+i*14, cy-18));
+    badges.forEach((b,i)=> ctx.fillText(b, cx-16+i*16, cy-20));
   }
 }
 
@@ -977,19 +977,20 @@ function jelliesInLine(j){
 }
 
 // Damage a target, respecting Shield (absorbs one hit) and Invisible (dodges entirely).
+function announce(msg, cls){ logMsg(msg, cls); setBanner(msg); }
 function damageJelly(source, target, amt){
   if(target.invisible){
-    logMsg(`${target.name} was invisible and dodged the attack!`);
+    announce(`${target.name} was invisible and dodged the attack!`);
     return;
   }
   if(target.shielded){
     target.shielded = false;
-    logMsg(`${target.name}'s shield absorbed the hit!`);
+    announce(`${target.name}'s shield absorbed the hit!`);
     return;
   }
   const dmg = source.rageCharge ? amt*2 : amt;
   target.hp -= dmg;
-  logMsg(`${source.name}'s attack hit ${target.name} (-${dmg} HP).`, 'hit');
+  announce(`${source.name}'s attack hit ${target.name} (-${dmg} HP).`, 'hit');
   playSfx('explosion');
   const px = boardToPx(target.px) + CELL/2, py = boardToPx(target.py) + CELL/2;
   burst(px, py, '#ff4d4d', 14);
@@ -1005,19 +1006,19 @@ function applyTileEffect(j){
   switch(type){
     // ── Weapon tiles: injure opponents around you ──
     case 'nuke': {
-      logMsg(`${j.name} triggered the ultimate bomb, injuring every opponent!`);
+      announce(`${j.name} triggered the ultimate bomb, injuring every opponent!`);
       otherJellies(j).forEach(k => damageJelly(j, k, 18));
       break;
     }
     case 'handbag': {
       const targets = jelliesWithin(j, 1);
-      logMsg(targets.length ? `${j.name} swung a handbag at anyone nearby.` : `${j.name} swung a handbag, but no one was close enough.`);
+      announce(targets.length ? `${j.name} swung a handbag at anyone nearby.` : `${j.name} swung a handbag, but no one was close enough.`);
       targets.forEach(k => damageJelly(j, k, 14));
       break;
     }
     case 'laser': {
       const targets = jelliesInLine(j);
-      logMsg(targets.length ? `${j.name} fired a laser down the row and column!` : `${j.name} fired a laser, but hit nothing.`);
+      announce(targets.length ? `${j.name} fired a laser down the row and column!` : `${j.name} fired a laser, but hit nothing.`);
       targets.forEach(k => damageJelly(j, k, 16));
       break;
     }
@@ -1025,16 +1026,16 @@ function applyTileEffect(j){
       const pool = otherJellies(j);
       if(pool.length){
         const target = pool[Math.floor(Math.random()*pool.length)];
-        logMsg(`${j.name} called in an air strike on ${target.name}!`);
+        announce(`${j.name} called in an air strike on ${target.name}!`);
         damageJelly(j, target, 20);
       } else {
-        logMsg(`${j.name} called in an air strike, but there was no one to hit.`);
+        announce(`${j.name} called in an air strike, but there was no one to hit.`);
       }
       break;
     }
     case 'blast': {
       const targets = jelliesWithin(j, 3);
-      logMsg(targets.length ? `${j.name} set off a blast across the arena.` : `${j.name} set off a blast, but everyone was out of range.`);
+      announce(targets.length ? `${j.name} set off a blast across the arena.` : `${j.name} set off a blast, but everyone was out of range.`);
       targets.forEach(k => damageJelly(j, k, 10));
       break;
     }
@@ -1042,10 +1043,10 @@ function applyTileEffect(j){
       const pool = otherJellies(j);
       if(pool.length){
         const target = pool[Math.floor(Math.random()*pool.length)];
-        logMsg(`${j.name} dropped a random object on ${target.name}!`);
+        announce(`${j.name} dropped a random object on ${target.name}!`);
         damageJelly(j, target, 12);
       } else {
-        logMsg(`${j.name} grabbed a random drop, but had no one to drop it on.`);
+        announce(`${j.name} grabbed a random drop, but had no one to drop it on.`);
       }
       break;
     }
@@ -1054,19 +1055,19 @@ function applyTileEffect(j){
     case 'invisible':
       j.invisible = true;
       j.invisibleUntilTurn = turnNumber + 1;
-      logMsg(`${j.name} turned invisible for a strategic advantage.`);
+      announce(`${j.name} turned invisible for a strategic advantage.`);
       playSfx('pickup');
       break;
     case 'debonus': {
       const targets = jelliesWithin(j, 2);
       targets.forEach(k => { k.shielded = false; k.invisible = false; k.rageCharge = false; k.tripleJump = false; });
-      logMsg(targets.length ? `${j.name} disarmed nearby opponents' bonuses.` : `${j.name} looked for bonuses to disarm, but found none nearby.`);
+      announce(targets.length ? `${j.name} disarmed nearby opponents' bonuses.` : `${j.name} looked for bonuses to disarm, but found none nearby.`);
       playSfx('pickup');
       break;
     }
     case 'shield':
       j.shielded = true;
-      logMsg(`${j.name} raised a shield.`);
+      announce(`${j.name} raised a shield.`);
       playSfx('pickup');
       break;
     case 'freeze': {
@@ -1074,22 +1075,22 @@ function applyTileEffect(j){
       if(pool.length){
         const target = pool[Math.floor(Math.random()*pool.length)];
         target.frozen = true;
-        logMsg(`${j.name} froze ${target.name} in place!`);
+        announce(`${j.name} froze ${target.name} in place!`);
       } else {
-        logMsg(`${j.name} tried to freeze someone, but no one was close enough.`);
+        announce(`${j.name} tried to freeze someone, but no one was close enough.`);
       }
       playSfx('pickup');
       break;
     }
     case 'rage':
       j.rageCharge = true;
-      logMsg(`${j.name} is enraged — their next attack deals double damage!`);
+      announce(`${j.name} is enraged — their next attack deals double damage!`);
       playSfx('pickup');
       break;
     case 'triplejump':
       j.tripleJump = true;
       j.tripleJumpUntilTurn = turnNumber + 1;
-      logMsg(`${j.name} can leap three extra tiles next turn.`);
+      announce(`${j.name} can leap three extra tiles next turn.`);
       playSfx('pickup');
       break;
 
@@ -1099,7 +1100,7 @@ function applyTileEffect(j){
       if(open.length){
         const dest = open[Math.floor(Math.random()*open.length)];
         j.x = dest.x; j.y = dest.y; j.px = dest.x; j.py = dest.y;
-        logMsg(`${j.name} teleported across the arena!`);
+        announce(`${j.name} teleported across the arena!`);
         playSfx('pickup');
       }
       break;
@@ -1108,19 +1109,19 @@ function applyTileEffect(j){
     // ── Hazard tile ──
     case 'mine':
       j.hp -= 10;
-      logMsg(`${j.name} stepped on a mine (-10 HP).`, 'hit');
+      announce(`${j.name} stepped on a mine (-10 HP).`, 'hit');
       playSfx('explosion');
       break;
 
     // ── Health tiles ──
     case 'superjelly':
       j.hp = 100;
-      logMsg(`${j.name} found a Super Jelly and is fully restored!`, 'heal');
+      announce(`${j.name} found a Super Jelly and is fully restored!`, 'heal');
       playSfx('heal');
       break;
     case 'health':
       j.hp = Math.min(100, j.hp + 12);
-      logMsg(`${j.name} snacked on some jelly (+12 HP).`, 'heal');
+      announce(`${j.name} snacked on some jelly (+12 HP).`, 'heal');
       playSfx('heal');
       break;
   }
