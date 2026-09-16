@@ -577,6 +577,56 @@ function drawBoard(){
     });
   }
 
+  // Laser charge — thin targeting lines through the whole row+column, and a
+  // brightening glow on the collector building up to the moment it fires.
+  if(laserCharge){
+    const p = Math.min(1, (now - laserCharge.start) / laserCharge.dur);
+    const cx = boardToPx(laserCharge.x)+CELL/2, cy = boardToPx(laserCharge.y)+CELL/2;
+    const boardL = PAD, boardR = PAD+GRID*CELL, boardT = PAD, boardB = PAD+GRID*CELL;
+    ctx.save();
+    ctx.strokeStyle = `rgba(255,225,77,${0.12+p*0.35})`;
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4,4]);
+    ctx.beginPath();
+    ctx.moveTo(boardL, cy); ctx.lineTo(boardR, cy);
+    ctx.moveTo(cx, boardT); ctx.lineTo(cx, boardB);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    const glowR = 20 + Math.sin(p*Math.PI*7)*4 + p*6;
+    const grad = ctx.createRadialGradient(cx,cy,2,cx,cy,glowR);
+    grad.addColorStop(0, `rgba(255,240,150,${0.55*p})`);
+    grad.addColorStop(1, 'rgba(255,240,150,0)');
+    ctx.fillStyle = grad;
+    ctx.beginPath(); ctx.arc(cx,cy,glowR,0,Math.PI*2); ctx.fill();
+    ctx.restore();
+  }
+
+  // Laser beams — four continuous beams fired out from the collector.
+  if(laserBeamFx){
+    const age = now - laserBeamFx.start;
+    const alpha = Math.max(0, 1 - age/laserBeamFx.dur);
+    const cx = boardToPx(laserBeamFx.x)+CELL/2, cy = boardToPx(laserBeamFx.y)+CELL/2;
+    const boardL = PAD, boardR = PAD+GRID*CELL, boardT = PAD, boardB = PAD+GRID*CELL;
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.strokeStyle = laserBeamFx.color;
+    ctx.lineWidth = 6;
+    ctx.shadowColor = laserBeamFx.color;
+    ctx.shadowBlur = 16;
+    ctx.beginPath();
+    ctx.moveTo(boardL, cy); ctx.lineTo(boardR, cy);
+    ctx.moveTo(cx, boardT); ctx.lineTo(cx, boardB);
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.moveTo(boardL, cy); ctx.lineTo(boardR, cy);
+    ctx.moveTo(cx, boardT); ctx.lineTo(cx, boardB);
+    ctx.stroke();
+    ctx.restore();
+  }
+
   // particles
   particles.forEach(p=>{
     ctx.globalAlpha = Math.max(0, p.life);
@@ -1338,9 +1388,10 @@ function dirBetween(a, b){
 // than one flat number — dmgFn overrides def.dmg when present.
 // Air Strike gets its own multi-missile sequence (see detonateAirStrike) —
 // pulled out of the generic AoE path just like Random Drop.
+// Laser gets its own charge → beam sequence (see detonateLaser) — pulled out
+// of the generic AoE path just like Random Drop and Air Strike.
 const AOE_DEFS = {
   nuke:       {dmg:30, radius:99,  shape:'square', label:'Nuke'},
-  laser:      {radius:0,  shape:'line',   label:'Laser', dmgFn: () => (Math.random()<0.5 ? 25 : 30)},
   blast:      {radius:4,  shape:'square', label:'Blast',
                dmgFn: (dist) => dist<=1 ? 40 : dist<=2 ? 30 : 20}
 };
@@ -1537,6 +1588,62 @@ function detonateAirStrike(j, done){
 
 function spawnFallingObject(shape,targetX,targetY,dur){ fallingObjects.push({shape,targetX,targetY,start:performance.now(),dur}); }
 
+// Laser: charge glow + targeting lines, then four continuous beams fired
+// out from the collector along the whole row and column.
+let laserCharge = null; // {x,y,start,dur}
+let laserBeamFx = null; // {x,y,start,dur,color}
+
+function detonateLaser(j, done){
+  const tdef = TILE_DEFS.laser;
+  spawnWeaponBanner('Laser', tdef.color);
+  const chargeDur = 450;
+  laserCharge = {x:j.x, y:j.y, start:performance.now(), dur:chargeDur};
+  playSfx('chargeLaser');
+  drawBoard();
+
+  setTimeout(()=>{
+    laserCharge = null;
+    const beamDur = 260;
+    laserBeamFx = {x:j.x, y:j.y, start:performance.now(), dur:beamDur, color:tdef.color};
+    playSfx('laserFire');
+    flashScreen('#ffffff', 0.25);
+    shake(5);
+
+    const lineCells = cellsInLine(j.x, j.y);
+    const cellKeys = new Set(lineCells.map(c=>c.x+','+c.y));
+    const hits = otherJellies(j).filter(k => cellKeys.has(k.x+','+k.y));
+    announce(hits.length
+      ? `${j.name}'s Laser sweeps the row and column — hitting ${hits.map(h=>h.name).join(', ')}!`
+      : `${j.name}'s Laser sweeps the row and column, but hits no one.`);
+    drawBoard();
+
+    let idx = 0;
+    function hitNext(){
+      if(idx >= hits.length){
+        setTimeout(()=>{
+          laserBeamFx = null;
+          j.rageCharge = false;
+          playSfx('crackle');
+          drawBoard();
+          done();
+        }, 150);
+        return;
+      }
+      const target = hits[idx];
+      const dmg = Math.random() < 0.5 ? 25 : 30;
+      const forceDir = target.x === j.x
+        ? {x:0, y: Math.sign(target.y-j.y) || 1}
+        : {x: Math.sign(target.x-j.x) || 1, y:0};
+      damageJelly(j, target, dmg, 'laserShock', forceDir, 1);
+      renderSidebar();
+      drawBoard();
+      idx++;
+      setTimeout(hitNext, 110);
+    }
+    hitNext();
+  }, chargeDur);
+}
+
 // Tracked squares so drawBoard can flash the exact tiles the explosion
 // covered — this is what makes the blast feel like it happened on the
 // board itself, not just to whoever was standing in it.
@@ -1691,11 +1798,6 @@ function detonate(j, type, done){
         hitType = 'blastKnockback';
         forceDir = dirBetween(j, target);
         severity = dist<=1 ? 1 : dist<=2 ? 0.7 : 0.4; // closer victims travel farther
-      } else if(type === 'laser'){
-        dmg = def.dmgFn();
-        hitType = 'laserShock';
-        forceDir = target.x === j.x ? {x:0, y:Math.sign(target.y-j.y)||1} : {x:Math.sign(target.x-j.x)||1, y:0};
-        severity = 1;
       } else if(type === 'nuke'){
         dmg = def.dmg;
         hitType = 'nukeLaunch';
@@ -1729,6 +1831,10 @@ function applyTileEffect(j, done){
   }
   if(type === 'airstrike'){
     detonateAirStrike(j, done);
+    return;
+  }
+  if(type === 'laser'){
+    detonateLaser(j, done);
     return;
   }
   if(AOE_DEFS[type]){
@@ -1931,6 +2037,19 @@ function playSfx(name){
       // a broken, dissonant cluster of piano notes
       [220,233,262,311,349,415].forEach((f,i)=> beep(f, 0.5, 'triangle', 0.1, i*0.02));
       beep(110, 0.6, 'sine', 0.14, 0.02);
+      break;
+    case 'chargeLaser':
+      // escalating electrical whine as the Laser charges up
+      for(let i=0;i<6;i++) beep(200+i*70, 0.08, 'sawtooth', 0.05, i*0.07);
+      break;
+    case 'laserFire':
+      beep(1400,0.05,'square',0.16);
+      beep(1800,0.06,'square',0.12,0.03);
+      break;
+    case 'crackle':
+      // electrical crackling followed by a rubber snap
+      for(let i=0;i<5;i++) beep(150+Math.random()*400, 0.03, 'sawtooth', 0.06, i*0.03);
+      beep(90, 0.08, 'square', 0.14, 0.15);
       break;
     case 'shift': beep(300,0.1,'sine',0.1); beep(260,0.12,'sine',0.08,0.05); break;
     case 'tick': beep(200+Math.random()*300,0.04,'square',0.06); break;
