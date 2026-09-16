@@ -592,6 +592,42 @@ function drawBoard(){
     fallingObjects = fallingObjects.filter(o => (now - o.start) < o.dur);
   }
 
+  // Pickup collection: icon pops up, enlarges, then spins+shrinks into the jelly
+  if(collectFx.length){
+    collectFx.forEach(f=>{
+      const p = Math.min(1, (now - f.start) / f.dur);
+      const jx = boardToPx(f.jelly.px) + CELL/2, jy = boardToPx(f.jelly.py) + CELL/2;
+      let x, y, scale, rot;
+      if(p < 0.35){
+        const pp = p/0.35;
+        x = f.x0; y = f.y0 - 18*pp;
+        scale = 1 + 0.5*pp;
+        rot = 0;
+      } else {
+        const pp = (p-0.35)/0.65;
+        const liftY = f.y0 - 18;
+        x = f.x0 + (jx-f.x0)*pp;
+        y = liftY + (jy-liftY)*pp;
+        scale = 1.5 * (1-pp);
+        rot = pp * Math.PI * 3;
+      }
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(rot);
+      ctx.scale(scale, scale);
+      ctx.font = '22px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(f.icon, 0, 0);
+      ctx.restore();
+      if(p >= 0.97 && !f.burstFired){
+        f.burstFired = true;
+        burst(jx, jy, f.color, 12); // small coloured burst as it's absorbed
+      }
+    });
+    collectFx = collectFx.filter(f => (now - f.start) < f.dur);
+  }
+
   // Air Strike target reticles — pulsing crosshairs on cells about to be hit
   if(airStrikeReticles.length){
     const pulse = 0.55 + Math.sin(now/110)*0.35;
@@ -2154,12 +2190,36 @@ function detonate(j, type, done){
   }, 220);
 }
 
+// Pickup collection: pop the icon up, spin it into the jelly, shrink it away,
+// then (only after that's readable) resolve what it actually does. Weapons
+// get collected the same way before their own telegraph begins.
+let collectFx = [];
+function spawnCollectFx(tileX, tileY, jelly, type){
+  const def = TILE_DEFS[type];
+  collectFx.push({
+    icon: def.icon, color: def.color,
+    x0: boardToPx(tileX)+CELL/2, y0: boardToPx(tileY)+CELL/2,
+    jelly, start: performance.now(), dur: 340
+  });
+}
+
 function applyTileEffect(j, done){
   const t = tileAt(j.x, j.y);
   if(t.type === 'plain'){ done(); return; }
   const type = t.type;
-  t.type = 'plain';
+  const def = TILE_DEFS[type];
+  t.type = 'plain'; // the static tile icon is gone now — the animated collectFx takes over
 
+  spawnCollectFx(j.x, j.y, j, type);
+  playSfx('pickup');
+  const px = boardToPx(j.px)+CELL/2, py = boardToPx(j.py)+CELL/2;
+  spawnFloatText(px, py-20, def.label, def.color, false);
+  drawBoard();
+
+  setTimeout(()=> resolveActualTileEffect(j, type, done), 340);
+}
+
+function resolveActualTileEffect(j, type, done){
   if(type === 'randomdrop'){
     detonateRandomDrop(j, done);
     return;
