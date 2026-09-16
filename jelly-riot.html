@@ -453,6 +453,28 @@ function drawBoard(){
     shiftFlash *= 0.9;
   }
 
+  // key depress/flash where a jelly just landed
+  if(landFlashes.length){
+    landFlashes.forEach(f=>{
+      const age = now - f.start;
+      const life = Math.max(0, 1 - age/220);
+      if(life <= 0) return;
+      const px = boardToPx(f.x), py = boardToPx(f.y);
+      ctx.save();
+      ctx.globalAlpha = life * 0.5;
+      ctx.fillStyle = '#000';
+      roundRect(px+3, py+3, CELL-6, CELL-6, 6);
+      ctx.fill();
+      ctx.globalAlpha = life;
+      ctx.strokeStyle = 'rgba(232,178,61,0.9)';
+      ctx.lineWidth = 2;
+      roundRect(px+2, py+2, CELL-4, CELL-4, 6);
+      ctx.stroke();
+      ctx.restore();
+    });
+    landFlashes = landFlashes.filter(f => (now - f.start) < 220);
+  }
+
   // explosion cells — the actual board squares a weapon tile blew up, fading over ~500ms
   if(explosionCells.length){
     explosionCells.forEach(c=>{
@@ -491,11 +513,25 @@ function drawBoard(){
     dropShadows = dropShadows.filter(s => (now - s.start) < s.dur);
   }
 
+  // jump ground shadows — shrink and fade as the jelly rises, grow back on landing
+  for(const j of jellies){
+    if(!j.alive || !(j.jumpLift > 0.5)) continue;
+    const gx = boardToPx(j.px) + CELL/2, gy = boardToPx(j.py) + CELL/2;
+    const shrink = 1 - (j.jumpLift / 28) * 0.5;
+    ctx.save();
+    ctx.globalAlpha = 0.4 * shrink;
+    ctx.fillStyle = '#000';
+    ctx.beginPath();
+    ctx.ellipse(gx, gy + 14, 15*shrink, 6*shrink, 0, 0, Math.PI*2);
+    ctx.fill();
+    ctx.restore();
+  }
+
   // jellies
   for(const j of jellies){
     if(!j.alive) continue;
     const px = boardToPx(j.px) + CELL/2;
-    const py = boardToPx(j.py) + CELL/2;
+    const py = boardToPx(j.py) + CELL/2 - (j.jumpLift || 0);
     drawJelly(px,py,j);
   }
 
@@ -690,10 +726,15 @@ function drawJelly(cx,cy,j){
     }
   } else {
     const landAge = j.landPunch ? now - j.landPunch : Infinity;
-    if(landAge < 240){
-      squish *= 1 - (1 - landAge/240) * 0.18;
+    if(landAge < 420){
+      // rebound + diminishing wobbles, riding on top of the ambient jiggle
+      const decay = Math.exp(-landAge/140);
+      squish *= 1 - Math.sin(landAge/40) * 0.22 * decay;
+      cyOffset -= Math.sin(landAge/40) * 5 * decay;
     }
   }
+  // in-air jump squash/stretch from resolveJump (compress before launch, stretch mid-arc)
+  if(j.jumpSquish && j.jumpSquish !== 1) squish *= j.jumpSquish;
   cy += cyOffset;
 
   if(j.isPlayer){
@@ -725,6 +766,7 @@ function drawJelly(cx,cy,j){
 
   ctx.save();
   ctx.translate(cx,cy);
+  if(j.jumpTilt) ctx.rotate(j.jumpTilt);
   ctx.scale(1/squish, squish);
 
   // wobbly blob outline instead of a perfect circle
@@ -953,34 +995,60 @@ function commitPlayerMove(tile){
   }, 280);
 }
 
+// Physical jelly jump: a 110ms anticipation compress at the start tile, then
+// a ~590ms parabolic hop to the destination (total ~700ms), landing with a
+// squash and a decaying rebound. All four jellies launch together.
 function resolveJump(){
   const start = performance.now();
-  const dur = 420;
+  const compressDur = 110;
+  const flightDur = 590;
+  const totalDur = compressDur + flightDur;
+  const ARC = 28;
   const froms = jellies.map(j=>({x:j.x,y:j.y}));
 
+  playSfx('launch');
+  setTimeout(()=> playSfx('whoosh'), compressDur);
+
   function animate(){
-    const t = Math.min(1, (performance.now()-start)/dur);
-    const ease = t<0.5 ? 2*t*t : -1+(4-2*t)*t;
+    const elapsed = performance.now() - start;
     jellies.forEach((j,i)=>{
       if(!j.alive) return;
-      j.px = froms[i].x + (j.targetX - froms[i].x)*ease;
-      j.py = froms[i].y + (j.targetY - froms[i].y)*ease;
+      const dx = j.targetX - froms[i].x, dy = j.targetY - froms[i].y;
+      const moving = dx !== 0 || dy !== 0;
+
+      if(elapsed < compressDur){
+        // anticipation: stays put, compresses down and wide before launch
+        j.px = froms[i].x; j.py = froms[i].y;
+        j.jumpSquish = 1 + (elapsed/compressDur) * 0.32;
+        j.jumpLift = 0;
+        j.jumpTilt = 0;
+      } else {
+        const ft = Math.min(1, (elapsed - compressDur) / flightDur);
+        j.px = froms[i].x + dx*ft;
+        j.py = froms[i].y + dy*ft;
+        j.jumpLift = Math.sin(ft*Math.PI) * ARC; // parabolic arc, peaks mid-flight
+        j.jumpSquish = moving ? (1 - Math.sin(ft*Math.PI)*0.24) : 1; // stretch tall in the air
+        j.jumpTilt = moving ? Math.atan2(dy,dx) * 0.14 * Math.sin(ft*Math.PI) : 0;
+      }
     });
     drawBoard();
-    if(t<1) requestAnimationFrame(animate);
+    if(elapsed < totalDur) requestAnimationFrame(animate);
     else{
       jellies.forEach(j=>{
         if(!j.alive) return;
         j.x = j.targetX; j.y = j.targetY;
         j.px = j.x; j.py = j.y;
+        j.jumpLift = 0; j.jumpSquish = 1; j.jumpTilt = 0;
         j.landPunch = performance.now();
+        spawnLandFlash(j.x, j.y);
       });
-      playSfx('settle');
+      playSfx('clack');
+      setTimeout(()=> playSfx('slap'), 60);
+      setTimeout(()=> playSfx('wobble'), 240);
       afterLanding();
     }
   }
   requestAnimationFrame(animate);
-  playSfx('jump');
 }
 
 // Resolve landings one at a time (not all in one silent instant) so each hit
@@ -1311,6 +1379,9 @@ function spawnFallingObject(icon,targetX,targetY,dur){ fallingObjects.push({icon
 // board itself, not just to whoever was standing in it.
 let explosionCells = [];
 // Random Drop's signature tell: a growing shadow under the victim, then the
+// Destination key briefly flashing/depressing when a jelly lands on it.
+let landFlashes = [];
+function spawnLandFlash(x,y){ landFlashes.push({x,y,start:performance.now()}); }
 // object itself falling from off-screen — this is deliberately its own thing
 // per the reference, not just another square-radius explosion.
 let dropShadows = [];
@@ -1580,7 +1651,8 @@ function beep(freq, dur, type='square', gainVal=0.15, when=0){
   const osc = actx.createOscillator();
   const gain = actx.createGain();
   osc.type = type;
-  osc.frequency.value = freq;
+  // small random detune so repeated hits never sound perfectly identical
+  osc.frequency.value = freq * (1 + (Math.random()-0.5) * 0.1);
   gain.gain.value = gainVal;
   osc.connect(gain); gain.connect(actx.destination);
   const t0 = actx.currentTime + when;
@@ -1594,6 +1666,11 @@ function playSfx(name){
   if(!actx) return;
   switch(name){
     case 'jump': beep(520,0.08,'square',0.12); break;
+    case 'launch': beep(180,0.07,'sine',0.14); beep(280,0.06,'sine',0.12,0.05); break;
+    case 'whoosh': beep(900,0.05,'sawtooth',0.05); beep(480,0.07,'sawtooth',0.04,0.04); break;
+    case 'clack': beep(320,0.04,'square',0.16); break;
+    case 'slap': beep(150,0.09,'sine',0.12); break;
+    case 'wobble': beep(700,0.05,'triangle',0.06); beep(600,0.05,'triangle',0.05,0.05); break;
     case 'shift': beep(300,0.1,'sine',0.1); beep(260,0.12,'sine',0.08,0.05); break;
     case 'tick': beep(200+Math.random()*300,0.04,'square',0.06); break;
     case 'settle': beep(660,0.1,'square',0.14); beep(880,0.14,'square',0.16,0.08); break;
