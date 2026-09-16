@@ -916,11 +916,7 @@ function drawJelly(cx,cy,j){
 
   // face
   ctx.fillStyle = '#10131a';
-  ctx.beginPath(); ctx.arc(-6,-2,2.2,0,Math.PI*2); ctx.fill();
-  ctx.beginPath(); ctx.arc(6,-2,2.2,0,Math.PI*2); ctx.fill();
-  ctx.beginPath();
-  ctx.arc(0,4,5,0,Math.PI,false);
-  ctx.stroke();
+  drawJellyFace(j, now, rx);
   ctx.restore();
 
   if(j.weaponCharge){
@@ -939,6 +935,84 @@ function drawJelly(cx,cy,j){
     ctx.font='16px sans-serif';
     ctx.textAlign='center';
     badges.forEach((b,i)=> ctx.fillText(b, cx-16+i*16, cy-20));
+  }
+}
+
+// Readable expressions at small size — priority order matters since only
+// one state is shown at a time (a fresh hit always wins over "low HP nerves").
+function drawJellyFace(j, now, rx){
+  let state = 'happy';
+  const reactionAge = j.reaction ? now - j.reaction.start : Infinity;
+  const reactionDur = j.reaction ? (REACTION_DEFS[j.reaction.type]||REACTION_DEFS.launch).dur : 0;
+
+  if(j.reaction && reactionAge < reactionDur * 0.35){
+    state = 'eyesShut'; // the instant of impact
+  } else if(now < panicUntil){
+    state = 'panic'; // Nuke countdown
+  } else if(j.reaction && reactionAge >= reactionDur && reactionAge < reactionDur + 260){
+    state = 'dazed'; // just recovering from a hit
+  } else if(j.rageCharge){
+    state = 'angry';
+  } else if(j.alive && j.hp > 0 && j.hp < 30){
+    state = 'nervous';
+  } else if(dropShadows.some(s => s.x===j.x && s.y===j.y)){
+    state = 'lookUp'; // a Random Drop shadow is growing beneath them
+  } else if(j.jumpTilt){
+    state = 'lookDir'; // mid-jump, eyes toward the destination
+  }
+
+  const lookX = state === 'lookDir' ? Math.sign(j.jumpTilt) * 1.6 : 0;
+  const lookY = state === 'lookUp' ? -2.2 : 0;
+
+  if(state === 'eyesShut'){
+    ctx.strokeStyle = '#10131a';
+    ctx.lineWidth = 1.6;
+    ctx.beginPath(); ctx.moveTo(-8,-2); ctx.lineTo(-4,-2); ctx.moveTo(4,-2); ctx.lineTo(8,-2); ctx.stroke();
+    ctx.beginPath(); ctx.arc(0,5,2.6,0,Math.PI,false); ctx.stroke();
+  } else if(state === 'panic'){
+    ctx.fillStyle = '#f4f1e8';
+    ctx.beginPath(); ctx.arc(-6,-2,3.4,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(6,-2,3.4,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#10131a';
+    ctx.beginPath(); ctx.arc(-6+lookX,-2+lookY,1.5,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(6+lookX,-2+lookY,1.5,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(0,5,2.6,0,Math.PI*2); ctx.fill();
+  } else if(state === 'dazed'){
+    ctx.strokeStyle = '#10131a';
+    ctx.lineWidth = 1.4;
+    ctx.beginPath(); ctx.arc(-6,-3,2.2,0,Math.PI*1.5); ctx.stroke();
+    ctx.beginPath(); ctx.arc(6,-1,2.2,0,Math.PI*1.5); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-3,5); ctx.lineTo(3,5); ctx.stroke();
+  } else if(state === 'angry'){
+    ctx.strokeStyle = '#10131a';
+    ctx.lineWidth = 1.6;
+    ctx.beginPath(); ctx.moveTo(-9,-6); ctx.lineTo(-3,-4); ctx.moveTo(9,-6); ctx.lineTo(3,-4); ctx.stroke();
+    ctx.fillStyle = '#10131a';
+    ctx.beginPath(); ctx.arc(-6,-2,2,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(6,-2,2,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(0,7,5,Math.PI,0,false); ctx.stroke();
+  } else if(state === 'nervous'){
+    ctx.fillStyle = '#10131a';
+    ctx.beginPath(); ctx.arc(-6,-2,2.2,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(6,-2,2.2,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle = '#10131a';
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.moveTo(-5,5);
+    ctx.quadraticCurveTo(-2.5,3,0,5);
+    ctx.quadraticCurveTo(2.5,7,5,5);
+    ctx.stroke();
+  } else {
+    ctx.fillStyle = '#10131a';
+    ctx.beginPath(); ctx.arc(-6+lookX,-2+lookY,2.2,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(6+lookX,-2+lookY,2.2,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle = '#10131a';
+    ctx.lineWidth = 1.4;
+    if(state === 'lookUp'){
+      ctx.beginPath(); ctx.arc(0,5,2.4,0,Math.PI*2); ctx.stroke();
+    } else {
+      ctx.beginPath(); ctx.arc(lookX*0.5,4,5,0,Math.PI,false); ctx.stroke();
+    }
   }
 }
 
