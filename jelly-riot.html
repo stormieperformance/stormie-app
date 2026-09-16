@@ -1134,8 +1134,10 @@ function applyJellyOffOutcome(rolls){
     const dy = Math.sign(loser.y - winner.jelly.y) || (Math.random()<0.5?-1:1);
     const nx = loser.x + dx, ny = loser.y + dy;
     if(!inBounds(nx,ny)){
-      loser.hp = 0;
-      logMsg(`${loser.name} was knocked off the map!`, 'hit');
+      // Pinned against the edge — extra damage instead of an automatic
+      // elimination, so only HP reaching 0 actually knocks someone out.
+      loser.hp -= 15;
+      logMsg(`${loser.name} was pinned against the edge (-15 HP).`, 'hit');
     } else {
       loser.x = nx; loser.y = ny; loser.px = nx; loser.py = ny;
     }
@@ -1211,10 +1213,6 @@ function spawnWeaponBanner(label, color){
 }
 
 function damageJelly(source, target, amt, style){
-  if(target.invisible){
-    announce(`${target.name} was invisible and dodged the attack!`);
-    return;
-  }
   if(target.shielded){
     target.shielded = false;
     announce(`${target.name}'s shield absorbed the hit!`);
@@ -1222,11 +1220,16 @@ function damageJelly(source, target, amt, style){
     spawnFloatText(px, py-30, 'BLOCKED', '#e8b23d');
     return;
   }
+  const wasInvisible = target.invisible;
+  if(wasInvisible){
+    target.invisible = false;
+    target.invisibleUntilTurn = undefined;
+  }
   const dmg = source.rageCharge ? amt*2 : amt;
   target.hp -= dmg;
   target.hitPunch = performance.now();
   target.hitStyle = style || 'normal';
-  announce(`${source.name}'s attack hit ${target.name} (-${dmg} HP).`, 'hit');
+  announce(`${source.name}'s attack hit ${target.name}${wasInvisible ? ' — revealing them' : ''} (-${dmg} HP).`, 'hit');
   playSfx('explosion');
   const px = boardToPx(target.px) + CELL/2, py = boardToPx(target.py) + CELL/2;
   burst(px, py, '#ff4d4d', 14);
@@ -1422,7 +1425,7 @@ function applyTileEffect(j, done){
       break;
     case 'debonus': {
       const targets = jelliesWithin(j, 2);
-      targets.forEach(k => { k.shielded = false; k.invisible = false; k.rageCharge = false; k.tripleJump = false; });
+      targets.forEach(k => { k.shielded = false; k.invisible = false; k.rageCharge = false; k.tripleJump = false; k.handbagTurns = 0; });
       announce(targets.length ? `${j.name} disarmed nearby opponents' bonuses.` : `${j.name} looked for bonuses to disarm, but found none nearby.`);
       playSfx('pickup');
       break;
