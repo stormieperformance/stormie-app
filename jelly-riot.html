@@ -388,6 +388,7 @@ function shiftTilesDown(){
 function boardToPx(x){ return PAD + x*CELL; }
 
 function drawBoard(){
+  const now = performance.now();
   ctx.clearRect(0,0,canvas.width,canvas.height);
   ctx.save();
   if(shakeAmt > 0.2){
@@ -451,7 +452,6 @@ function drawBoard(){
 
   // explosion cells — the actual board squares a weapon tile blew up, fading over ~500ms
   if(explosionCells.length){
-    const now = performance.now();
     explosionCells.forEach(c=>{
       const age = now - c.start;
       const life = Math.max(0, 1 - age/500);
@@ -472,12 +472,47 @@ function drawBoard(){
     explosionCells = explosionCells.filter(c => (now - c.start) < 500);
   }
 
+  // drop shadows — the tell-tale growing dark ellipse under a Random Drop victim
+  if(dropShadows.length){
+    dropShadows.forEach(s=>{
+      const p = Math.min(1, (now - s.start) / s.dur);
+      const px = boardToPx(s.x) + CELL/2, py = boardToPx(s.y) + CELL/2;
+      ctx.save();
+      ctx.globalAlpha = 0.55 * p;
+      ctx.fillStyle = '#000';
+      ctx.beginPath();
+      ctx.ellipse(px, py + 10, (CELL*0.38) * p, (CELL*0.16) * p, 0, 0, Math.PI*2);
+      ctx.fill();
+      ctx.restore();
+    });
+    dropShadows = dropShadows.filter(s => (now - s.start) < s.dur);
+  }
+
   // jellies
   for(const j of jellies){
     if(!j.alive) continue;
     const px = boardToPx(j.px) + CELL/2;
     const py = boardToPx(j.py) + CELL/2;
     drawJelly(px,py,j);
+  }
+
+  // falling Random Drop object — plummets from off-canvas down to the victim
+  if(fallingObjects.length){
+    fallingObjects.forEach(o=>{
+      const p = Math.min(1, (now - o.start) / o.dur);
+      const ease = p*p; // accelerating fall
+      const px = boardToPx(o.targetX) + CELL/2;
+      const py = -40 + (boardToPx(o.targetY) + CELL/2 + 40) * ease;
+      ctx.save();
+      ctx.translate(px, py);
+      ctx.rotate((1-p) * 0.6);
+      ctx.font = '30px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(o.icon, 0, 0);
+      ctx.restore();
+    });
+    fallingObjects = fallingObjects.filter(o => (now - o.start) < o.dur);
   }
 
   // particles
@@ -1138,19 +1173,79 @@ function damageJelly(source, target, amt, style){
 // Weapon tiles explode outward from the tile the jelly lands on, in a square
 // area measured in grid squares (radius 1 = 3x3, radius 2 = 5x5, etc).
 // Laser is a straight line down the row+column instead of a square.
+// Random Drop is handled separately (see detonateRandomDrop) — it targets one
+// opponent with a falling-object sequence instead of a generic square blast.
 const AOE_DEFS = {
   nuke:       {dmg:18, radius:99,  shape:'square', label:'Nuke'},
   handbag:    {dmg:14, radius:1,   shape:'square', label:'Handbag'},
   laser:      {dmg:16, radius:0,   shape:'line',   label:'Laser'},
   airstrike:  {dmg:20, radius:1,   shape:'random', label:'Air Strike'},
-  blast:      {dmg:10, radius:1,   shape:'square', label:'Blast'},
-  randomdrop: {dmg:12, radius:1,   shape:'random', label:'Random Drop'}
+  blast:      {dmg:10, radius:1,   shape:'square', label:'Blast'}
 };
+
+// Object variants, weighted toward the lighter ones like the reference.
+const DROP_VARIANTS = [
+  {name:'a wrench',  icon:'🔧', dmg:14, weight:5},
+  {name:'an anvil',  icon:'🧱', dmg:20, weight:3},
+  {name:'a piano',   icon:'🎹', dmg:28, weight:1}
+];
+function pickDropVariant(){
+  const total = DROP_VARIANTS.reduce((s,v)=>s+v.weight,0);
+  let r = Math.random()*total;
+  for(const v of DROP_VARIANTS){ r -= v.weight; if(r<=0) return v; }
+  return DROP_VARIANTS[0];
+}
+
+// Random Drop: pick one opponent, grow a shadow under them, drop the object,
+// flatten them on impact, then let them peel back off the tile.
+function detonateRandomDrop(j, done){
+  const tdef = TILE_DEFS.randomdrop;
+  spawnWeaponBanner('Random Drop', tdef.color);
+  const pool = otherJellies(j).filter(k => !k.invisible);
+  if(!pool.length){
+    announce(`${j.name} grabbed a Random Drop, but everyone nearby was invisible!`);
+    done();
+    return;
+  }
+  const target = pool[Math.floor(Math.random()*pool.length)];
+  const variant = pickDropVariant();
+  const shadowDur = 420;
+  spawnDropShadow(target.x, target.y, shadowDur);
+  playSfx('telegraph');
+  drawBoard();
+
+  setTimeout(()=>{
+    const fallDur = 260;
+    spawnFallingObject(variant.icon, target.x, target.y, fallDur);
+    playSfx('shift');
+    setTimeout(()=>{
+      announce(`${j.name} dropped ${variant.name} on ${target.name}!`);
+      playSfx('explosion');
+      const px = boardToPx(target.px)+CELL/2, py = boardToPx(target.py)+CELL/2;
+      addShockwave(px, py, tdef.color, 50);
+      burst(px, py, tdef.color, 24);
+      flashScreen(tdef.color, 0.22);
+      shake(12);
+      damageJelly(j, target, variant.dmg, 'flatten');
+      renderSidebar();
+      drawBoard();
+      // hold on the flattened pose so the "peel off and reform" is visible
+      setTimeout(done, 520);
+    }, fallDur);
+  }, shadowDur);
+}
+function spawnDropShadow(x,y,dur){ dropShadows.push({x,y,start:performance.now(),dur}); }
+function spawnFallingObject(icon,targetX,targetY,dur){ fallingObjects.push({icon,targetX,targetY,start:performance.now(),dur}); }
 
 // Tracked squares so drawBoard can flash the exact tiles the explosion
 // covered — this is what makes the blast feel like it happened on the
 // board itself, not just to whoever was standing in it.
 let explosionCells = [];
+// Random Drop's signature tell: a growing shadow under the victim, then the
+// object itself falling from off-screen — this is deliberately its own thing
+// per the reference, not just another square-radius explosion.
+let dropShadows = [];
+let fallingObjects = [];
 function markExplosion(cells, color){
   const now = performance.now();
   cells.forEach(c => explosionCells.push({x:c.x, y:c.y, color, start:now}));
@@ -1213,11 +1308,10 @@ function detonate(j, type, done){
 
     // Stagger multi-target hits so each impact is its own visible beat
     // instead of every victim reacting on the exact same frame.
-    const style = type === 'randomdrop' ? 'flatten' : 'normal';
     let idx = 0;
     function hitNext(){
       if(idx >= hits.length){ done(); return; }
-      damageJelly(j, hits[idx], def.dmg, style);
+      damageJelly(j, hits[idx], def.dmg);
       renderSidebar();
       drawBoard();
       idx++;
@@ -1233,6 +1327,10 @@ function applyTileEffect(j, done){
   const type = t.type;
   t.type = 'plain';
 
+  if(type === 'randomdrop'){
+    detonateRandomDrop(j, done);
+    return;
+  }
   if(AOE_DEFS[type]){
     detonate(j, type, done);
     return;
