@@ -505,6 +505,21 @@ function drawBoard(){
   });
   shockwaves = shockwaves.filter(s=>s.alpha > 0.02);
 
+  // floating damage/heal numbers punching upward off the hit jelly
+  floatTexts.forEach(f=>{
+    ctx.globalAlpha = Math.max(0, f.life);
+    ctx.font = 'bold 15px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = f.color;
+    ctx.strokeStyle = 'rgba(0,0,0,0.55)';
+    ctx.lineWidth = 3;
+    ctx.strokeText(f.text, f.x, f.y);
+    ctx.fillText(f.text, f.x, f.y);
+    ctx.globalAlpha = 1;
+  });
+  floatTexts.forEach(f=>{ f.y -= 0.7; f.life -= 0.018; });
+  floatTexts = floatTexts.filter(f=>f.life > 0);
+
   ctx.restore();
 
   if(screenFlash.alpha > 0.01){
@@ -590,8 +605,14 @@ function roundRect(x,y,w,h,r){
 
 function drawJelly(cx,cy,j){
   const t = performance.now()/300 + j.wobble;
-  const squish = 1 + Math.sin(t)*0.07;
+  let squish = 1 + Math.sin(t)*0.07;
   const r = 20;
+
+  const hitAge = j.hitPunch ? performance.now() - j.hitPunch : Infinity;
+  if(hitAge < 220){
+    // sharp squash-and-flash on impact, easing back out
+    squish *= 1 - (1 - hitAge/220) * 0.4;
+  }
 
   if(j.isPlayer){
     const pulse = 1 + Math.sin(performance.now()/260)*0.12;
@@ -645,6 +666,14 @@ function drawJelly(cx,cy,j){
   ctx.strokeStyle = 'rgba(0,0,0,0.3)';
   ctx.lineWidth = 1.5;
   ctx.stroke();
+
+  // red hit-flash tint over the same silhouette, fading out fast
+  if(hitAge < 220){
+    ctx.globalAlpha = (1 - hitAge/220) * 0.65;
+    ctx.fillStyle = '#ff2b2b';
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  }
 
   // glossy highlight
   ctx.beginPath();
@@ -853,6 +882,24 @@ function resolveJump(){
   playSfx('jump');
 }
 
+// Resolve landings one at a time (not all in one silent instant) so each hit
+// is actually watchable — the whole point of the game is *seeing* the damage
+// happen. Non-damaging tiles go first, weapons resolve last for a dramatic finish.
+const LANDING_ORDER = {teleport:0, status:1, health:2, hazard:3, weapon:4};
+function landingPriority(j){
+  const t = tileAt(j.x, j.y);
+  if(t.type === 'plain') return -1;
+  return LANDING_ORDER[TILE_DEFS[t.type].cat] ?? 5;
+}
+
+function resolveSingleLandings(list, i, done){
+  if(i >= list.length){ done(); return; }
+  applyTileEffect(list[i]);
+  renderSidebar();
+  drawBoard();
+  setTimeout(()=> resolveSingleLandings(list, i+1, done), 550);
+}
+
 function afterLanding(){
   // group by tile
   const groups = {};
@@ -863,16 +910,20 @@ function afterLanding(){
   }
 
   const jellyOffGroups = [];
+  const singles = [];
   for(const key in groups){
     const group = groups[key];
     if(group.length >= 2) jellyOffGroups.push(group);
-    else applyTileEffect(group[0]);
+    else singles.push(group[0]);
   }
+  singles.sort((a,b)=> landingPriority(a) - landingPriority(b));
 
   renderSidebar();
   drawBoard();
 
-  runJellyOffQueue(jellyOffGroups, 0, finishTurnResolution);
+  resolveSingleLandings(singles, 0, () => {
+    runJellyOffQueue(jellyOffGroups, 0, finishTurnResolution);
+  });
 }
 
 function runJellyOffQueue(queue, i, done){
@@ -1001,6 +1052,11 @@ function jelliesInLine(j){
 
 // Damage a target, respecting Shield (absorbs one hit) and Invisible (dodges entirely).
 function announce(msg, cls){ logMsg(msg, cls); setBanner(msg); }
+let floatTexts = [];
+function spawnFloatText(x, y, text, color){
+  floatTexts.push({x, y, text, color, life:1});
+}
+
 function damageJelly(source, target, amt){
   if(target.invisible){
     announce(`${target.name} was invisible and dodged the attack!`);
@@ -1009,14 +1065,18 @@ function damageJelly(source, target, amt){
   if(target.shielded){
     target.shielded = false;
     announce(`${target.name}'s shield absorbed the hit!`);
+    const px = boardToPx(target.px) + CELL/2, py = boardToPx(target.py) + CELL/2;
+    spawnFloatText(px, py-30, 'BLOCKED', '#e8b23d');
     return;
   }
   const dmg = source.rageCharge ? amt*2 : amt;
   target.hp -= dmg;
+  target.hitPunch = performance.now();
   announce(`${source.name}'s attack hit ${target.name} (-${dmg} HP).`, 'hit');
   playSfx('explosion');
   const px = boardToPx(target.px) + CELL/2, py = boardToPx(target.py) + CELL/2;
   burst(px, py, '#ff4d4d', 14);
+  spawnFloatText(px, py-30, `-${dmg}`, '#ff5d5d');
 }
 
 // Weapon tiles explode outward from the tile the jelly lands on, in a square
@@ -1166,11 +1226,13 @@ function applyTileEffect(j){
       j.hp = 100;
       announce(`${j.name} found a Super Jelly and is fully restored!`, 'heal');
       playSfx('heal');
+      spawnFloatText(boardToPx(j.px)+CELL/2, boardToPx(j.py)+CELL/2-30, 'FULL HEAL', '#5ee08a');
       break;
     case 'health':
       j.hp = Math.min(100, j.hp + 12);
       announce(`${j.name} snacked on some jelly (+12 HP).`, 'heal');
       playSfx('heal');
+      spawnFloatText(boardToPx(j.px)+CELL/2, boardToPx(j.py)+CELL/2-30, '+12', '#5ee08a');
       break;
   }
 
