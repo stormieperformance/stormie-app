@@ -86,7 +86,15 @@
     border-bottom:2px solid var(--gold);border-right:2px solid var(--gold);
   }
 
-  .board-wrap{padding:16px;}
+  .board-wrap{padding:16px;position:relative;}
+  .board-wrap canvas{
+    border-radius:10px;
+    box-shadow:
+      0 0 0 6px #0c0f16,
+      0 0 0 8px rgba(232,178,61,0.25),
+      inset 0 2px 10px rgba(0,0,0,0.5),
+      0 10px 24px rgba(0,0,0,0.45);
+  }
   #board{display:block;background:radial-gradient(circle at 50% 30%,#1c2b22,#0d1118 75%);border-radius:8px;}
 
   .side{
@@ -115,6 +123,7 @@
   .log div.hit{border-color:var(--danger);color:#ffb3b3;}
   .log div.heal{border-color:var(--heal);color:#b8ffd0;}
   .log div.win{border-color:var(--gold);color:var(--gold);}
+  .log div.elim{border-color:var(--danger);color:#fff;background:rgba(255,77,77,0.14);font-weight:700;padding:5px 7px;border-radius:3px;}
 
   .controls{display:flex;gap:8px;flex-wrap:wrap;}
   button{
@@ -245,6 +254,7 @@
     <h2 id="overlayTitle">You Win!</h2>
     <p id="overlayText">Every rival jelly has been wobbled out of the arena.</p>
     <button class="primary" id="overlayBtn">Play Again</button>
+    <button id="overlayWatchBtn" style="display:none;">Watch the Battle</button>
   </div>
 </div>
 
@@ -260,6 +270,10 @@
    ========================================================= */
 
 const GRID = 7;
+// Original, subtle key labels for the board's plain tiles — a believable
+// keyboard-style character set, not a copy of any real keyboard's artwork.
+const KEY_LABELS = ('QWERTYUASDFGHZXCVBN1234567890!@#$%^&*()-=+[]{}'.split(''));
+while(KEY_LABELS.length < GRID*GRID) KEY_LABELS.push('·');
 const CELL = 66;
 const PAD = 12;
 let shakeAmt = 0;
@@ -300,6 +314,9 @@ let tiles = [];
 let turnNumber = 0;
 let phase = 'idle'; // idle, picking, resolving, gameover
 let difficulty = 'normal'; // easy | normal | hard — set from the start modal
+let tutorialActive = true; // shown during the player's first picking phase only
+let hoverCell = null; // {x,y} — for the shift-prediction preview while tutorialActive
+let spectating = false; // true once the player chooses "Watch the Battle" after dying
 let selectedTile = null;
 let timerId = null;
 let timerDuration = 8000;
@@ -457,6 +474,16 @@ function drawBoard(){
     ctx.fill();
     ctx.restore();
 
+    // subtle keyboard-style label on empty keys (never on tiles with an icon)
+    if(t.type === 'plain'){
+      const label = KEY_LABELS[t.y*GRID + t.x];
+      ctx.font = '11px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = 'rgba(180,190,210,0.16)';
+      ctx.fillText(label, px+CELL/2, py+CELL/2);
+    }
+
     if(t.type !== 'plain'){
       const def = TILE_DEFS[t.type];
       const glowColor = def ? def.color : '#e8b23d';
@@ -567,7 +594,7 @@ function drawBoard(){
 
   // jellies
   for(const j of jellies){
-    if(!j.alive) continue;
+    if(!j.alive && !j.dying) continue;
     const px = boardToPx(j.px) + CELL/2;
     const py = boardToPx(j.py) + CELL/2 - (j.jumpLift || 0);
     drawJelly(px,py,j);
@@ -626,6 +653,44 @@ function drawBoard(){
       }
     });
     collectFx = collectFx.filter(f => (now - f.start) < f.dur);
+  }
+
+  // First-turn tutorial: faint arrows showing where each icon is about to
+  // shift to, plus a preview of the predicted icon under the cursor.
+  if(tutorialActive && phase === 'picking'){
+    ctx.save();
+    ctx.strokeStyle = 'rgba(232,178,61,0.4)';
+    ctx.fillStyle = 'rgba(232,178,61,0.4)';
+    ctx.lineWidth = 2;
+    tiles.forEach(t=>{
+      if(t.type === 'plain' || t.y >= GRID-1) return;
+      const x0 = boardToPx(t.x)+CELL/2, y0 = boardToPx(t.y)+CELL/2+10;
+      const y1 = boardToPx(t.y+1)+CELL/2-10;
+      ctx.beginPath();
+      ctx.moveTo(x0, y0);
+      ctx.lineTo(x0, y1);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(x0-4, y1-6);
+      ctx.lineTo(x0, y1);
+      ctx.lineTo(x0+4, y1-6);
+      ctx.stroke();
+    });
+    ctx.restore();
+
+    if(hoverCell){
+      const predicted = predictTileAt(hoverCell.x, hoverCell.y);
+      if(predicted.type !== 'plain'){
+        const def = TILE_DEFS[predicted.type];
+        const px = boardToPx(hoverCell.x)+CELL/2, py = boardToPx(hoverCell.y)+CELL/2;
+        ctx.save();
+        ctx.globalAlpha = 0.75;
+        ctx.font = '20px sans-serif';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(def.icon, px, py);
+        ctx.restore();
+      }
+    }
   }
 
   // Air Strike target reticles — pulsing crosshairs on cells about to be hit
@@ -888,32 +953,56 @@ function drawJelly(cx,cy,j){
   let squish = 1 + Math.sin(t)*0.07;
   const r = 20;
   const now = performance.now();
+  let deathAlpha = 1;
+  let cyOffset = 0, cxOffset = 0;
+  let reactionRotation = 0, reactionTint = '#ff2b2b', reactionTintAlpha = 0;
+  let rx = {active:false};
 
-  const rx = playReactionFrame(j, now); // {cxOffset, cyOffset, squishMult, rotation, tintColor, tintAlpha}
-  let cyOffset = rx.cyOffset, cxOffset = rx.cxOffset;
-  squish *= rx.squishMult;
-  const reactionRotation = rx.rotation;
-  const reactionTint = rx.tintColor;
-  const reactionTintAlpha = rx.tintAlpha;
-
-  if(!rx.active){
-    const landAge = j.landPunch ? now - j.landPunch : Infinity;
-    if(landAge < 420){
-      // rebound + diminishing wobbles, riding on top of the ambient jiggle
-      const decay = Math.exp(-landAge/140);
-      squish *= 1 - Math.sin(landAge/40) * 0.22 * decay;
-      cyOffset -= Math.sin(landAge/40) * 5 * decay;
+  if(j.dying){
+    // Melt into a colored puddle: progressively flatten (the existing
+    // scale(1/squish, squish) naturally spreads it wide as squish shrinks),
+    // then fade out in the final stretch.
+    const dp = Math.min(1, (now - j.dyingStart) / 1700);
+    const squashP = Math.min(1, dp / 0.55);
+    squish = Math.max(0.08, 1 - squashP*0.88);
+    deathAlpha = dp > 0.8 ? Math.max(0, 1 - (dp-0.8)/0.2) : 1;
+    // Laser deaths twitch electrically for their first beat; Handbag deaths
+    // spin sideways as they go down.
+    if(j.deathCause === 'laserShock' && dp < 0.3){
+      cxOffset += (Math.random()-0.5) * 6;
+    } else if(j.deathCause === 'sideWhack'){
+      reactionRotation = (1-squashP) * 0.6;
     }
-  }
-  // in-air jump squash/stretch from resolveJump (compress before launch, stretch mid-arc)
-  if(j.jumpSquish && j.jumpSquish !== 1) squish *= j.jumpSquish;
-  // frightened trembling for everyone while a Nuke counts down
-  if(j.alive && now < panicUntil){
-    cxOffset += Math.sin(now/35 + j.wobble*10) * 2.2;
-    cyOffset += Math.cos(now/28 + j.wobble*7) * 1.4;
+  } else {
+    rx = playReactionFrame(j, now); // {cxOffset, cyOffset, squishMult, rotation, tintColor, tintAlpha}
+    cyOffset = rx.cyOffset; cxOffset = rx.cxOffset;
+    squish *= rx.squishMult;
+    reactionRotation = rx.rotation;
+    reactionTint = rx.tintColor;
+    reactionTintAlpha = rx.tintAlpha;
+
+    if(!rx.active){
+      const landAge = j.landPunch ? now - j.landPunch : Infinity;
+      if(landAge < 420){
+        // rebound + diminishing wobbles, riding on top of the ambient jiggle
+        const decay = Math.exp(-landAge/140);
+        squish *= 1 - Math.sin(landAge/40) * 0.22 * decay;
+        cyOffset -= Math.sin(landAge/40) * 5 * decay;
+      }
+    }
+    // in-air jump squash/stretch from resolveJump (compress before launch, stretch mid-arc)
+    if(j.jumpSquish && j.jumpSquish !== 1) squish *= j.jumpSquish;
+    // frightened trembling for everyone while a Nuke counts down
+    if(j.alive && now < panicUntil){
+      cxOffset += Math.sin(now/35 + j.wobble*10) * 2.2;
+      cyOffset += Math.cos(now/28 + j.wobble*7) * 1.4;
+    }
   }
   cy += cyOffset;
   cx += cxOffset;
+
+  ctx.save();
+  ctx.globalAlpha = deathAlpha;
 
   if(j.isPlayer){
     const pulse = 1 + Math.sin(performance.now()/260)*0.12;
@@ -990,23 +1079,26 @@ function drawJelly(cx,cy,j){
   drawJellyFace(j, now, rx);
   ctx.restore();
 
-  if(j.weaponCharge){
+  if(j.weaponCharge && !j.dying){
     ctx.font='13px sans-serif';
     ctx.textAlign='center';
     ctx.fillText('⚔️', cx+16, cy-18);
   }
-  const badges = [];
-  if(j.shielded) badges.push('🛡️');
-  if(j.invisible) badges.push('🕶️');
-  if(j.frozen) badges.push('❄️');
-  if(j.rageCharge) badges.push('☣️');
-  if(j.tripleJump) badges.push('↗️');
-  if(j.handbagTurns > 0) badges.push('👜'+j.handbagTurns);
-  if(badges.length){
-    ctx.font='16px sans-serif';
-    ctx.textAlign='center';
-    badges.forEach((b,i)=> ctx.fillText(b, cx-16+i*16, cy-20));
+  if(!j.dying){
+    const badges = [];
+    if(j.shielded) badges.push('🛡️');
+    if(j.invisible) badges.push('🕶️');
+    if(j.frozen) badges.push('❄️');
+    if(j.rageCharge) badges.push('☣️');
+    if(j.tripleJump) badges.push('↗️');
+    if(j.handbagTurns > 0) badges.push('👜'+j.handbagTurns);
+    if(badges.length){
+      ctx.font='16px sans-serif';
+      ctx.textAlign='center';
+      badges.forEach((b,i)=> ctx.fillText(b, cx-16+i*16, cy-20));
+    }
   }
+  ctx.restore(); // matches the deathAlpha save at the top of this function
 }
 
 // Readable expressions at small size — priority order matters since only
@@ -1016,7 +1108,9 @@ function drawJellyFace(j, now, rx){
   const reactionAge = j.reaction ? now - j.reaction.start : Infinity;
   const reactionDur = j.reaction ? (REACTION_DEFS[j.reaction.type]||REACTION_DEFS.launch).dur : 0;
 
-  if(j.reaction && reactionAge < reactionDur * 0.35){
+  if(j.dying){
+    state = 'dying';
+  } else if(j.reaction && reactionAge < reactionDur * 0.35){
     state = 'eyesShut'; // the instant of impact
   } else if(now < panicUntil){
     state = 'panic'; // Nuke countdown
@@ -1073,6 +1167,21 @@ function drawJellyFace(j, now, rx){
     ctx.quadraticCurveTo(-2.5,3,0,5);
     ctx.quadraticCurveTo(2.5,7,5,5);
     ctx.stroke();
+  } else if(state === 'dying'){
+    // Shocked expression that holds, then sinks into the puddle and fades.
+    const dp = j.dyingStart ? Math.min(1, (performance.now() - j.dyingStart) / 1700) : 0;
+    if(dp < 0.85){
+      const sinkY = Math.max(0, (dp - 0.5) / 0.5) * 10;
+      ctx.fillStyle = '#f4f1e8';
+      ctx.beginPath(); ctx.arc(-6,-2+sinkY,3.2,0,Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(6,-2+sinkY,3.2,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#10131a';
+      ctx.beginPath(); ctx.arc(-6,-2+sinkY,1.4,0,Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(6,-2+sinkY,1.4,0,Math.PI*2); ctx.fill();
+      ctx.strokeStyle = '#10131a';
+      ctx.lineWidth = 1.4;
+      ctx.beginPath(); ctx.arc(0,5+sinkY,2.6,0,Math.PI*2); ctx.stroke();
+    }
   } else {
     ctx.fillStyle = '#10131a';
     ctx.beginPath(); ctx.arc(-6+lookX,-2+lookY,2.2,0,Math.PI*2); ctx.fill();
@@ -1132,7 +1241,11 @@ function startGame(){
   makeTiles();
   spawnJellies();
   turnNumber = 0;
+  spectating = false;
+  tutorialActive = true;
+  hoverCell = null;
   document.getElementById('overlay').classList.remove('show');
+  document.getElementById('overlayWatchBtn').style.display = 'none';
   document.getElementById('restartBtn').disabled = false;
   document.getElementById('startBtn').disabled = true;
   document.getElementById('log').innerHTML = '';
@@ -1142,9 +1255,18 @@ function startGame(){
 }
 
 function nextTurn(){
+  disarmResolutionWatchdog();
   turnNumber++;
   const player = jellies.find(j=>j.isPlayer);
-  if(!player.alive || checkWin()) return;
+
+  if(!player.alive){
+    if(spectating && !checkWin()){
+      phase = 'resolving';
+      setTimeout(autoAdvanceSpectatorTurn, 500);
+    }
+    return;
+  }
+  if(checkWin()) return;
 
   phase = 'picking';
   selectedTile = null;
@@ -1156,7 +1278,9 @@ function nextTurn(){
     return;
   }
   reachableSet = new Set(reachableTiles(player.x, player.y, moveRangeFor(player)).map(t=>t.x+','+t.y));
-  setBanner(`Turn ${turnNumber}: choose your jump`);
+  setBanner(tutorialActive
+    ? 'The icons move down before you land. Aim one key below the item you want.'
+    : `Turn ${turnNumber}: choose your jump`);
   renderSidebar();
   drawBoard();
 
@@ -1205,6 +1329,17 @@ canvas.addEventListener('click', (e)=>{
   if(!reachableSet.has(gx+','+gy)) return;
   commitPlayerMove({x:gx,y:gy});
 });
+
+canvas.addEventListener('mousemove', (e)=>{
+  if(!tutorialActive || phase !== 'picking'){ hoverCell = null; return; }
+  const rect = canvas.getBoundingClientRect();
+  const mx = (e.clientX-rect.left) * (canvas.width/rect.width);
+  const my = (e.clientY-rect.top) * (canvas.height/rect.height);
+  const gx = Math.floor((mx-PAD)/CELL);
+  const gy = Math.floor((my-PAD)/CELL);
+  hoverCell = reachableSet.has(gx+','+gy) ? {x:gx,y:gy} : null;
+});
+canvas.addEventListener('mouseleave', ()=>{ hoverCell = null; });
 
 // What tile will actually occupy (x,y) once shiftTilesDown() runs before the
 // jump. Row 0 is freshly generated and unknowable in advance.
@@ -1294,13 +1429,43 @@ function commitPlayerMove(tile){
   clearInterval(timerId);
   document.getElementById('timerFill').style.width='0%';
   selectedTile = tile;
-  phase = 'resolving';
-  setBanner('Rivals are choosing...');
+  tutorialActive = false;
+  hoverCell = null;
 
   const player = jellies.find(j=>j.isPlayer);
   player.targetX = tile.x; player.targetY = tile.y;
+  resolveAllMoves('Rivals are choosing...');
+}
 
-  // AI picks
+// Shared by the human's move and, in spectator mode, the auto-advanced
+// "turn" once the player is out — AI picks for everyone else, tiles shift,
+// everyone jumps.
+// Safety net: turn resolution should never legitimately take anywhere near
+// this long (worst observed case is ~6s with a heavy weapon volley plus a
+// death hold). If something stalls a resolving phase indefinitely for any
+// reason, force the game back to a playable state rather than hang forever.
+let resolutionWatchdog = null;
+function armResolutionWatchdog(){
+  clearTimeout(resolutionWatchdog);
+  resolutionWatchdog = setTimeout(()=>{
+    if(phase !== 'resolving') return; // resolved normally already
+    jellies.forEach(j=>{ if(j.dying) j.dying = false; });
+    hitStopUntil = 0;
+    renderSidebar();
+    drawBoard();
+    if(!checkWin()){
+      phase = 'idle';
+      setTimeout(nextTurn, 300);
+    }
+  }, 12000);
+}
+function disarmResolutionWatchdog(){ clearTimeout(resolutionWatchdog); }
+
+function resolveAllMoves(bannerMsg){
+  armResolutionWatchdog();
+  phase = 'resolving';
+  setBanner(bannerMsg);
+
   for(const j of jellies){
     if(!j.alive || j.isPlayer) continue;
     if(j.frozen){
@@ -1323,6 +1488,13 @@ function commitPlayerMove(tile){
     drawBoard();
     setTimeout(resolveJump, 380);
   }, 280);
+}
+
+// Spectator mode: the player is out, but the AI jellies keep fighting.
+function autoAdvanceSpectatorTurn(){
+  const player = jellies.find(j=>j.isPlayer);
+  player.targetX = player.x; player.targetY = player.y;
+  resolveAllMoves('Watching the battle...');
 }
 
 // Physical jelly jump: a 110ms anticipation compress at the start tile, then
@@ -1516,10 +1688,15 @@ function runJellyOffQueue(queue, i, done){
 }
 
 function finishTurnResolution(){
+  const justDied = [];
   jellies.forEach(j=>{
     if(j.alive && j.hp <= 0){
       j.alive = false;
-      logMsg(`${j.name} wobbled apart and is out of the battle!`, 'hit');
+      j.dying = true;
+      j.dyingStart = performance.now();
+      j.deathCause = j.reaction ? j.reaction.type : 'launch';
+      justDied.push(j);
+      logMsg(`${j.name} wobbled apart and is out of the battle!`, 'elim');
       playSfx('out');
     }
     // Expire timed statuses (Invisible / Triple Jump) once their bonus turn has passed.
@@ -1530,6 +1707,18 @@ function finishTurnResolution(){
   renderSidebar();
   drawBoard();
 
+  if(justDied.length){
+    // Let the melt-into-a-puddle animation actually play before continuing.
+    setTimeout(()=>{
+      justDied.forEach(j=> j.dying = false);
+      drawBoard();
+      const w = checkWin();
+      if(w) return;
+      phase = 'idle';
+      setTimeout(nextTurn, 400);
+    }, 1700);
+    return;
+  }
   if(checkWin()) return;
 
   phase = 'idle';
@@ -1669,7 +1858,7 @@ function spawnWeaponBanner(label, color){
 function damageJelly(source, target, amt, hitType, forceDir, severity){
   if(target.shielded){
     target.shielded = false;
-    announce(`${target.name}'s shield absorbed the hit!`);
+    logMsg(`${target.name}'s shield absorbed the hit!`, 'heal');
     const px = boardToPx(target.px) + CELL/2, py = boardToPx(target.py) + CELL/2;
     spawnFloatText(px, py-30, 'BLOCKED', '#e8b23d');
     addShockwave(px, py, '#e8b23d', 40);
@@ -1685,7 +1874,9 @@ function damageJelly(source, target, amt, hitType, forceDir, severity){
   const dmg = source.rageCharge ? amt*2 : amt;
   target.hp -= dmg;
   playHitReaction(target, hitType || 'launch', forceDir, severity);
-  announce(`${source.name}'s attack hit ${target.name}${wasInvisible ? ', revealing them' : ''} (-${dmg} HP).`, 'hit');
+  // Logged (not announced) — the weapon's own banner already carries the
+  // headline, so per-target hits shouldn't keep stealing the spotlight.
+  logMsg(`${source.name}'s attack hit ${target.name}${wasInvisible ? ', revealing them' : ''} (-${dmg} HP).`, 'hit');
   playSfx('explosion');
   playSfx(dmg >= 30 ? 'yelpBig' : 'yelpSmall'); // victim's own pain vocalization
   const px = boardToPx(target.px) + CELL/2, py = boardToPx(target.py) + CELL/2;
@@ -2349,23 +2540,45 @@ function resolveActualTileEffect(j, type, done){
 function checkWin(){
   const alive = jellies.filter(j=>j.alive);
   const player = jellies.find(j=>j.isPlayer);
-  if(alive.length <= 1 || !player.alive){
+  const overlay = document.getElementById('overlay');
+  const title = document.getElementById('overlayTitle');
+  const text = document.getElementById('overlayText');
+  const watchBtn = document.getElementById('overlayWatchBtn');
+
+  // Player just died but rivals remain, and they haven't chosen to spectate
+  // yet — offer the choice instead of ending the match outright.
+  if(!player.alive && alive.length > 1 && !spectating){
+    disarmResolutionWatchdog();
+    phase = 'gameover';
+    clearInterval(timerId);
+    title.textContent = 'You Are Out';
+    text.textContent = 'Wobbled out of the arena. The battle continues without you...';
+    logMsg(`${player.name} is OUT.`, 'elim');
+    playSfx('lose');
+    watchBtn.style.display = '';
+    document.getElementById('overlayBtn').textContent = 'Play Again';
+    overlay.classList.add('show');
+    setBanner(`${player.name} is out, the rivals fight on`);
+    return true;
+  }
+
+  if(alive.length <= 1){
+    disarmResolutionWatchdog();
     phase = 'gameover';
     clearInterval(timerId);
     stopMusic();
-    const overlay = document.getElementById('overlay');
-    const title = document.getElementById('overlayTitle');
-    const text = document.getElementById('overlayText');
+    watchBtn.style.display = 'none';
+    document.getElementById('overlayBtn').textContent = 'Play Again';
     if(player.alive && alive.length===1 && alive[0].isPlayer){
       title.textContent = 'You Win!';
       text.textContent = 'Every rival jelly has been wobbled out of the arena.';
       logMsg('VICTORY! You are the last jelly standing.', 'win');
       playSfx('win');
     } else {
-      title.textContent = 'Wobbled Out';
+      title.textContent = spectating ? 'Battle Over' : 'Wobbled Out';
       text.textContent = `${alive[0] ? alive[0].name : 'A rival'} claims the arena this time.`;
-      logMsg('Defeat. Better luck next battle.', 'hit');
-      playSfx('lose');
+      logMsg(`${alive[0] ? alive[0].name : 'A rival'} wins the battle!`, 'win');
+      playSfx(spectating ? 'win' : 'lose');
     }
     overlay.classList.add('show');
     setBanner('Battle over');
@@ -2396,6 +2609,12 @@ document.getElementById('rulesBtn').addEventListener('click', ()=>{
 });
 document.getElementById('restartBtn').addEventListener('click', startGame);
 document.getElementById('overlayBtn').addEventListener('click', startGame);
+document.getElementById('overlayWatchBtn').addEventListener('click', ()=>{
+  spectating = true;
+  document.getElementById('overlay').classList.remove('show');
+  document.getElementById('overlayWatchBtn').style.display = 'none';
+  nextTurn();
+});
 
 /* idle render loop for jelly wobble even between turns */
 function idleLoop(){
