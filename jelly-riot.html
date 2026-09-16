@@ -133,6 +133,8 @@
   }
   .timer-track{width:100%;height:4px;background:#1c2330;margin-top:8px;border-radius:2px;overflow:hidden;}
   .timer-fill{height:100%;background:var(--gold);width:100%;}
+  .timer-fill.timer-pulse{animation:timerPulse 0.5s ease-in-out infinite;}
+  @keyframes timerPulse{ 0%,100%{opacity:1;} 50%{opacity:0.45;} }
 
   .overlay{
     position:fixed;inset:0;background:rgba(6,7,10,.88);display:none;align-items:center;justify-content:center;z-index:50;
@@ -292,7 +294,8 @@ let turnNumber = 0;
 let phase = 'idle'; // idle, picking, resolving, gameover
 let selectedTile = null;
 let timerId = null;
-let timerDuration = 3600;
+let timerDuration = 8000;
+let lastTickSecond = -1;
 let timerStart = 0;
 const TIMER_TICK = 60;
 
@@ -781,6 +784,7 @@ function drawJelly(cx,cy,j){
   if(j.frozen) badges.push('❄️');
   if(j.rageCharge) badges.push('☣️');
   if(j.tripleJump) badges.push('↗️');
+  if(j.handbagTurns > 0) badges.push('👜'+j.handbagTurns);
   if(badges.length){
     ctx.font='16px sans-serif';
     ctx.textAlign='center';
@@ -861,15 +865,30 @@ function nextTurn(){
   drawBoard();
 
   timerStart = performance.now();
+  lastTickSecond = -1;
   clearInterval(timerId);
+  const fill = document.getElementById('timerFill');
+  fill.classList.remove('timer-pulse');
   timerId = setInterval(()=>{
     const elapsed = performance.now() - timerStart;
+    const remaining = Math.max(0, timerDuration - elapsed);
     const pct = Math.max(0, 1 - elapsed/timerDuration);
-    const fill = document.getElementById('timerFill');
     fill.style.width = (pct*100)+'%';
     fill.style.background = pct > 0.5 ? 'var(--gold)' : pct > 0.22 ? '#e8912e' : '#ff4d4d';
+
+    // final 3 seconds: pulse the bar and tick once per second, without covering the board
+    if(remaining <= 3000){
+      fill.classList.add('timer-pulse');
+      const secondsLeft = Math.ceil(remaining/1000);
+      if(secondsLeft !== lastTickSecond && secondsLeft > 0){
+        lastTickSecond = secondsLeft;
+        playSfx('tick');
+      }
+    }
+
     if(elapsed >= timerDuration){
       clearInterval(timerId);
+      fill.classList.remove('timer-pulse');
       if(phase==='picking'){
         // auto-pick random reachable tile
         const opts = [...reachableSet];
@@ -1005,8 +1024,52 @@ function afterLanding(){
   drawBoard();
 
   resolveSingleLandings(singles, 0, () => {
-    runJellyOffQueue(jellyOffGroups, 0, finishTurnResolution);
+    runJellyOffQueue(jellyOffGroups, 0, () => {
+      const wielders = jellies.filter(j => j.alive && j.handbagTurns > 0);
+      resolveHandbagSwings(wielders, 0, finishTurnResolution);
+    });
   });
+}
+
+// Handbag isn't a one-shot explosion — for 3 of the wielder's turns, it
+// automatically swings at whoever is standing on an adjacent tile.
+function resolveHandbagSwings(list, i, done){
+  if(i >= list.length){ done(); return; }
+  const j = list[i];
+  if(!j.alive){ resolveHandbagSwings(list, i+1, done); return; }
+  j.handbagTurns -= 1;
+  const targets = otherJellies(j).filter(k => Math.max(Math.abs(k.x-j.x), Math.abs(k.y-j.y)) <= 1);
+  const tdef = TILE_DEFS.handbag;
+  const px = boardToPx(j.px)+CELL/2, py = boardToPx(j.py)+CELL/2;
+
+  if(!targets.length){
+    setTimeout(()=> resolveHandbagSwings(list, i+1, done), 200);
+    return;
+  }
+
+  spawnWeaponBanner('Handbag', tdef.color);
+  announce(`${j.name} swings the handbag at ${targets.map(t=>t.name).join(', ')}!`);
+  addShockwave(px, py, tdef.color, 45);
+  burst(px, py, tdef.color, 20);
+  playSfx('hit');
+  shake(9);
+
+  let idx = 0;
+  function hitNext(){
+    if(idx >= targets.length){
+      j.rageCharge = false;
+      renderSidebar();
+      drawBoard();
+      setTimeout(()=> resolveHandbagSwings(list, i+1, done), 300);
+      return;
+    }
+    damageJelly(j, targets[idx], 35);
+    renderSidebar();
+    drawBoard();
+    idx++;
+    setTimeout(hitNext, 120);
+  }
+  hitNext();
 }
 
 function runJellyOffQueue(queue, i, done){
@@ -1175,19 +1238,21 @@ function damageJelly(source, target, amt, style){
 // Laser is a straight line down the row+column instead of a square.
 // Random Drop is handled separately (see detonateRandomDrop) — it targets one
 // opponent with a falling-object sequence instead of a generic square blast.
+// Blast and Laser deal variable damage (distance-based / randomized) rather
+// than one flat number — dmgFn overrides def.dmg when present.
 const AOE_DEFS = {
-  nuke:       {dmg:18, radius:99,  shape:'square', label:'Nuke'},
-  handbag:    {dmg:14, radius:1,   shape:'square', label:'Handbag'},
-  laser:      {dmg:16, radius:0,   shape:'line',   label:'Laser'},
-  airstrike:  {dmg:20, radius:1,   shape:'random', label:'Air Strike'},
-  blast:      {dmg:10, radius:1,   shape:'square', label:'Blast'}
+  nuke:       {dmg:30, radius:99,  shape:'square', label:'Nuke'},
+  laser:      {radius:0,  shape:'line',   label:'Laser', dmgFn: () => (Math.random()<0.5 ? 25 : 30)},
+  airstrike:  {dmg:30, radius:1,   shape:'random', label:'Air Strike'},
+  blast:      {radius:4,  shape:'square', label:'Blast',
+               dmgFn: (dist) => dist<=1 ? 40 : dist<=2 ? 30 : 20}
 };
 
-// Object variants, weighted toward the lighter ones like the reference.
+// Object variants — damage matches the reference weights (axe/anvil/piano).
 const DROP_VARIANTS = [
-  {name:'a wrench',  icon:'🔧', dmg:14, weight:5},
-  {name:'an anvil',  icon:'🧱', dmg:20, weight:3},
-  {name:'a piano',   icon:'🎹', dmg:28, weight:1}
+  {name:'a heavy axe', icon:'🪓', dmg:25, weight:5},
+  {name:'a one-ton anvil', icon:'⚓', dmg:35, weight:3},
+  {name:'an upright piano', icon:'🎹', dmg:50, weight:1}
 ];
 function pickDropVariant(){
   const total = DROP_VARIANTS.reduce((s,v)=>s+v.weight,0);
@@ -1227,6 +1292,7 @@ function detonateRandomDrop(j, done){
       flashScreen(tdef.color, 0.22);
       shake(12);
       damageJelly(j, target, variant.dmg, 'flatten');
+      j.rageCharge = false;
       renderSidebar();
       drawBoard();
       // hold on the flattened pose so the "peel off and reform" is visible
@@ -1310,8 +1376,18 @@ function detonate(j, type, done){
     // instead of every victim reacting on the exact same frame.
     let idx = 0;
     function hitNext(){
-      if(idx >= hits.length){ done(); return; }
-      damageJelly(j, hits[idx], def.dmg);
+      if(idx >= hits.length){ j.rageCharge = false; done(); return; }
+      const target = hits[idx];
+      let dmg;
+      if(type === 'blast'){
+        const dist = Math.max(Math.abs(target.x-j.x), Math.abs(target.y-j.y));
+        dmg = def.dmgFn(dist);
+      } else if(def.dmgFn){
+        dmg = def.dmgFn();
+      } else {
+        dmg = def.dmg;
+      }
+      damageJelly(j, target, dmg);
       renderSidebar();
       drawBoard();
       idx++;
@@ -1356,6 +1432,11 @@ function applyTileEffect(j, done){
       announce(`${j.name} raised a shield.`);
       playSfx('pickup');
       break;
+    case 'handbag':
+      j.handbagTurns = (j.handbagTurns || 0) + 3;
+      announce(`${j.name} picked up a handbag — swinging at adjacent rivals for the next 3 turns!`);
+      playSfx('pickup');
+      break;
     case 'freeze': {
       const pool = jelliesWithin(j, 2);
       if(pool.length){
@@ -1393,15 +1474,17 @@ function applyTileEffect(j, done){
     }
 
     // ── Hazard tile ──
-    case 'mine':
-      j.hp -= 10;
+    case 'mine': {
+      const dmg = 20 + Math.floor(Math.random()*30); // 20–49
+      j.hp -= dmg;
       j.hitPunch = performance.now();
       j.hitStyle = 'normal';
-      announce(`${j.name} stepped on a mine (-10 HP).`, 'hit');
+      announce(`${j.name} stepped on a mine (-${dmg} HP).`, 'hit');
       playSfx('explosion');
-      spawnFloatText(boardToPx(j.px)+CELL/2, boardToPx(j.py)+CELL/2-32, '-10 HEALTH', '#ff3b3b', true);
+      spawnFloatText(boardToPx(j.px)+CELL/2, boardToPx(j.py)+CELL/2-32, `-${dmg} HEALTH`, '#ff3b3b', true);
       shake(10);
       break;
+    }
 
     // ── Health tiles ──
     case 'superjelly':
@@ -1410,16 +1493,16 @@ function applyTileEffect(j, done){
       playSfx('heal');
       spawnFloatText(boardToPx(j.px)+CELL/2, boardToPx(j.py)+CELL/2-32, 'FULL HEAL', '#5ee08a', true);
       break;
-    case 'health':
-      j.hp = Math.min(100, j.hp + 12);
-      announce(`${j.name} snacked on some jelly (+12 HP).`, 'heal');
+    case 'health': {
+      const heal = 30 + Math.floor(Math.random()*20); // 30–49
+      j.hp = Math.min(100, j.hp + heal);
+      announce(`${j.name} snacked on some jelly (+${heal} HP).`, 'heal');
       playSfx('heal');
-      spawnFloatText(boardToPx(j.px)+CELL/2, boardToPx(j.py)+CELL/2-32, '+12 HEALTH', '#5ee08a', true);
+      spawnFloatText(boardToPx(j.px)+CELL/2, boardToPx(j.py)+CELL/2-32, `+${heal} HEALTH`, '#5ee08a', true);
       break;
+    }
   }
 
-  // A used attack clears the attacker's own rage charge.
-  if(TILE_DEFS[type] && TILE_DEFS[type].cat === 'weapon' && j.rageCharge) j.rageCharge = false;
   done();
 }
 
