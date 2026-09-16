@@ -1264,13 +1264,26 @@ function resolveJump(){
 
 // Resolve landings one at a time (not all in one silent instant) so each hit
 // is actually watchable — the whole point of the game is *seeing* the damage
-// happen. Non-damaging tiles go first, weapons resolve last for a dramatic finish.
-const LANDING_ORDER = {teleport:0, status:1, health:2, hazard:3, weapon:4};
-function landingPriority(j){
-  const t = tileAt(j.x, j.y);
-  if(t.type === 'plain') return -1;
-  return LANDING_ORDER[TILE_DEFS[t.type].cat] ?? 5;
+// happen.
+function shuffle(arr){
+  const a = arr.slice();
+  for(let i=a.length-1; i>0; i--){
+    const k = Math.floor(Math.random()*(i+1));
+    [a[i],a[k]] = [a[k],a[i]];
+  }
+  return a;
 }
+
+// Which broad phase a tile type resolves in, and the order those phases run.
+// Debonus gets its own phase (ahead of the rest) so it can strip bonuses
+// before those bonuses might otherwise matter this same cycle.
+const RESOLUTION_GROUP = {
+  teleport:'teleport', debonus:'debonus',
+  health:'other', superjelly:'other', mine:'other', triplejump:'other',
+  freeze:'other', shield:'other', rage:'other', invisible:'other',
+  airstrike:'weapon', nuke:'weapon', randomdrop:'weapon', laser:'weapon', blast:'weapon', handbag:'weapon'
+};
+const RESOLUTION_PHASE_ORDER = ['teleport','debonus','other','weapon'];
 
 function resolveSingleLandings(list, i, done){
   if(i >= list.length){ done(); return; }
@@ -1281,31 +1294,53 @@ function resolveSingleLandings(list, i, done){
   });
 }
 
+// Builds the phase-ordered, shuffled-within-phase queue and resolves it.
+function resolveTileEffectPhases(eligible, done){
+  const byPhase = {teleport:[], debonus:[], other:[], weapon:[]};
+  eligible.forEach(j=>{
+    if(!j.alive || j.knockedThisCycle) return; // Jelly Off losers sit this cycle out
+    const t = tileAt(j.x, j.y);
+    if(t.type === 'plain') return;
+    const phase = RESOLUTION_GROUP[t.type] || 'other';
+    byPhase[phase].push(j);
+  });
+  eligible.forEach(j => { j.knockedThisCycle = false; });
+
+  const queue = [];
+  RESOLUTION_PHASE_ORDER.forEach(p => queue.push(...shuffle(byPhase[p])));
+  resolveSingleLandings(queue, 0, done);
+}
+
 function afterLanding(){
-  // group by tile
+  // group by landed tile to find Jelly Off collisions
   const groups = {};
   for(const j of jellies){
     if(!j.alive) continue;
     const key = j.x+','+j.y;
     (groups[key] = groups[key]||[]).push(j);
   }
-
   const jellyOffGroups = [];
-  const singles = [];
+  const soloLandings = [];
   for(const key in groups){
     const group = groups[key];
     if(group.length >= 2) jellyOffGroups.push(group);
-    else singles.push(group[0]);
+    else soloLandings.push(group[0]);
   }
-  singles.sort((a,b)=> landingPriority(a) - landingPriority(b));
 
   renderSidebar();
   drawBoard();
 
-  resolveSingleLandings(singles, 0, () => {
+  // 1. Handbags already active BEFORE this landing swing first, in random
+  //    order. A handbag picked up THIS cycle doesn't swing until a future one.
+  const existingWielders = shuffle(jellies.filter(j => j.alive && j.handbagTurns > 0));
+
+  resolveHandbagSwings(existingWielders, 0, () => {
+    // 2. Jelly Off conflicts resolve next.
     runJellyOffQueue(jellyOffGroups, 0, () => {
-      const wielders = jellies.filter(j => j.alive && j.handbagTurns > 0);
-      resolveHandbagSwings(wielders, 0, finishTurnResolution);
+      // 3-6. Teleport -> Debonus -> other non-weapon -> weapon, each phase
+      // shuffled. Jelly Off winners (undisplaced) are eligible; losers aren't.
+      const winners = jellyOffGroups.map(g => g.__winner).filter(Boolean);
+      resolveTileEffectPhases(soloLandings.concat(winners), finishTurnResolution);
     });
   });
 }
@@ -1404,6 +1439,10 @@ function applyJellyOffOutcome(rolls){
   shake(10);
   const cx = boardToPx(winner.jelly.px) + CELL/2, cy = boardToPx(winner.jelly.py) + CELL/2;
   burst(cx, cy, '#e8b23d', 18);
+
+  const usedDestinations = new Set([winner.jelly.x+','+winner.jelly.y]);
+  const dirs8 = [{x:1,y:0},{x:-1,y:0},{x:0,y:1},{x:0,y:-1},{x:1,y:1},{x:1,y:-1},{x:-1,y:1},{x:-1,y:-1}];
+
   for(let i=1;i<rolls.length;i++){
     const loser = rolls[i].jelly;
     if(loser.shielded){
@@ -1414,17 +1453,28 @@ function applyJellyOffOutcome(rolls){
     loser.hp -= 15;
     logMsg(`${loser.name} took a hit (-15 HP).`, 'hit');
     burst(cx, cy, loser.color, 12);
-    const dx = Math.sign(loser.x - winner.jelly.x) || (Math.random()<0.5?-1:1);
-    const dy = Math.sign(loser.y - winner.jelly.y) || (Math.random()<0.5?-1:1);
-    const nx = loser.x + dx, ny = loser.y + dy;
-    if(!inBounds(nx,ny)){
-      // Pinned against the edge — extra damage instead of an automatic
-      // elimination, so only HP reaching 0 actually knocks someone out.
-      loser.hp -= 15;
-      logMsg(`${loser.name} was pinned against the edge (-15 HP).`, 'hit');
-    } else {
-      loser.x = nx; loser.y = ny; loser.px = nx; loser.py = ny;
-    }
+
+    // Punch them into a random valid adjacent key — never off the board,
+    // and avoid stacking two losers on the same destination when another
+    // free key is available.
+    const preferDx = Math.sign(loser.x - winner.jelly.x);
+    const preferDy = Math.sign(loser.y - winner.jelly.y);
+    const candidates = dirs8
+      .map(d => ({x: loser.x+d.x, y: loser.y+d.y}))
+      .filter(c => inBounds(c.x, c.y));
+    candidates.sort((a,b)=>{
+      const aAway = (Math.sign(a.x-loser.x)===preferDx && Math.sign(a.y-loser.y)===preferDy) ? 0 : 1;
+      const bAway = (Math.sign(b.x-loser.x)===preferDx && Math.sign(b.y-loser.y)===preferDy) ? 0 : 1;
+      if(aAway !== bAway) return aAway - bAway;
+      const aUsed = usedDestinations.has(a.x+','+a.y) ? 1 : 0;
+      const bUsed = usedDestinations.has(b.x+','+b.y) ? 1 : 0;
+      return aUsed - bUsed;
+    });
+    const dest = candidates[0]; // a 7x7 board always has at least one in-bounds neighbor
+    usedDestinations.add(dest.x+','+dest.y);
+    loser.x = dest.x; loser.y = dest.y; loser.px = dest.x; loser.py = dest.y;
+    // Whatever key they land on, its icon (if any) sits out this cycle.
+    loser.knockedThisCycle = true;
   }
 }
 
@@ -1466,6 +1516,7 @@ async function runJellyOffAnimation(group){
   await delay(700);
 
   applyJellyOffOutcome(rolls);
+  group.__winner = rolls[0].jelly;
   renderSidebar();
 
   row.querySelectorAll('.jof-jelly').forEach(el=>el.classList.add('jof-shrink'));
@@ -2056,9 +2107,20 @@ function applyTileEffect(j, done){
       playSfx('pickup');
       break;
     case 'debonus': {
-      const targets = jelliesWithin(j, 2);
-      targets.forEach(k => { k.shielded = false; k.invisible = false; k.rageCharge = false; k.tripleJump = false; k.handbagTurns = 0; });
-      announce(targets.length ? `${j.name} disarmed nearby opponents' bonuses.` : `${j.name} looked for bonuses to disarm, but found none nearby.`);
+      const targets = otherJellies(j); // every living enemy, no range limit
+      targets.forEach(k => {
+        const removed = [];
+        if(k.shielded){ k.shielded = false; removed.push('🛡️'); }
+        if(k.invisible){ k.invisible = false; k.invisibleUntilTurn = undefined; removed.push('🕶️'); }
+        if(k.rageCharge){ k.rageCharge = false; removed.push('☣️'); }
+        if(k.tripleJump){ k.tripleJump = false; k.tripleJumpUntilTurn = undefined; removed.push('↗️'); }
+        if(k.handbagTurns > 0){ k.handbagTurns = 0; removed.push('👜'); }
+        if(removed.length){
+          const px = boardToPx(k.px)+CELL/2, py = boardToPx(k.py)+CELL/2;
+          removed.forEach((icon,i) => spawnFloatText(px + (i-removed.length/2)*10, py-26, icon, '#8dff6b'));
+        }
+      });
+      announce(targets.length ? `${j.name} disarmed every opponent's bonuses!` : `${j.name} looked for bonuses to disarm, but there was no one else in the battle.`);
       playSfx('pickup');
       break;
     }
@@ -2073,14 +2135,14 @@ function applyTileEffect(j, done){
       playSfx('pickup');
       break;
     case 'freeze': {
-      const pool = jelliesWithin(j, 2);
+      const pool = otherJellies(j); // anywhere on the board, not just nearby
       if(pool.length){
         const target = pool[Math.floor(Math.random()*pool.length)];
         target.frozen = true;
         announce(`${j.name} froze ${target.name} in place!`);
         playSfx('iceForm');
       } else {
-        announce(`${j.name} tried to freeze someone, but no one was close enough.`);
+        announce(`${j.name} tried to freeze someone, but there was no one else in the battle.`);
         playSfx('pickup');
       }
       break;
