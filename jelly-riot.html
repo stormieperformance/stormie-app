@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Jelly Riot — Stormie Games</title>
+<title>Jelly Riot - Stormie Games</title>
 <style>
   :root{
     --gold:#e8b23d;
@@ -212,7 +212,7 @@
   </div>
 </div>
 
-<footer>stormie.app — jelly riot</footer>
+<footer>stormie.app: jelly riot</footer>
 
 <div class="overlay show" id="rulesOverlay">
   <div class="overlay-card" style="max-width:400px;">
@@ -221,15 +221,15 @@
       <li><b>Goal:</b> be the last jelly wobbling. 3 rivals, 1 arena.</li>
       <li>Each turn, click a tile within <b>2 squares</b> of you to jump there.</li>
       <li>16 special tiles, 5 kinds: <b>Weapon</b> tiles explode the instant you land on them, <b>Status</b> tiles buff you or debuff nearby rivals, <b>Teleport</b> flings you somewhere random, <b>Hazard</b> tiles hurt you, and <b>Health</b> tiles heal you.</li>
-      <li>Land on a weapon tile and it goes off right there on the board — a <b>Bomb-type Blast</b> or <b>Handbag</b> hits a 3×3 area around you, <b>Laser</b> sweeps your whole row and column, and <b>Nuke</b> hits the entire arena.</li>
+      <li>Land on a weapon tile and it goes off right there on the board: a <b>Bomb-type Blast</b> or <b>Handbag</b> hits a 3×3 area around you, <b>Laser</b> sweeps your whole row and column, and <b>Nuke</b> hits the entire arena.</li>
       <li>Icons drift <b>south</b> every turn and fall off the map, so aim for where one is <i>heading</i>, not where it sits now.</li>
-      <li>Land on the <b>same tile</b> as a rival and it's a <b>Jelly Off</b> — everyone rolls, the winner holds the tile and punches the rest away.</li>
+      <li>Land on the <b>same tile</b> as a rival and it's a <b>Jelly Off</b>, and everyone rolls, the winner holds the tile and punches the rest away.</li>
       <li>Get punched off the edge of the board and you're <b>out</b>.</li>
     </ul>
     <label style="display:block;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim);margin-bottom:6px;">Name your jelly</label>
     <input id="playerNameInput" type="text" maxlength="14" placeholder="Your jelly's name" value="You"
       style="width:100%;padding:9px 10px;margin-bottom:18px;background:var(--panel-2);border:1px solid var(--gold-dim);color:var(--text);border-radius:2px;font-size:13px;">
-    <button class="primary" id="rulesStartBtn">Got it — Start Battle</button>
+    <button class="primary" id="rulesStartBtn">Got it, Start Battle</button>
   </div>
 </div>
 
@@ -421,6 +421,33 @@ function drawBoard(){
     ctx.lineWidth = isReach ? 2 : 1;
     roundRect(px+2,py+2,CELL-4,CELL-4,6);
     ctx.stroke();
+
+    // keycap bevel: dark bottom-right edge (the key's side wall), light
+    // top-left edge (catching the light), plus a soft glossy sheen
+    const isPressed = landFlashes.some(f => f.x===t.x && f.y===t.y && (now - f.start) < 220);
+    ctx.save();
+    ctx.beginPath();
+    roundRect(px+2,py+2,CELL-4,CELL-4,6);
+    ctx.clip();
+    ctx.strokeStyle = isPressed ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.38)';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(px+CELL-4, py+4);
+    ctx.lineTo(px+CELL-4, py+CELL-4);
+    ctx.lineTo(px+4, py+CELL-4);
+    ctx.stroke();
+    ctx.strokeStyle = isPressed ? 'rgba(0,0,0,0.25)' : 'rgba(255,255,255,0.09)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(px+4, py+CELL-7);
+    ctx.lineTo(px+4, py+4);
+    ctx.lineTo(px+CELL-7, py+4);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.ellipse(px+CELL*0.32, py+CELL*0.3, CELL*0.26, CELL*0.14, -0.4, 0, Math.PI*2);
+    ctx.fillStyle = 'rgba(255,255,255,0.035)';
+    ctx.fill();
+    ctx.restore();
 
     if(t.type !== 'plain'){
       const def = TILE_DEFS[t.type];
@@ -1080,11 +1107,12 @@ function nextTurn(){
   if(player.frozen){
     player.frozen = false;
     logMsg(`${player.name} is frozen solid and can't move this turn!`, 'hit');
+    playSfx('iceCrack');
     commitPlayerMove({x:player.x, y:player.y});
     return;
   }
   reachableSet = new Set(reachableTiles(player.x, player.y, moveRangeFor(player)).map(t=>t.x+','+t.y));
-  setBanner(`Turn ${turnNumber} — choose your jump`);
+  setBanner(`Turn ${turnNumber}: choose your jump`);
   renderSidebar();
   drawBoard();
 
@@ -1151,6 +1179,7 @@ function commitPlayerMove(tile){
       j.frozen = false;
       j.targetX = j.x; j.targetY = j.y;
       logMsg(`${j.name} is frozen solid and can't move this turn!`, 'hit');
+      playSfx('iceCrack');
       continue;
     }
     const opts = reachableTiles(j.x, j.y, moveRangeFor(j));
@@ -1299,27 +1328,32 @@ function resolveHandbagSwings(list, i, done){
 
   spawnWeaponBanner('Handbag', tdef.color);
   announce(`${j.name} swings the handbag at ${targets.map(t=>t.name).join(', ')}!`);
-  addShockwave(px, py, tdef.color, 45);
-  burst(px, py, tdef.color, 20);
-  playSfx('hit');
-  shake(9);
+  playSfx('handbagSwing'); // anticipation whoosh before the impact lands
+  drawBoard();
 
-  let idx = 0;
-  function hitNext(){
-    if(idx >= targets.length){
-      j.rageCharge = false;
+  setTimeout(()=>{
+    addShockwave(px, py, tdef.color, 45);
+    burst(px, py, tdef.color, 20);
+    playSfx('handbagWhack');
+    shake(9);
+
+    let idx = 0;
+    function hitNext(){
+      if(idx >= targets.length){
+        j.rageCharge = false;
+        renderSidebar();
+        drawBoard();
+        setTimeout(()=> resolveHandbagSwings(list, i+1, done), 300);
+        return;
+      }
+      damageJelly(j, targets[idx], 35, 'sideWhack', dirBetween(j, targets[idx]), 1);
       renderSidebar();
       drawBoard();
-      setTimeout(()=> resolveHandbagSwings(list, i+1, done), 300);
-      return;
+      idx++;
+      setTimeout(hitNext, 120);
     }
-    damageJelly(j, targets[idx], 35, 'sideWhack', dirBetween(j, targets[idx]), 1);
-    renderSidebar();
-    drawBoard();
-    idx++;
-    setTimeout(hitNext, 120);
-  }
-  hitNext();
+    hitNext();
+  }, 150);
 }
 
 function runJellyOffQueue(queue, i, done){
@@ -1481,8 +1515,9 @@ function damageJelly(source, target, amt, hitType, forceDir, severity){
   const dmg = source.rageCharge ? amt*2 : amt;
   target.hp -= dmg;
   playHitReaction(target, hitType || 'launch', forceDir, severity);
-  announce(`${source.name}'s attack hit ${target.name}${wasInvisible ? ' — revealing them' : ''} (-${dmg} HP).`, 'hit');
+  announce(`${source.name}'s attack hit ${target.name}${wasInvisible ? ', revealing them' : ''} (-${dmg} HP).`, 'hit');
   playSfx('explosion');
+  playSfx(dmg >= 30 ? 'yelpBig' : 'yelpSmall'); // victim's own pain vocalization
   const px = boardToPx(target.px) + CELL/2, py = boardToPx(target.py) + CELL/2;
   burst(px, py, '#ff4d4d', 14);
   spawnFloatText(px, py-32, `-${dmg} HEALTH`, '#ff3b3b', true);
@@ -1666,7 +1701,7 @@ function detonateAirStrike(j, done){
     targets.push({x: Math.floor(Math.random()*GRID), y: Math.floor(Math.random()*GRID), active:true});
   }
   airStrikeReticles = targets;
-  announce(`${j.name} calls in an Air Strike — ${missileCount} missiles incoming!`);
+  announce(`${j.name} calls in an Air Strike, ${missileCount} missiles incoming!`);
   drawBoard();
 
   const reticleDelay = 350; // brief warning before the first missile drops
@@ -1728,7 +1763,7 @@ function detonateLaser(j, done){
     const cellKeys = new Set(lineCells.map(c=>c.x+','+c.y));
     const hits = otherJellies(j).filter(k => cellKeys.has(k.x+','+k.y));
     announce(hits.length
-      ? `${j.name}'s Laser sweeps the row and column — hitting ${hits.map(h=>h.name).join(', ')}!`
+      ? `${j.name}'s Laser sweeps the row and column, hitting ${hits.map(h=>h.name).join(', ')}!`
       : `${j.name}'s Laser sweeps the row and column, but hits no one.`);
     drawBoard();
 
@@ -1790,7 +1825,7 @@ function detonateNuke(j, done){
         scorchUntil = performance.now() + 1800;
         const hits = otherJellies(j);
         announce(hits.length
-          ? `${j.name} triggers a NUKE — ${hits.map(h=>h.name).join(', ')} caught in the blast!`
+          ? `${j.name} triggers a NUKE, ${hits.map(h=>h.name).join(', ')} caught in the blast!`
           : `${j.name} triggers a NUKE, but no one else is around.`);
         let idx = 0;
         function hitNext(){
@@ -1938,7 +1973,7 @@ function detonate(j, type, done){
   // white/warning before anything actually goes off.
   spawnWeaponBanner(def.label, tdef.color);
   markExplosion(cells, '#ffffff');
-  playSfx('telegraph');
+  playSfx(type === 'blast' ? 'blastCharge' : 'telegraph');
   drawBoard();
 
   setTimeout(()=>{
@@ -1948,7 +1983,7 @@ function detonate(j, type, done){
     burst(px, py, tdef.color, Math.min(40, 14 + cells.length));
     flashScreen(tdef.color, def.radius >= 2 ? 0.5 : 0.2);
     shake(6 + Math.min(20, cells.length));
-    playSfx('explosion');
+    playSfx(type === 'blast' ? 'pressureWave' : 'explosion');
 
     const cellKeys = new Set(cells.map(c=>c.x+','+c.y));
     const hits = otherJellies(j).filter(k => cellKeys.has(k.x+','+k.y));
@@ -2034,7 +2069,7 @@ function applyTileEffect(j, done){
       break;
     case 'handbag':
       j.handbagTurns = (j.handbagTurns || 0) + 3;
-      announce(`${j.name} picked up a handbag — swinging at adjacent rivals for the next 3 turns!`);
+      announce(`${j.name} picked up a handbag, swinging at adjacent rivals for the next 3 turns!`);
       playSfx('pickup');
       break;
     case 'freeze': {
@@ -2043,15 +2078,16 @@ function applyTileEffect(j, done){
         const target = pool[Math.floor(Math.random()*pool.length)];
         target.frozen = true;
         announce(`${j.name} froze ${target.name} in place!`);
+        playSfx('iceForm');
       } else {
         announce(`${j.name} tried to freeze someone, but no one was close enough.`);
+        playSfx('pickup');
       }
-      playSfx('pickup');
       break;
     }
     case 'rage':
       j.rageCharge = true;
-      announce(`${j.name} is enraged — their next attack deals double damage!`);
+      announce(`${j.name} is enraged, their next attack deals double damage!`);
       playSfx('pickup');
       break;
     case 'triplejump':
@@ -2228,6 +2264,16 @@ function playSfx(name){
       break;
     case 'countdownBeep': beep(880,0.09,'square',0.14); break;
     case 'nukeFlash': beep(2200,0.1,'square',0.2); beep(1600,0.12,'sawtooth',0.16,0.02); break;
+    case 'handbagSwing': beep(500,0.07,'sine',0.06); beep(380,0.09,'sine',0.06,0.05); break;
+    case 'handbagWhack': beep(140,0.09,'square',0.2); beep(90,0.1,'sine',0.15,0.02); break;
+    case 'blastCharge':
+      for(let i=0;i<5;i++) beep(120+i*30, 0.1, 'sawtooth', 0.06, i*0.09);
+      break;
+    case 'pressureWave': beep(80,0.28,'sine',0.22); beep(60,0.32,'square',0.14,0.03); break;
+    case 'iceForm': beep(1500,0.06,'sine',0.08); beep(1100,0.08,'sine',0.06,0.05); break;
+    case 'iceCrack': beep(900,0.04,'square',0.1); beep(500,0.05,'square',0.09,0.03); beep(300,0.07,'square',0.08,0.06); break;
+    case 'yelpSmall': beep(650,0.07,'triangle',0.09); break;
+    case 'yelpBig': beep(420,0.1,'triangle',0.13); beep(300,0.12,'triangle',0.1,0.06); break;
     case 'shift': beep(300,0.1,'sine',0.1); beep(260,0.12,'sine',0.08,0.05); break;
     case 'tick': beep(200+Math.random()*300,0.04,'square',0.06); break;
     case 'settle': beep(660,0.1,'square',0.14); beep(880,0.14,'square',0.16,0.08); break;
