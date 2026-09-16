@@ -133,6 +133,12 @@
   }
   .timer-track{width:100%;height:4px;background:#1c2330;margin-top:8px;border-radius:2px;overflow:hidden;}
   .timer-fill{height:100%;background:var(--gold);width:100%;}
+  .charges-bar{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;min-height:20px;}
+  .charge-chip{display:flex;align-items:center;gap:6px;background:var(--panel-2);border:1px solid var(--gold-dim);border-radius:20px;padding:6px 12px;font-size:13px;cursor:pointer;transition:transform .12s, border-color .12s;}
+  .charge-chip:hover{transform:translateY(-2px);border-color:var(--gold);}
+  .charge-chip.is-armed{border-color:var(--gold);box-shadow:0 0 0 2px rgba(232,178,61,.35);animation:chargePulse 1s ease-in-out infinite;}
+  @keyframes chargePulse{ 0%,100%{box-shadow:0 0 0 2px rgba(232,178,61,.35);} 50%{box-shadow:0 0 0 5px rgba(232,178,61,.15);} }
+  .charge-chip .cc-count{color:var(--gold);font-weight:700;}
 
   .overlay{
     position:fixed;inset:0;background:rgba(6,7,10,.88);display:none;align-items:center;justify-content:center;z-index:50;
@@ -190,6 +196,7 @@
     <canvas id="board" width="486" height="486"></canvas>
     <div class="banner" id="banner">Press Start to jump in</div>
     <div class="timer-track"><div class="timer-fill" id="timerFill"></div></div>
+    <div class="charges-bar" id="chargesBar"></div>
   </div>
 
   <div class="hud-card side">
@@ -218,7 +225,8 @@
     <ul class="rules-list">
       <li><b>Goal:</b> be the last jelly wobbling. 3 rivals, 1 arena.</li>
       <li>Each turn, click a tile within <b>2 squares</b> of you to jump there.</li>
-      <li>16 special tiles, 5 kinds: <b>Weapon</b> tiles hurt opponents around you, <b>Status</b> tiles buff you or debuff nearby rivals, <b>Teleport</b> flings you somewhere random, <b>Hazard</b> tiles hurt you, and <b>Health</b> tiles heal you.</li>
+      <li>16 special tiles, 5 kinds: <b>Weapon</b> tiles are collected as charges you fire off later, <b>Status</b> tiles buff you or debuff nearby rivals, <b>Teleport</b> flings you somewhere random, <b>Hazard</b> tiles hurt you, and <b>Health</b> tiles heal you.</li>
+      <li>Land on a weapon tile to add it to your charges (shown under the board). Tap a charge, then tap a rival jelly to unleash it on them — a <b>Nuke</b> charge hits every rival at once instead.</li>
       <li>Icons drift <b>south</b> every turn and fall off the map, so aim for where one is <i>heading</i>, not where it sits now.</li>
       <li>Land on the <b>same tile</b> as a rival and it's a <b>Jelly Off</b> — everyone rolls, the winner holds the tile and punches the rest away.</li>
       <li>Get punched off the edge of the board and you're <b>out</b>.</li>
@@ -345,7 +353,7 @@ function spawnJellies(){
     id, name:names[id], color:COLORS[id],
     x:corners[i].x, y:corners[i].y,
     px:corners[i].x, py:corners[i].y, // render pos (for animation)
-    hp:100, alive:true, weaponCharge:false,
+    hp:100, alive:true, weaponCharge:false, charges:[],
     isPlayer: id==='p1',
     wobble: Math.random()*Math.PI*2
   }));
@@ -690,17 +698,55 @@ function renderSidebar(){
       <div class="jelly-info">
         <div class="jelly-name"><span>${j.name}</span><span>${j.alive ? Math.max(0,Math.round(j.hp)) : 'OUT'}</span></div>
         <div class="hp-track"><div class="hp-fill" style="width:${Math.max(0,j.hp)}%"></div></div>
-        ${j.weaponCharge ? '<div class="weapon-tag">Weapon Charged</div>' : ''}
+        ${j.charges && j.charges.length ? `<div class="weapon-tag">${j.charges.length} charge${j.charges.length>1?'s':''}</div>` : ''}
         ${j.shielded ? '<div class="weapon-tag">Shielded</div>' : ''}
       </div>`;
     list.appendChild(row);
   }
+  renderChargesBar();
+}
+
+// Weapon charge chosen by the player, awaiting a target click on the canvas.
+let pendingCharge = null;
+
+function renderChargesBar(){
+  const bar = document.getElementById('chargesBar');
+  if(!bar) return;
+  const player = jellies.find(j=>j.isPlayer);
+  bar.innerHTML = '';
+  if(!player || !player.charges || !player.charges.length){
+    if(pendingCharge) pendingCharge = null;
+    return;
+  }
+  // group charges by type with counts
+  const counts = {};
+  player.charges.forEach(c => counts[c] = (counts[c]||0)+1);
+  Object.keys(counts).forEach(type => {
+    const def = TILE_DEFS[type];
+    const chip = document.createElement('div');
+    chip.className = 'charge-chip' + (pendingCharge === type ? ' is-armed' : '');
+    chip.innerHTML = `<span>${def.icon}</span><span>${def.label}</span><span class="cc-count">×${counts[type]}</span>`;
+    chip.addEventListener('click', () => {
+      if(phase !== 'picking') return;
+      if(WEAPON_DEFS[type].target === 'all'){
+        fireWeaponCharge(player, type, null);
+        pendingCharge = null;
+        renderChargesBar();
+      } else {
+        pendingCharge = (pendingCharge === type) ? null : type;
+        setBanner(pendingCharge ? `Tap a rival jelly to hit them with ${def.label}` : `Turn ${turnNumber} — choose your jump`);
+        renderChargesBar();
+      }
+    });
+    bar.appendChild(chip);
+  });
 }
 
 function startGame(){
   makeTiles();
   spawnJellies();
   turnNumber = 0;
+  pendingCharge = null;
   document.getElementById('overlay').classList.remove('show');
   document.getElementById('restartBtn').disabled = false;
   document.getElementById('startBtn').disabled = true;
@@ -755,6 +801,20 @@ canvas.addEventListener('click', (e)=>{
   const my = (e.clientY-rect.top) * (canvas.height/rect.height);
   const gx = Math.floor((mx-PAD)/CELL);
   const gy = Math.floor((my-PAD)/CELL);
+
+  if(pendingCharge){
+    const player = jellies.find(j=>j.isPlayer);
+    const target = jellies.find(k => k.alive && !k.isPlayer && k.x===gx && k.y===gy);
+    if(target){
+      fireWeaponCharge(player, pendingCharge, target);
+      pendingCharge = null;
+      setBanner(`Turn ${turnNumber} — choose your jump`);
+    } else {
+      setBanner(`No rival jelly there — tap a rival to use ${TILE_DEFS[pendingCharge].label}, or click its chip again to cancel`);
+    }
+    return;
+  }
+
   if(!reachableSet.has(gx+','+gy)) return;
   commitPlayerMove({x:gx,y:gy});
 });
@@ -772,6 +832,14 @@ function commitPlayerMove(tile){
   // AI picks
   for(const j of jellies){
     if(!j.alive || j.isPlayer) continue;
+    // AI fires off charges before moving: prefers hitting the player, with decent odds.
+    if(j.charges && j.charges.length && Math.random() < 0.65){
+      const type = j.charges[Math.floor(Math.random()*j.charges.length)];
+      const wdef = WEAPON_DEFS[type];
+      const target = wdef.target === 'all' ? null :
+        (player.alive ? player : otherJellies(j).find(k=>k.alive));
+      if(wdef.target === 'all' || target) fireWeaponCharge(j, type, target);
+    }
     if(j.frozen){
       j.frozen = false;
       j.targetX = j.x; j.targetY = j.y;
@@ -996,62 +1064,63 @@ function damageJelly(source, target, amt){
   burst(px, py, '#ff4d4d', 14);
 }
 
+// Weapon tiles are now collected as charges, not used instantly — the player
+// (or AI) chooses when and on whom to unleash them.
+const WEAPON_DEFS = {
+  nuke:       {dmg:18, target:'all',    label:'Nuke'},
+  handbag:    {dmg:14, target:'one',    label:'Handbag'},
+  laser:      {dmg:16, target:'one',    label:'Laser'},
+  airstrike:  {dmg:20, target:'one',    label:'Air Strike'},
+  blast:      {dmg:10, target:'one',    label:'Blast'},
+  randomdrop: {dmg:12, target:'one',    label:'Random Drop'}
+};
+
+// Fire a collected weapon charge. target is required for single-target weapons,
+// ignored (hits everyone) for 'all' weapons like Nuke.
+function fireWeaponCharge(user, type, target){
+  const idx = user.charges.indexOf(type);
+  if(idx === -1) return false;
+  const def = WEAPON_DEFS[type];
+  const tdef = TILE_DEFS[type];
+  user.charges.splice(idx,1);
+
+  if(def.target === 'all'){
+    announce(`${user.name} unleashed a ${def.label} on everyone!`);
+    const px = boardToPx(user.px)+CELL/2, py = boardToPx(user.py)+CELL/2;
+    addShockwave(px, py, tdef.color, 100); addShockwave(px, py, '#ff4d4d', 130);
+    burst(px, py, tdef.color, 40); flashScreen(tdef.color, 0.5); shake(18);
+    otherJellies(user).forEach(k => damageJelly(user, k, def.dmg));
+  } else {
+    if(!target || !target.alive){ user.charges.push(type); return false; }
+    announce(`${user.name} used ${def.label} on ${target.name}!`);
+    const px = boardToPx(target.px)+CELL/2, py = boardToPx(target.py)+CELL/2;
+    addShockwave(px, py, tdef.color, 55);
+    burst(px, py, tdef.color, 22); flashScreen(tdef.color, 0.18); shake(6);
+    damageJelly(user, target, def.dmg);
+  }
+  renderSidebar();
+  drawBoard();
+  return true;
+}
+
 function applyTileEffect(j){
   const t = tileAt(j.x, j.y);
   if(t.type === 'plain') return;
-  triggerIconEffect(t.type, j);
   const type = t.type;
   t.type = 'plain';
 
-  switch(type){
-    // ── Weapon tiles: injure opponents around you ──
-    case 'nuke': {
-      announce(`${j.name} triggered the ultimate bomb, injuring every opponent!`);
-      otherJellies(j).forEach(k => damageJelly(j, k, 18));
-      break;
-    }
-    case 'handbag': {
-      const targets = jelliesWithin(j, 1);
-      announce(targets.length ? `${j.name} swung a handbag at anyone nearby.` : `${j.name} swung a handbag, but no one was close enough.`);
-      targets.forEach(k => damageJelly(j, k, 14));
-      break;
-    }
-    case 'laser': {
-      const targets = jelliesInLine(j);
-      announce(targets.length ? `${j.name} fired a laser down the row and column!` : `${j.name} fired a laser, but hit nothing.`);
-      targets.forEach(k => damageJelly(j, k, 16));
-      break;
-    }
-    case 'airstrike': {
-      const pool = otherJellies(j);
-      if(pool.length){
-        const target = pool[Math.floor(Math.random()*pool.length)];
-        announce(`${j.name} called in an air strike on ${target.name}!`);
-        damageJelly(j, target, 20);
-      } else {
-        announce(`${j.name} called in an air strike, but there was no one to hit.`);
-      }
-      break;
-    }
-    case 'blast': {
-      const targets = jelliesWithin(j, 3);
-      announce(targets.length ? `${j.name} set off a blast across the arena.` : `${j.name} set off a blast, but everyone was out of range.`);
-      targets.forEach(k => damageJelly(j, k, 10));
-      break;
-    }
-    case 'randomdrop': {
-      const pool = otherJellies(j);
-      if(pool.length){
-        const target = pool[Math.floor(Math.random()*pool.length)];
-        announce(`${j.name} dropped a random object on ${target.name}!`);
-        damageJelly(j, target, 12);
-      } else {
-        announce(`${j.name} grabbed a random drop, but had no one to drop it on.`);
-      }
-      break;
-    }
+  // Weapon tiles are collected as charges, not fired immediately.
+  if(WEAPON_DEFS[type]){
+    triggerIconEffect(type, j);
+    j.charges.push(type);
+    announce(`${j.name} picked up a ${WEAPON_DEFS[type].label} charge!`);
+    playSfx('pickup');
+    if(j.isPlayer) renderChargesBar();
+    return;
+  }
+  triggerIconEffect(type, j);
 
-    // ── Status modifier tiles ──
+  switch(type){
     case 'invisible':
       j.invisible = true;
       j.invisibleUntilTurn = turnNumber + 1;
