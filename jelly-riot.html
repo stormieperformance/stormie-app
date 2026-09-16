@@ -218,7 +218,7 @@
     <ul class="rules-list">
       <li><b>Goal:</b> be the last jelly wobbling. 3 rivals, 1 arena.</li>
       <li>Each turn, click a tile within <b>2 squares</b> of you to jump there.</li>
-      <li>Icons on the board do something big when you land on them — grab a <b>bomb</b> and the whole tile explodes, snack on <b>fruit</b> to heal, and more.</li>
+      <li>16 special tiles, 5 kinds: <b>Weapon</b> tiles hurt opponents around you, <b>Status</b> tiles buff you or debuff nearby rivals, <b>Teleport</b> flings you somewhere random, <b>Hazard</b> tiles hurt you, and <b>Health</b> tiles heal you.</li>
       <li>Icons drift <b>south</b> every turn and fall off the map, so aim for where one is <i>heading</i>, not where it sits now.</li>
       <li>Land on the <b>same tile</b> as a rival and it's a <b>Jelly Off</b> — everyone rolls, the winner holds the tile and punches the rest away.</li>
       <li>Get punched off the edge of the board and you're <b>out</b>.</li>
@@ -264,6 +264,27 @@ const COLORS = {
 };
 const NAMES = { p1:'You', p2:'Glob', p3:'Squish', p4:'Ooze' };
 
+// 16 special tiles across 5 categories, matching the real Jelly Battle tile set.
+const TILE_DEFS = {
+  nuke:       {cat:'weapon', icon:'☢️', color:'#ff4d4d', label:'Nuke'},
+  handbag:    {cat:'weapon', icon:'👜', color:'#ff6fa8', label:'Handbag'},
+  laser:      {cat:'weapon', icon:'⚡', color:'#ffe14d', label:'Laser'},
+  airstrike:  {cat:'weapon', icon:'✈️', color:'#ff9d3d', label:'Air Strike'},
+  blast:      {cat:'weapon', icon:'💥', color:'#ff7a3d', label:'Blast'},
+  randomdrop: {cat:'weapon', icon:'🎯', color:'#ff5da2', label:'Random Drop'},
+  invisible:  {cat:'status', icon:'🕶️', color:'#8dff6b', label:'Invisible'},
+  debonus:    {cat:'status', icon:'❌', color:'#8dff6b', label:'De-bonus'},
+  shield:     {cat:'status', icon:'🛡️', color:'#e8b23d', label:'Shield'},
+  freeze:     {cat:'status', icon:'❄️', color:'#3ad6d9', label:'Freeze'},
+  rage:       {cat:'status', icon:'☣️', color:'#8dff6b', label:'Jelly Rage'},
+  triplejump: {cat:'status', icon:'↗️', color:'#8dff6b', label:'Triple Jump'},
+  teleport:   {cat:'teleport', icon:'🌀', color:'#3ad6d9', label:'Teleport'},
+  mine:       {cat:'hazard', icon:'💣', color:'#ff4d4d', label:'Mine'},
+  superjelly: {cat:'health', icon:'💚', color:'#5ee08a', label:'Super Jelly'},
+  health:     {cat:'health', icon:'➕', color:'#5ee08a', label:'Health'}
+};
+const TILE_TYPES = Object.keys(TILE_DEFS);
+
 let jellies = [];
 let tiles = [];
 let turnNumber = 0;
@@ -278,16 +299,22 @@ function idx(x,y){ return y*GRID+x; }
 function inBounds(x,y){ return x>=0 && y>=0 && x<GRID && y<GRID; }
 
 // Real Jelly Battle move range: any square within 2 tiles (any direction),
-// including your own square.
-function reachableTiles(x,y){
+// including your own square. A jelly under a Triple Jump charge gets +2 range;
+// a frozen jelly can only stay put.
+function reachableTiles(x,y,range=2){
   const out=[];
-  for(let dy=-2; dy<=2; dy++){
-    for(let dx=-2; dx<=2; dx++){
+  for(let dy=-range; dy<=range; dy++){
+    for(let dx=-range; dx<=range; dx++){
       const nx=x+dx, ny=y+dy;
       if(inBounds(nx,ny)) out.push({x:nx,y:ny});
     }
   }
   return out;
+}
+function moveRangeFor(j){
+  if(j.frozen) return 0;
+  if(j.tripleJump) return 4;
+  return 2;
 }
 
 function makeTiles(){
@@ -297,10 +324,10 @@ function makeTiles(){
       tiles.push({x,y,type:'plain'});
     }
   }
-  const specialCount = 10;
-  const types = ['fruit','fruit','weapon','weapon','trap','trap','trap','teleport','shield','shield'];
+  // One of each of the 16 special tiles to start.
+  const types = TILE_TYPES.slice();
   const pool = tiles.slice();
-  for(let i=0;i<specialCount;i++){
+  for(let i=0;i<types.length;i++){
     const pick = Math.floor(Math.random()*pool.length);
     const t = pool.splice(pick,1)[0];
     t.type = types[i];
@@ -336,13 +363,12 @@ function shiftTilesDown(){
     grid.push(tiles.slice(y*GRID,(y+1)*GRID).map(t=>t.type));
   }
   const shifted = [];
-  const iconTypes = ['fruit','weapon','trap','teleport','shield'];
   for(let y=0;y<GRID;y++){
     if(y===0){
-      // new row: mostly empty, occasional fresh icon
+      // new row: mostly empty, occasional fresh icon from the full 16-tile set
       const row = [];
       for(let x=0;x<GRID;x++){
-        row.push(Math.random() < 0.16 ? iconTypes[Math.floor(Math.random()*iconTypes.length)] : 'plain');
+        row.push(Math.random() < 0.16 ? TILE_TYPES[Math.floor(Math.random()*TILE_TYPES.length)] : 'plain');
       }
       shifted.push(row);
     } else {
@@ -389,7 +415,8 @@ function drawBoard(){
     ctx.stroke();
 
     if(t.type !== 'plain'){
-      const glowColor = t.type==='fruit' ? '#5ee08a' : t.type==='weapon' ? '#ff9d3d' : t.type==='trap' ? '#ff4d4d' : t.type==='teleport' ? '#3ad6d9' : '#e8b23d';
+      const def = TILE_DEFS[t.type];
+      const glowColor = def ? def.color : '#e8b23d';
       const glow = ctx.createRadialGradient(px+CELL/2,py+CELL/2,2, px+CELL/2,py+CELL/2, CELL*0.55);
       glow.addColorStop(0, glowColor+'55');
       glow.addColorStop(1, glowColor+'00');
@@ -398,9 +425,9 @@ function drawBoard(){
       ctx.arc(px+CELL/2, py+CELL/2, CELL*0.55, 0, Math.PI*2);
       ctx.fill();
 
-      ctx.font = '24px sans-serif';
+      ctx.font = '22px sans-serif';
       ctx.textAlign='center'; ctx.textBaseline='middle';
-      const icon = t.type==='fruit' ? '🍇' : t.type==='weapon' ? '⚔️' : t.type==='trap' ? '💣' : t.type==='teleport' ? '🌀' : '🛡️';
+      const icon = def ? def.icon : '❓';
       ctx.fillText(icon, px+CELL/2, py+CELL/2);
       // ghost preview one row below — where this icon is heading after the scroll (vanishes off the bottom edge)
       if(t.y+1 < GRID){
@@ -489,20 +516,24 @@ function flashScreen(color, alpha){
 // of picking a tile, so it needs to actually read as an event.
 function triggerIconEffect(type, j){
   const px = boardToPx(j.px) + CELL/2, py = boardToPx(j.py) + CELL/2;
-  if(type === 'fruit'){
+  const def = TILE_DEFS[type];
+  const cat = def ? def.cat : 'status';
+  if(cat === 'health'){
     addShockwave(px, py, '#5ee08a', 60);
     burst(px, py, '#5ee08a', 26);
     burst(px, py, '#bdffcf', 14);
     flashScreen('#5ee08a', 0.18);
     shake(4);
-  } else if(type === 'weapon'){
-    addShockwave(px, py, '#ff9d3d', 55);
-    burst(px, py, '#ff9d3d', 22);
-    burst(px, py, '#ffd39c', 12);
-    flashScreen('#ff9d3d', 0.16);
-    shake(5);
-  } else if(type === 'trap'){
-    // full explosion — this is the moment that should feel huge
+  } else if(cat === 'weapon'){
+    // big weapons hit harder visually than small ones
+    const big = type === 'nuke' || type === 'blast';
+    addShockwave(px, py, def.color, big ? 100 : 55);
+    if(big) addShockwave(px, py, '#ff4d4d', 130);
+    burst(px, py, def.color, big ? 40 : 22);
+    burst(px, py, '#ffd39c', big ? 26 : 12);
+    flashScreen(def.color, big ? 0.5 : 0.16);
+    shake(big ? 18 : 6);
+  } else if(cat === 'hazard'){
     addShockwave(px, py, '#ffb347', 100);
     addShockwave(px, py, '#ff4d4d', 130);
     burst(px, py, '#ff4d4d', 40);
@@ -510,16 +541,16 @@ function triggerIconEffect(type, j){
     burst(px, py, '#ffffff', 14);
     flashScreen('#ff8a3d', 0.55);
     shake(20);
-  } else if(type === 'teleport'){
+  } else if(cat === 'teleport'){
     addShockwave(px, py, '#3ad6d9', 50);
     addShockwave(px, py, '#a259ff', 70);
     burst(px, py, '#3ad6d9', 24);
     flashScreen('#a259ff', 0.2);
     shake(3);
-  } else if(type === 'shield'){
-    addShockwave(px, py, '#e8b23d', 45);
-    burst(px, py, '#e8b23d', 18);
-    flashScreen('#e8b23d', 0.14);
+  } else if(cat === 'status'){
+    addShockwave(px, py, def.color, 45);
+    burst(px, py, def.color, 18);
+    flashScreen(def.color, 0.14);
   }
 }
 
@@ -611,10 +642,16 @@ function drawJelly(cx,cy,j){
     ctx.textAlign='center';
     ctx.fillText('⚔️', cx+16, cy-18);
   }
-  if(j.shielded){
+  const badges = [];
+  if(j.shielded) badges.push('🛡️');
+  if(j.invisible) badges.push('🕶️');
+  if(j.frozen) badges.push('❄️');
+  if(j.rageCharge) badges.push('☣️');
+  if(j.tripleJump) badges.push('↗️');
+  if(badges.length){
     ctx.font='13px sans-serif';
     ctx.textAlign='center';
-    ctx.fillText('🛡️', cx-16, cy-18);
+    badges.forEach((b,i)=> ctx.fillText(b, cx-16+i*14, cy-18));
   }
 }
 
@@ -680,7 +717,13 @@ function nextTurn(){
 
   phase = 'picking';
   selectedTile = null;
-  reachableSet = new Set(reachableTiles(player.x, player.y).map(t=>t.x+','+t.y));
+  if(player.frozen){
+    player.frozen = false;
+    logMsg(`${player.name} is frozen solid and can't move this turn!`, 'hit');
+    commitPlayerMove({x:player.x, y:player.y});
+    return;
+  }
+  reachableSet = new Set(reachableTiles(player.x, player.y, moveRangeFor(player)).map(t=>t.x+','+t.y));
   setBanner(`Turn ${turnNumber} — choose your jump`);
   renderSidebar();
   drawBoard();
@@ -729,7 +772,13 @@ function commitPlayerMove(tile){
   // AI picks
   for(const j of jellies){
     if(!j.alive || j.isPlayer) continue;
-    const opts = reachableTiles(j.x, j.y);
+    if(j.frozen){
+      j.frozen = false;
+      j.targetX = j.x; j.targetY = j.y;
+      logMsg(`${j.name} is frozen solid and can't move this turn!`, 'hit');
+      continue;
+    }
+    const opts = reachableTiles(j.x, j.y, moveRangeFor(j));
     let choice = opts[Math.floor(Math.random()*opts.length)];
     // bias: chase player, or go for special tiles
     const special = opts.find(o => tileAt(o.x,o.y).type !== 'plain');
@@ -815,6 +864,9 @@ function finishTurnResolution(){
       logMsg(`${j.name} wobbled apart and is out of the battle!`, 'hit');
       playSfx('out');
     }
+    // Expire timed statuses (Invisible / Triple Jump) once their bonus turn has passed.
+    if(j.invisible && j.invisibleUntilTurn !== undefined && turnNumber >= j.invisibleUntilTurn) j.invisible = false;
+    if(j.tripleJump && j.tripleJumpUntilTurn !== undefined && turnNumber >= j.tripleJumpUntilTurn) j.tripleJump = false;
   });
 
   renderSidebar();
@@ -916,39 +968,165 @@ async function runJellyOffAnimation(group){
   await delay(120);
 }
 
+function otherJellies(j){ return jellies.filter(k=>k.alive && k!==j); }
+function jelliesWithin(j, radius){
+  return otherJellies(j).filter(k => Math.max(Math.abs(k.x-j.x), Math.abs(k.y-j.y)) <= radius);
+}
+function jelliesInLine(j){
+  return otherJellies(j).filter(k => k.x===j.x || k.y===j.y);
+}
+
+// Damage a target, respecting Shield (absorbs one hit) and Invisible (dodges entirely).
+function damageJelly(source, target, amt){
+  if(target.invisible){
+    logMsg(`${target.name} was invisible and dodged the attack!`);
+    return;
+  }
+  if(target.shielded){
+    target.shielded = false;
+    logMsg(`${target.name}'s shield absorbed the hit!`);
+    return;
+  }
+  const dmg = source.rageCharge ? amt*2 : amt;
+  target.hp -= dmg;
+  logMsg(`${source.name}'s attack hit ${target.name} (-${dmg} HP).`, 'hit');
+  playSfx('explosion');
+  const px = boardToPx(target.px) + CELL/2, py = boardToPx(target.py) + CELL/2;
+  burst(px, py, '#ff4d4d', 14);
+}
+
 function applyTileEffect(j){
   const t = tileAt(j.x, j.y);
-  if(t.type !== 'plain') triggerIconEffect(t.type, j);
-  if(t.type === 'fruit'){
-    j.hp = Math.min(100, j.hp + 12);
-    logMsg(`${j.name} snacked on fruit (+12 HP).`, 'heal');
-    playSfx('heal');
-    t.type = 'plain';
-  } else if(t.type === 'weapon'){
-    j.weaponCharge = true;
-    logMsg(`${j.name} grabbed a weapon shard.`);
-    playSfx('pickup');
-    t.type = 'plain';
-  } else if(t.type === 'trap'){
-    j.hp -= 10;
-    logMsg(`${j.name} triggered a bomb (-10 HP).`, 'hit');
-    playSfx('explosion');
-    t.type = 'plain';
-  } else if(t.type === 'teleport'){
-    const open = tiles.filter(o => !jellies.some(k=>k.alive && k.x===o.x && k.y===o.y));
-    if(open.length){
-      const dest = open[Math.floor(Math.random()*open.length)];
-      j.x = dest.x; j.y = dest.y; j.px = dest.x; j.py = dest.y;
-      logMsg(`${j.name} teleported across the arena!`);
-      playSfx('pickup');
+  if(t.type === 'plain') return;
+  triggerIconEffect(t.type, j);
+  const type = t.type;
+  t.type = 'plain';
+
+  switch(type){
+    // ── Weapon tiles: injure opponents around you ──
+    case 'nuke': {
+      logMsg(`${j.name} triggered the ultimate bomb, injuring every opponent!`);
+      otherJellies(j).forEach(k => damageJelly(j, k, 18));
+      break;
     }
-    t.type = 'plain';
-  } else if(t.type === 'shield'){
-    j.shielded = true;
-    logMsg(`${j.name} raised a shield.`);
-    playSfx('pickup');
-    t.type = 'plain';
+    case 'handbag': {
+      const targets = jelliesWithin(j, 1);
+      logMsg(targets.length ? `${j.name} swung a handbag at anyone nearby.` : `${j.name} swung a handbag, but no one was close enough.`);
+      targets.forEach(k => damageJelly(j, k, 14));
+      break;
+    }
+    case 'laser': {
+      const targets = jelliesInLine(j);
+      logMsg(targets.length ? `${j.name} fired a laser down the row and column!` : `${j.name} fired a laser, but hit nothing.`);
+      targets.forEach(k => damageJelly(j, k, 16));
+      break;
+    }
+    case 'airstrike': {
+      const pool = otherJellies(j);
+      if(pool.length){
+        const target = pool[Math.floor(Math.random()*pool.length)];
+        logMsg(`${j.name} called in an air strike on ${target.name}!`);
+        damageJelly(j, target, 20);
+      } else {
+        logMsg(`${j.name} called in an air strike, but there was no one to hit.`);
+      }
+      break;
+    }
+    case 'blast': {
+      const targets = jelliesWithin(j, 3);
+      logMsg(targets.length ? `${j.name} set off a blast across the arena.` : `${j.name} set off a blast, but everyone was out of range.`);
+      targets.forEach(k => damageJelly(j, k, 10));
+      break;
+    }
+    case 'randomdrop': {
+      const pool = otherJellies(j);
+      if(pool.length){
+        const target = pool[Math.floor(Math.random()*pool.length)];
+        logMsg(`${j.name} dropped a random object on ${target.name}!`);
+        damageJelly(j, target, 12);
+      } else {
+        logMsg(`${j.name} grabbed a random drop, but had no one to drop it on.`);
+      }
+      break;
+    }
+
+    // ── Status modifier tiles ──
+    case 'invisible':
+      j.invisible = true;
+      j.invisibleUntilTurn = turnNumber + 1;
+      logMsg(`${j.name} turned invisible for a strategic advantage.`);
+      playSfx('pickup');
+      break;
+    case 'debonus': {
+      const targets = jelliesWithin(j, 2);
+      targets.forEach(k => { k.shielded = false; k.invisible = false; k.rageCharge = false; k.tripleJump = false; });
+      logMsg(targets.length ? `${j.name} disarmed nearby opponents' bonuses.` : `${j.name} looked for bonuses to disarm, but found none nearby.`);
+      playSfx('pickup');
+      break;
+    }
+    case 'shield':
+      j.shielded = true;
+      logMsg(`${j.name} raised a shield.`);
+      playSfx('pickup');
+      break;
+    case 'freeze': {
+      const pool = jelliesWithin(j, 2);
+      if(pool.length){
+        const target = pool[Math.floor(Math.random()*pool.length)];
+        target.frozen = true;
+        logMsg(`${j.name} froze ${target.name} in place!`);
+      } else {
+        logMsg(`${j.name} tried to freeze someone, but no one was close enough.`);
+      }
+      playSfx('pickup');
+      break;
+    }
+    case 'rage':
+      j.rageCharge = true;
+      logMsg(`${j.name} is enraged — their next attack deals double damage!`);
+      playSfx('pickup');
+      break;
+    case 'triplejump':
+      j.tripleJump = true;
+      j.tripleJumpUntilTurn = turnNumber + 1;
+      logMsg(`${j.name} can leap three extra tiles next turn.`);
+      playSfx('pickup');
+      break;
+
+    // ── Teleportation tile ──
+    case 'teleport': {
+      const open = tiles.filter(o => !jellies.some(k=>k.alive && k.x===o.x && k.y===o.y));
+      if(open.length){
+        const dest = open[Math.floor(Math.random()*open.length)];
+        j.x = dest.x; j.y = dest.y; j.px = dest.x; j.py = dest.y;
+        logMsg(`${j.name} teleported across the arena!`);
+        playSfx('pickup');
+      }
+      break;
+    }
+
+    // ── Hazard tile ──
+    case 'mine':
+      j.hp -= 10;
+      logMsg(`${j.name} stepped on a mine (-10 HP).`, 'hit');
+      playSfx('explosion');
+      break;
+
+    // ── Health tiles ──
+    case 'superjelly':
+      j.hp = 100;
+      logMsg(`${j.name} found a Super Jelly and is fully restored!`, 'heal');
+      playSfx('heal');
+      break;
+    case 'health':
+      j.hp = Math.min(100, j.hp + 12);
+      logMsg(`${j.name} snacked on some jelly (+12 HP).`, 'heal');
+      playSfx('heal');
+      break;
   }
+
+  // A used attack clears the attacker's own rage charge.
+  if(TILE_DEFS[type] && TILE_DEFS[type].cat === 'weapon' && j.rageCharge) j.rageCharge = false;
 }
 
 function checkWin(){
