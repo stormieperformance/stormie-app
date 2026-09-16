@@ -309,6 +309,26 @@ const TILE_DEFS = {
 };
 const TILE_TYPES = Object.keys(TILE_DEFS);
 
+// Weighted spawn rarity — strong weapons must be significantly rarer than
+// health/status/utility tiles, and Nuke/Air Strike are never guaranteed.
+const TILE_RARITY = {
+  health:'common', shield:'common', teleport:'common', freeze:'common',
+  mine:'uncommon', handbag:'uncommon', rage:'uncommon', invisible:'uncommon', debonus:'uncommon', triplejump:'uncommon',
+  blast:'rare', laser:'rare', randomdrop:'rare', superjelly:'rare',
+  airstrike:'veryrare', nuke:'veryrare'
+};
+const RARITY_WEIGHT = {common:10, uncommon:5, rare:2, veryrare:1};
+function weightedTileType(){
+  const entries = Object.entries(TILE_RARITY);
+  const total = entries.reduce((s,[,r])=>s+RARITY_WEIGHT[r], 0);
+  let roll = Math.random()*total;
+  for(const [t,r] of entries){
+    roll -= RARITY_WEIGHT[r];
+    if(roll <= 0) return t;
+  }
+  return entries[0][0];
+}
+
 let jellies = [];
 let tiles = [];
 let turnNumber = 0;
@@ -353,13 +373,14 @@ function makeTiles(){
       tiles.push({x,y,type:'plain'});
     }
   }
-  // One of each of the 16 special tiles to start.
-  const types = TILE_TYPES.slice();
+  // ~9-11 special tiles to start, weighted so strong weapons are rare —
+  // never a guaranteed one-of-each anymore.
+  const specialCount = 9 + Math.floor(Math.random()*3); // 9, 10 or 11
   const pool = tiles.slice();
-  for(let i=0;i<types.length;i++){
+  for(let i=0;i<specialCount;i++){
     const pick = Math.floor(Math.random()*pool.length);
     const t = pool.splice(pick,1)[0];
-    t.type = types[i];
+    t.type = weightedTileType();
   }
 }
 
@@ -394,10 +415,10 @@ function shiftTilesDown(){
   const shifted = [];
   for(let y=0;y<GRID;y++){
     if(y===0){
-      // new row: mostly empty, occasional fresh icon from the full 16-tile set
+      // new row: mostly empty, occasional fresh icon weighted toward common tiles
       const row = [];
       for(let x=0;x<GRID;x++){
-        row.push(Math.random() < 0.16 ? TILE_TYPES[Math.floor(Math.random()*TILE_TYPES.length)] : 'plain');
+        row.push(Math.random() < 0.14 ? weightedTileType() : 'plain');
       }
       shifted.push(row);
     } else {
@@ -1360,7 +1381,12 @@ function scoreDestination(mover, x, y, useCorrectShift, opponents){
   if(def){
     if(def.cat === 'weapon'){
       const rivalsNearby = opponents.filter(o => Math.max(Math.abs(o.x-x),Math.abs(o.y-y)) <= 3).length;
-      score += type==='nuke' ? 90 : (rivalsNearby>=2 ? 70 : 45);
+      let weaponScore = type==='nuke' ? 90 : (rivalsNearby>=2 ? 70 : 45);
+      // Easy/Normal don't hunt down the ultimates or Laser the way Hard does.
+      if((type==='nuke' || type==='airstrike' || type==='laser') && difficulty !== 'hard'){
+        weaponScore *= 0.35;
+      }
+      score += weaponScore;
     } else if(type === 'health'){
       score += mover.hp < 60 ? 60 : 15;
     } else if(type === 'superjelly'){
@@ -1581,9 +1607,15 @@ function resolveSingleLandings(list, i, done){
   applyTileEffect(list[i], () => {
     renderSidebar();
     drawBoard();
-    setTimeout(()=> resolveSingleLandings(list, i+1, done), 400);
+    setTimeout(()=> resolveSingleLandings(list, i+1, done), 320);
   });
 }
+
+// At most one Nuke/Air Strike resolves per turn — if a second is collected
+// the same cycle, it's deferred to the very start of the next resolution
+// phase instead of piling on top of the first.
+let pendingUltimate = null; // {jelly, type}
+const ULTIMATE_TYPES = ['nuke','airstrike'];
 
 // Builds the phase-ordered, shuffled-within-phase queue and resolves it.
 function resolveTileEffectPhases(eligible, done){
@@ -1596,6 +1628,16 @@ function resolveTileEffectPhases(eligible, done){
     byPhase[phase].push(j);
   });
   eligible.forEach(j => { j.knockedThisCycle = false; });
+
+  const ultimates = byPhase.weapon.filter(j => ULTIMATE_TYPES.includes(tileAt(j.x,j.y).type));
+  for(let i=1;i<ultimates.length;i++){
+    const j = ultimates[i];
+    const tile = tileAt(j.x, j.y);
+    const type = tile.type;
+    byPhase.weapon = byPhase.weapon.filter(k=>k!==j);
+    tile.type = 'plain'; // consumed now, fires on its own next resolution phase
+    pendingUltimate = {jelly:j, type};
+  }
 
   const queue = [];
   RESOLUTION_PHASE_ORDER.forEach(p => queue.push(...shuffle(byPhase[p])));
@@ -1631,7 +1673,21 @@ function afterLanding(){
       // 3-6. Teleport -> Debonus -> other non-weapon -> weapon, each phase
       // shuffled. Jelly Off winners (undisplaced) are eligible; losers aren't.
       const winners = jellyOffGroups.map(g => g.__winner).filter(Boolean);
-      resolveTileEffectPhases(soloLandings.concat(winners), finishTurnResolution);
+      const eligible = soloLandings.concat(winners);
+      const runPhases = () => resolveTileEffectPhases(eligible, finishTurnResolution);
+
+      // A Nuke/Air Strike deferred from last turn fires first, on its own,
+      // before anything new this turn even begins.
+      if(pendingUltimate && pendingUltimate.jelly.alive){
+        const pu = pendingUltimate;
+        pendingUltimate = null;
+        setTimeout(()=> resolveActualTileEffect(pu.jelly, pu.type, () => {
+          setTimeout(runPhases, 320);
+        }), 320);
+      } else {
+        pendingUltimate = null;
+        runPhases();
+      }
     });
   });
 }
@@ -1755,7 +1811,7 @@ function applyJellyOffOutcome(rolls){
     const loser = rolls[i].jelly;
     if(loser.shielded){
       loser.shielded = false;
-      logMsg(`${loser.name}'s shield absorbed the punch!`, 'heal');
+      logMsg(`${possessive(loser)} shield absorbed the punch!`, 'heal');
       continue;
     }
     loser.hp -= 15;
@@ -1834,6 +1890,8 @@ async function runJellyOffAnimation(group){
 }
 
 function otherJellies(j){ return jellies.filter(k=>k.alive && k!==j); }
+// "Your Laser..." for the player, "Glob's Laser..." for AI — never "You's".
+function possessive(j){ return j.isPlayer ? 'Your' : `${j.name}'s`; }
 function jelliesWithin(j, radius){
   return otherJellies(j).filter(k => Math.max(Math.abs(k.x-j.x), Math.abs(k.y-j.y)) <= radius);
 }
@@ -1852,13 +1910,14 @@ function spawnFloatText(x, y, text, color, big){
 // it goes off — this is what actually sells the hit, not just the number.
 let weaponBanners = [];
 function spawnWeaponBanner(label, color){
+  weaponBanners = []; // only one weapon banner at a time — never let two overlap
   weaponBanners.push({label: label.toUpperCase(), color, life:1});
 }
 
 function damageJelly(source, target, amt, hitType, forceDir, severity){
   if(target.shielded){
     target.shielded = false;
-    logMsg(`${target.name}'s shield absorbed the hit!`, 'heal');
+    logMsg(`${possessive(target)} shield absorbed the hit!`, 'heal');
     const px = boardToPx(target.px) + CELL/2, py = boardToPx(target.py) + CELL/2;
     spawnFloatText(px, py-30, 'BLOCKED', '#e8b23d');
     addShockwave(px, py, '#e8b23d', 40);
@@ -1876,7 +1935,7 @@ function damageJelly(source, target, amt, hitType, forceDir, severity){
   playHitReaction(target, hitType || 'launch', forceDir, severity);
   // Logged (not announced) — the weapon's own banner already carries the
   // headline, so per-target hits shouldn't keep stealing the spotlight.
-  logMsg(`${source.name}'s attack hit ${target.name}${wasInvisible ? ', revealing them' : ''} (-${dmg} HP).`, 'hit');
+  logMsg(`${possessive(source)} attack hit ${target.name}${wasInvisible ? ', revealing them' : ''} (-${dmg} HP).`, 'hit');
   playSfx('explosion');
   playSfx(dmg >= 30 ? 'yelpBig' : 'yelpSmall'); // victim's own pain vocalization
   const px = boardToPx(target.px) + CELL/2, py = boardToPx(target.py) + CELL/2;
@@ -2124,8 +2183,8 @@ function detonateLaser(j, done){
     const cellKeys = new Set(lineCells.map(c=>c.x+','+c.y));
     const hits = otherJellies(j).filter(k => cellKeys.has(k.x+','+k.y));
     announce(hits.length
-      ? `${j.name}'s Laser sweeps the row and column, hitting ${hits.map(h=>h.name).join(', ')}!`
-      : `${j.name}'s Laser sweeps the row and column, but hits no one.`);
+      ? `${possessive(j)} Laser sweeps the row and column, hitting ${hits.map(h=>h.name).join(', ')}!`
+      : `${possessive(j)} Laser sweeps the row and column, but hits no one.`);
     drawBoard();
 
     let idx = 0;
@@ -2173,7 +2232,7 @@ function detonateNuke(j, done){
   function tickCountdown(){
     if(count <= 0){
       nukeCountdown = null;
-      flashScreen('#ffffff', 0.92);
+      flashScreen('#ffffff', 0.55);
       const cx = canvas.width/2, cy = canvas.height/2;
       addShockwave(cx, cy, tdef.color, 240);
       addShockwave(cx, cy, '#ffffff', 280);
@@ -2349,8 +2408,8 @@ function detonate(j, type, done){
     const cellKeys = new Set(cells.map(c=>c.x+','+c.y));
     const hits = otherJellies(j).filter(k => cellKeys.has(k.x+','+k.y));
     announce(hits.length
-      ? `${j.name}'s ${def.label} exploded across the board and hit ${hits.map(h=>h.name).join(', ')}!`
-      : `${j.name}'s ${def.label} exploded across the board, but no one was caught in it.`);
+      ? `${possessive(j)} ${def.label} exploded across the board and hit ${hits.map(h=>h.name).join(', ')}!`
+      : `${possessive(j)} ${def.label} exploded across the board, but no one was caught in it.`);
 
     // Stagger multi-target hits so each impact is its own visible beat
     // instead of every victim reacting on the exact same frame.
