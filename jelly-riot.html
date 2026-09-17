@@ -1259,6 +1259,15 @@ function renderSidebar(){
 }
 
 function startGame(){
+  // Invalidate every pending timer/callback from any previous game or stale
+  // turn before we reset state, so nothing old can fire into the fresh game.
+  turnId++;
+  turnFinished = true;
+  nextTurnScheduled = false;
+  disarmResolutionWatchdog();
+  clearInterval(timerId);
+  timerId = null;
+
   makeTiles();
   spawnJellies();
   turnNumber = 0;
@@ -1275,7 +1284,19 @@ function startGame(){
   nextTurn();
 }
 
+// Turn lifecycle guards — see the resolution-race postmortem: a turn must
+// resolve exactly once and nextTurn() must be scheduled at most once.
+let turnId = 0;          // bumped each time a resolution episode begins
+let turnFinished = true; // finishTurnResolution() may run once per episode
+let nextTurnScheduled = false;
+function scheduleNextTurn(delay){
+  if(nextTurnScheduled) return; // a nextTurn() call is already pending
+  nextTurnScheduled = true;
+  setTimeout(()=>{ nextTurnScheduled = false; nextTurn(); }, delay);
+}
+
 function nextTurn(){
+  if(phase === 'picking') return; // never re-enter picking while already waiting on the player
   disarmResolutionWatchdog();
   turnNumber++;
   const player = jellies.find(j=>j.isPlayer);
@@ -1452,7 +1473,9 @@ function chooseAiMove(j, opts, opponents){
 }
 
 function commitPlayerMove(tile){
+  if(phase !== 'picking') return; // ignore stray clicks once we've already moved on
   clearInterval(timerId);
+  timerId = null;
   document.getElementById('timerFill').style.width='0%';
   selectedTile = tile;
   tutorialActive = false;
@@ -1474,20 +1497,23 @@ let resolutionWatchdog = null;
 function armResolutionWatchdog(){
   clearTimeout(resolutionWatchdog);
   resolutionWatchdog = setTimeout(()=>{
-    if(phase !== 'resolving') return; // resolved normally already
+    if(phase !== 'resolving' || turnFinished) return; // resolved normally already
+    turnFinished = true;
     jellies.forEach(j=>{ if(j.dying) j.dying = false; });
     hitStopUntil = 0;
     renderSidebar();
     drawBoard();
     if(!checkWin()){
       phase = 'idle';
-      setTimeout(nextTurn, 300);
+      scheduleNextTurn(300);
     }
-  }, 12000);
+  }, 15000);
 }
 function disarmResolutionWatchdog(){ clearTimeout(resolutionWatchdog); }
 
 function resolveAllMoves(bannerMsg){
+  const myTurnId = ++turnId;
+  turnFinished = false;
   armResolutionWatchdog();
   phase = 'resolving';
   setBanner(bannerMsg);
@@ -1508,11 +1534,12 @@ function resolveAllMoves(bannerMsg){
   }
 
   setTimeout(()=>{
+    if(myTurnId !== turnId) return; // superseded before tiles even shifted
     shiftTilesDown();
     setBanner('Tiles shift down!');
     playSfx('shift');
     drawBoard();
-    setTimeout(resolveJump, 380);
+    setTimeout(()=> resolveJump(myTurnId), 380);
   }, 280);
 }
 
@@ -1526,7 +1553,8 @@ function autoAdvanceSpectatorTurn(){
 // Physical jelly jump: a 110ms anticipation compress at the start tile, then
 // a ~590ms parabolic hop to the destination (total ~700ms), landing with a
 // squash and a decaying rebound. All four jellies launch together.
-function resolveJump(){
+function resolveJump(id){
+  if(id !== turnId) return; // a newer turn has already started; abandon this one
   const start = performance.now();
   const compressDur = 110;
   const flightDur = 590;
@@ -1535,9 +1563,10 @@ function resolveJump(){
   const froms = jellies.map(j=>({x:j.x,y:j.y}));
 
   playSfx('launch');
-  setTimeout(()=> playSfx('whoosh'), compressDur);
+  setTimeout(()=> { if(id === turnId) playSfx('whoosh'); }, compressDur);
 
   function animate(){
+    if(id !== turnId) return; // abort a stale animation loop outright
     const elapsed = performance.now() - start;
     jellies.forEach((j,i)=>{
       if(!j.alive) return;
@@ -1571,9 +1600,9 @@ function resolveJump(){
         spawnLandFlash(j.x, j.y);
       });
       playSfx('clack');
-      setTimeout(()=> playSfx('slap'), 60);
-      setTimeout(()=> playSfx('wobble'), 240);
-      afterLanding();
+      setTimeout(()=> { if(id === turnId) playSfx('slap'); }, 60);
+      setTimeout(()=> { if(id === turnId) playSfx('wobble'); }, 240);
+      afterLanding(id);
     }
   }
   requestAnimationFrame(animate);
@@ -1644,7 +1673,8 @@ function resolveTileEffectPhases(eligible, done){
   resolveSingleLandings(queue, 0, done);
 }
 
-function afterLanding(){
+function afterLanding(id){
+  if(id !== turnId) return; // stale — a newer turn has already begun
   // group by landed tile to find Jelly Off collisions
   const groups = {};
   for(const j of jellies){
@@ -1744,6 +1774,10 @@ function runJellyOffQueue(queue, i, done){
 }
 
 function finishTurnResolution(){
+  if(turnFinished) return; // this turn's resolution has already completed once
+  turnFinished = true;
+  disarmResolutionWatchdog(); // this chain finished normally; the safety net is no longer needed
+
   const justDied = [];
   jellies.forEach(j=>{
     if(j.alive && j.hp <= 0){
@@ -1771,14 +1805,14 @@ function finishTurnResolution(){
       const w = checkWin();
       if(w) return;
       phase = 'idle';
-      setTimeout(nextTurn, 400);
+      scheduleNextTurn(400);
     }, 1700);
     return;
   }
   if(checkWin()) return;
 
   phase = 'idle';
-  setTimeout(nextTurn, 500);
+  scheduleNextTurn(500);
 }
 
 function delay(ms){ return new Promise(res=>setTimeout(res,ms)); }
