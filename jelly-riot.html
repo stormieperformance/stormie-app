@@ -599,11 +599,15 @@ function drawBoard(){
     dropShadows = dropShadows.filter(s => (now - s.start) < s.dur);
   }
 
-  // Spotlight: dim the board itself while a weapon effect is demonstrating,
-  // so the acting jelly (drawn afterward, on top) reads as the focal point.
+  // Spotlight: a subtle dark tint over the board with a clear radial cutout
+  // around the acting jelly, so it never reads as a strong coloured cloud.
   if(spotlightJelly){
     ctx.save();
-    ctx.fillStyle = 'rgba(6,7,10,0.5)';
+    const sx = boardToPx(spotlightJelly.px) + CELL/2, sy = boardToPx(spotlightJelly.py) + CELL/2;
+    const grad = ctx.createRadialGradient(sx, sy, CELL*0.9, sx, sy, CELL*3.2);
+    grad.addColorStop(0, 'rgba(6,7,10,0)');
+    grad.addColorStop(1, 'rgba(6,7,10,0.32)');
+    ctx.fillStyle = grad;
     ctx.fillRect(PAD, PAD, GRID*CELL, GRID*CELL);
     ctx.restore();
   }
@@ -1886,6 +1890,7 @@ function applyJellyOffOutcome(rolls){
 // through random numbers before landing on their real roll, highlights the
 // winner, then applies the outcome and fades back into the board.
 async function runJellyOffAnimation(group){
+  clearAllEffectVisuals(); // clean board before the Jelly Off overlay takes over
   playSfx('clash');
   const rolls = rollJellyOff(group);
   const overlay = document.getElementById('jofOverlay');
@@ -1926,7 +1931,8 @@ async function runJellyOffAnimation(group){
   row.querySelectorAll('.jof-jelly').forEach(el=>el.classList.add('jof-shrink'));
   await delay(350);
   overlay.classList.remove('show');
-  await delay(120);
+  clearAllEffectVisuals();
+  await delay(300);
 }
 
 function otherJellies(j){ return jellies.filter(k=>k.alive && k!==j); }
@@ -2580,6 +2586,13 @@ function resolveActualTileEffect(j, type, done){
     return;
   }
   triggerIconEffect(type, j);
+  const tdef = TILE_DEFS[type];
+  announceEffectBanner(j, tdef.label, tdef.color);
+  drawBoard();
+
+  // Every case does its state change + reaction, then holds briefly (readable
+  // but much faster than a weapon) before the same exclusive clear+pause.
+  const hold = (ms) => setTimeout(()=> finishEffect(done), ms);
 
   switch(type){
     case 'invisible':
@@ -2587,7 +2600,8 @@ function resolveActualTileEffect(j, type, done){
       j.invisibleUntilTurn = turnNumber + 1;
       playBuffReaction(j);
       announce(`${j.name} turned invisible for a strategic advantage.`);
-      break;
+      hold(420);
+      return;
     case 'debonus': {
       const targets = otherJellies(j); // every living enemy, no range limit
       targets.forEach(k => {
@@ -2604,17 +2618,21 @@ function resolveActualTileEffect(j, type, done){
         }
       });
       announce(targets.length ? `${j.name} disarmed every opponent's bonuses!` : `${j.name} looked for bonuses to disarm, but there was no one else in the battle.`);
-      break;
+      hold(480);
+      return;
     }
     case 'shield':
       j.shielded = true;
       playBuffReaction(j);
       announce(`${j.name} raised a shield.`);
-      break;
+      hold(420);
+      return;
     case 'handbag':
       j.handbagTurns = (j.handbagTurns || 0) + 3;
+      playBuffReaction(j);
       announce(`${j.name} picked up a handbag, swinging at adjacent rivals for the next 3 turns!`);
-      break;
+      hold(420);
+      return;
     case 'freeze': {
       const pool = otherJellies(j); // anywhere on the board, not just nearby
       if(pool.length){
@@ -2626,19 +2644,22 @@ function resolveActualTileEffect(j, type, done){
       } else {
         announce(`${j.name} tried to freeze someone, but there was no one else in the battle.`);
       }
-      break;
+      hold(420);
+      return;
     }
     case 'rage':
       j.rageCharge = true;
       playBuffReaction(j);
       announce(`${j.name} is enraged, their next attack deals double damage!`);
-      break;
+      hold(420);
+      return;
     case 'triplejump':
       j.tripleJump = true;
       j.tripleJumpUntilTurn = turnNumber + 1;
       playBuffReaction(j);
       announce(`${j.name} can leap three extra tiles next turn.`);
-      break;
+      hold(420);
+      return;
 
     // ── Teleportation tile ──
     case 'teleport': {
@@ -2648,7 +2669,8 @@ function resolveActualTileEffect(j, type, done){
         j.x = dest.x; j.y = dest.y; j.px = dest.x; j.py = dest.y;
         announce(`${j.name} teleported across the arena!`);
       }
-      break;
+      hold(420);
+      return;
     }
 
     // ── Hazard tile ──
@@ -2660,7 +2682,8 @@ function resolveActualTileEffect(j, type, done){
       playSfx('explosion');
       spawnFloatText(boardToPx(j.px)+CELL/2, boardToPx(j.py)+CELL/2-32, `-${dmg} HEALTH`, '#ff3b3b', true);
       shake(10);
-      break;
+      hold(550);
+      return;
     }
 
     // ── Health tiles ──
@@ -2669,18 +2692,20 @@ function resolveActualTileEffect(j, type, done){
       announce(`${j.name} found a Super Jelly and is fully restored!`, 'heal');
       playSfx('heal');
       spawnFloatText(boardToPx(j.px)+CELL/2, boardToPx(j.py)+CELL/2-32, 'FULL HEAL', '#5ee08a', true);
-      break;
+      hold(480);
+      return;
     case 'health': {
       const heal = 30 + Math.floor(Math.random()*20); // 30–49
       j.hp = Math.min(100, j.hp + heal);
       announce(`${j.name} snacked on some jelly (+${heal} HP).`, 'heal');
       playSfx('heal');
       spawnFloatText(boardToPx(j.px)+CELL/2, boardToPx(j.py)+CELL/2-32, `+${heal} HEALTH`, '#5ee08a', true);
-      break;
+      hold(480);
+      return;
     }
   }
 
-  done();
+  finishEffect(done);
 }
 
 function checkWin(){
