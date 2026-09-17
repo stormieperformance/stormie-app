@@ -375,7 +375,7 @@ function makeTiles(){
   }
   // ~9-11 special tiles to start, weighted so strong weapons are rare —
   // never a guaranteed one-of-each anymore.
-  const specialCount = 9 + Math.floor(Math.random()*3); // 9, 10 or 11
+  const specialCount = 11 + Math.floor(Math.random()*3); // 11, 12 or 13
   const pool = tiles.slice();
   for(let i=0;i<specialCount;i++){
     const pick = Math.floor(Math.random()*pool.length);
@@ -418,7 +418,7 @@ function shiftTilesDown(){
       // new row: mostly empty, occasional fresh icon weighted toward common tiles
       const row = [];
       for(let x=0;x<GRID;x++){
-        row.push(Math.random() < 0.14 ? weightedTileType() : 'plain');
+        row.push(Math.random() < 0.20 ? weightedTileType() : 'plain');
       }
       shifted.push(row);
     } else {
@@ -1562,8 +1562,7 @@ function resolveJump(id){
   const ARC = 28;
   const froms = jellies.map(j=>({x:j.x,y:j.y}));
 
-  playSfx('launch');
-  setTimeout(()=> { if(id === turnId) playSfx('whoosh'); }, compressDur);
+  playSfx('launch'); // one soft sound for the whole simultaneous jump
 
   function animate(){
     if(id !== turnId) return; // abort a stale animation loop outright
@@ -1599,9 +1598,7 @@ function resolveJump(id){
         j.landPunch = performance.now();
         spawnLandFlash(j.x, j.y);
       });
-      playSfx('clack');
-      setTimeout(()=> { if(id === turnId) playSfx('slap'); }, 60);
-      setTimeout(()=> { if(id === turnId) playSfx('wobble'); }, 240);
+      playSfx('clack'); // one landing sound for the whole simultaneous landing
       afterLanding(id);
     }
   }
@@ -2349,8 +2346,20 @@ const REACTION_DEFS = {
     const kick = Math.sin(p*Math.PI);
     const spin = dx || 1;
     return { cxOffset:dx*kick*8, cyOffset:-kick*22*sev, squishMult:1-(1-p)*0.45, rotation:kick*0.35*spin, tintColor:'#fff6d9', tintAlpha:(1-p)*0.8 };
+  }},
+  // Status effects (Rage/Invisible/Shield/Triple Jump/Freeze) — a quick,
+  // punchy pop so a buff reads as a character beat, not just an icon+text.
+  buffPop: { dur: 240, render(p,dx,dy,sev){
+    const kick = Math.sin(p*Math.PI);
+    return { cxOffset:0, cyOffset:-kick*7*sev, squishMult:1+kick*0.22, rotation:0, tintColor:'#8dff6b', tintAlpha:kick*0.45 };
   }}
 };
+
+// A light, non-damaging pop for status effects — no hit-stop, just a quick
+// character beat so a buff/debuff doesn't read as a silent menu interaction.
+function playBuffReaction(target){
+  target.reaction = { type:'buffPop', start: performance.now(), dirX:0, dirY:0, severity:1 };
+}
 
 function playReactionFrame(j, now){
   const idle = {active:false, cxOffset:0, cyOffset:0, squishMult:1, rotation:0, tintColor:'#ff2b2b', tintAlpha:0};
@@ -2495,7 +2504,6 @@ function applyTileEffect(j, done){
   t.type = 'plain'; // the static tile icon is gone now — the animated collectFx takes over
 
   spawnCollectFx(j.x, j.y, j, type);
-  playSfx('pickup');
   const px = boardToPx(j.px)+CELL/2, py = boardToPx(j.py)+CELL/2;
   spawnFloatText(px, py-20, def.label, def.color, false);
   drawBoard();
@@ -2530,8 +2538,8 @@ function resolveActualTileEffect(j, type, done){
     case 'invisible':
       j.invisible = true;
       j.invisibleUntilTurn = turnNumber + 1;
+      playBuffReaction(j);
       announce(`${j.name} turned invisible for a strategic advantage.`);
-      playSfx('pickup');
       break;
     case 'debonus': {
       const targets = otherJellies(j); // every living enemy, no range limit
@@ -2545,45 +2553,44 @@ function resolveActualTileEffect(j, type, done){
         if(removed.length){
           const px = boardToPx(k.px)+CELL/2, py = boardToPx(k.py)+CELL/2;
           removed.forEach((icon,i) => spawnFloatText(px + (i-removed.length/2)*10, py-26, icon, '#8dff6b'));
+          playBuffReaction(k);
         }
       });
       announce(targets.length ? `${j.name} disarmed every opponent's bonuses!` : `${j.name} looked for bonuses to disarm, but there was no one else in the battle.`);
-      playSfx('pickup');
       break;
     }
     case 'shield':
       j.shielded = true;
+      playBuffReaction(j);
       announce(`${j.name} raised a shield.`);
-      playSfx('pickup');
       break;
     case 'handbag':
       j.handbagTurns = (j.handbagTurns || 0) + 3;
       announce(`${j.name} picked up a handbag, swinging at adjacent rivals for the next 3 turns!`);
-      playSfx('pickup');
       break;
     case 'freeze': {
       const pool = otherJellies(j); // anywhere on the board, not just nearby
       if(pool.length){
         const target = pool[Math.floor(Math.random()*pool.length)];
         target.frozen = true;
+        playBuffReaction(target);
         announce(`${j.name} froze ${target.name} in place!`);
         playSfx('iceForm');
       } else {
         announce(`${j.name} tried to freeze someone, but there was no one else in the battle.`);
-        playSfx('pickup');
       }
       break;
     }
     case 'rage':
       j.rageCharge = true;
+      playBuffReaction(j);
       announce(`${j.name} is enraged, their next attack deals double damage!`);
-      playSfx('pickup');
       break;
     case 'triplejump':
       j.tripleJump = true;
       j.tripleJumpUntilTurn = turnNumber + 1;
+      playBuffReaction(j);
       announce(`${j.name} can leap three extra tiles next turn.`);
-      playSfx('pickup');
       break;
 
     // ── Teleportation tile ──
@@ -2593,7 +2600,6 @@ function resolveActualTileEffect(j, type, done){
         const dest = open[Math.floor(Math.random()*open.length)];
         j.x = dest.x; j.y = dest.y; j.px = dest.x; j.py = dest.y;
         announce(`${j.name} teleported across the arena!`);
-        playSfx('pickup');
       }
       break;
     }
