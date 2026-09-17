@@ -913,8 +913,10 @@ function addShockwave(x,y,color,maxRadius){
   shockwaves.push({x,y,radius:6,maxRadius:maxRadius||70,color,alpha:1});
 }
 function flashScreen(color, alpha){
-  screenFlash.color = color;
-  screenFlash.alpha = alpha;
+  // The board must never wash in a weapon's colour — always a neutral black
+  // dim, capped low, so tiles/background stay legible and only briefly dim.
+  screenFlash.color = '#000000';
+  screenFlash.alpha = Math.min(alpha, 0.2);
 }
 
 // Big, obvious feedback for grabbing something — this is the whole point
@@ -2206,7 +2208,7 @@ function detonateRandomDrop(j, done){
   const variant = pickDropVariant();
   const shadowDur = 420;
   spawnDropShadow(target.x, target.y, shadowDur);
-  playSfx('telegraph');
+  playSfx('shadowForm');
   drawBoard();
 
   setTimeout(()=>{
@@ -2216,6 +2218,8 @@ function detonateRandomDrop(j, done){
     setTimeout(()=>{
       announce(`${j.name} dropped ${variant.name} on ${target.name}!`);
       if(variant.shape === 'piano') playSfx('pianoCrash');
+      else if(variant.shape === 'axe') playSfx('axeChop');
+      else if(variant.shape === 'anvil') playSfx('anvilThud');
       else playSfx('explosion');
       const px = boardToPx(target.px)+CELL/2, py = boardToPx(target.py)+CELL/2;
       addShockwave(px, py, tdef.color, 50);
@@ -2530,7 +2534,7 @@ function detonate(j, type, done){
   // white/warning before anything actually goes off.
   announceEffectBanner(j, def.label, tdef.color);
   markExplosion(cells, '#ffffff');
-  playSfx(type === 'blast' ? 'blastCharge' : 'telegraph');
+  playSfx('blastCharge');
   drawBoard();
 
   setTimeout(()=>{
@@ -2640,6 +2644,7 @@ function resolveActualTileEffect(j, type, done){
       j.invisible = true;
       j.invisibleUntilTurn = turnNumber + 1;
       playBuffReaction(j);
+      playSfx('shimmerInvisible');
       announce(`${j.name} turned invisible for a strategic advantage.`);
       hold(420);
       return;
@@ -2665,6 +2670,7 @@ function resolveActualTileEffect(j, type, done){
     case 'shield':
       j.shielded = true;
       playBuffReaction(j);
+      playSfx('shieldPulse');
       announce(`${j.name} raised a shield.`);
       hold(420);
       return;
@@ -2694,6 +2700,7 @@ function resolveActualTileEffect(j, type, done){
     case 'rage':
       j.rageCharge = true;
       playBuffReaction(j);
+      playSfx('rageSurge');
       announce(`${j.name} is enraged, their next attack deals double damage!`);
       hold(420);
       return;
@@ -2850,22 +2857,38 @@ function initAudio(){
   musicGain = actx.createGain();
   musicGain.gain.value = 0.18;
   musicGain.connect(actx.destination);
+  // All sound effects route through one compressor bus — this is the
+  // volume normalization / anti-clipping layer so nothing ever spikes
+  // or stacks into a harsh wall of noise.
+  sfxBus = actx.createDynamicsCompressor();
+  sfxBus.threshold.value = -22;
+  sfxBus.knee.value = 18;
+  sfxBus.ratio.value = 9;
+  sfxBus.attack.value = 0.002;
+  sfxBus.release.value = 0.16;
+  sfxBus.connect(actx.destination);
 }
+let sfxBus = null;
+let activeVoices = 0;
+const MAX_ACTIVE_VOICES = 10; // hard cap on simultaneous oscillators
 
 function beep(freq, dur, type='square', gainVal=0.15, when=0){
   if(!actx || muted) return;
+  if(activeVoices >= MAX_ACTIVE_VOICES) return; // limit simultaneous playback
+  activeVoices++;
   const osc = actx.createOscillator();
   const gain = actx.createGain();
   osc.type = type;
   // small random detune so repeated hits never sound perfectly identical
   osc.frequency.value = freq * (1 + (Math.random()-0.5) * 0.1);
   gain.gain.value = gainVal;
-  osc.connect(gain); gain.connect(actx.destination);
+  osc.connect(gain); gain.connect(sfxBus || actx.destination);
   const t0 = actx.currentTime + when;
   gain.gain.setValueAtTime(gainVal, t0);
   gain.gain.exponentialRampToValueAtTime(0.001, t0+dur);
   osc.start(t0);
   osc.stop(t0+dur);
+  osc.onended = () => { activeVoices = Math.max(0, activeVoices-1); };
 }
 
 function playSfx(name){
@@ -2917,6 +2940,28 @@ function playSfx(name){
     case 'pressureWave': beep(80,0.28,'sine',0.22); beep(60,0.32,'square',0.14,0.03); break;
     case 'iceForm': beep(1500,0.06,'sine',0.08); beep(1100,0.08,'sine',0.06,0.05); break;
     case 'iceCrack': beep(900,0.04,'square',0.1); beep(500,0.05,'square',0.09,0.03); beep(300,0.07,'square',0.08,0.06); break;
+    case 'rageSurge':
+      // crackling electrical surge — distinct from Laser's clean charge
+      for(let i=0;i<4;i++) beep(180+Math.random()*220, 0.05, 'sawtooth', 0.1, i*0.045);
+      beep(90, 0.2, 'square', 0.12, 0.18);
+      break;
+    case 'shimmerInvisible':
+      // soft ascending shimmer, no percussive edge
+      [700,880,1100,1400].forEach((f,i)=> beep(f, 0.14, 'sine', 0.06, i*0.05));
+      break;
+    case 'shieldPulse':
+      // a single warm, rounded pulse — protective, not aggressive
+      beep(260, 0.18, 'sine', 0.14);
+      beep(390, 0.2, 'triangle', 0.1, 0.03);
+      break;
+    case 'axeChop':
+      beep(220, 0.07, 'square', 0.18);
+      beep(140, 0.12, 'sawtooth', 0.16, 0.02);
+      break;
+    case 'anvilThud':
+      beep(70, 0.3, 'sine', 0.24);
+      beep(50, 0.35, 'square', 0.16, 0.03);
+      break;
     case 'yelpSmall': beep(650,0.07,'triangle',0.09); break;
     case 'yelpBig': beep(420,0.1,'triangle',0.13); beep(300,0.12,'triangle',0.1,0.06); break;
     case 'shift': beep(300,0.1,'sine',0.1); beep(260,0.12,'sine',0.08,0.05); break;
@@ -2924,7 +2969,7 @@ function playSfx(name){
     case 'settle': beep(660,0.1,'square',0.14); beep(880,0.14,'square',0.16,0.08); break;
     case 'clash': beep(180,0.15,'sawtooth',0.15); beep(140,0.15,'sawtooth',0.1,0.05); break;
     case 'hit': beep(110,0.2,'square',0.18); break;
-    case 'telegraph': beep(420,0.05,'square',0.09); beep(520,0.06,'square',0.1,0.07); break;
+    case 'shadowForm': beep(420,0.05,'square',0.07); beep(520,0.06,'square',0.08,0.07); break;
     case 'explosion':
       beep(90,0.35,'sawtooth',0.22);
       beep(60,0.4,'square',0.18,0.03);
