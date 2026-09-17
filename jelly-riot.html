@@ -22,7 +22,7 @@
   }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;overflow-x:hidden;overscroll-behavior:none;}
-  html{-webkit-text-size-adjust:100%;text-size-adjust:100%;}
+  html{-webkit-text-size-adjust:100%;text-size-adjust:100%;overflow-x:hidden;}
   body{
     min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;align-items:center;
     padding:24px 14px calc(50px + env(safe-area-inset-bottom,0px));
@@ -34,7 +34,8 @@
       radial-gradient(ellipse 900px 600px at 20% -10%, #1c3a2e 0%, transparent 60%),
       radial-gradient(ellipse 900px 600px at 85% 10%, #3a1c3e 0%, transparent 55%),
       var(--bg);
-    overflow:hidden;
+    overflow-x:hidden;
+    overflow-y:visible; /* content taller than the viewport must scroll, never clip */
   }
   .blob-bg{position:fixed;border-radius:50%;filter:blur(60px);opacity:.35;z-index:0;pointer-events:none;animation:drift 14s ease-in-out infinite;}
   .blob-bg.b1{width:340px;height:340px;background:#3ad6d9;top:-80px;left:-100px;animation-delay:0s;}
@@ -205,14 +206,27 @@
   /* ---------------- Mobile layout (portrait, ~360-430px) ---------------- */
   @media (max-width: 480px){
     body{padding:10px 8px calc(16px + env(safe-area-inset-bottom,0px));}
-    .marquee{margin-bottom:8px;}
-    h1{font-size:22px;margin:0 0 2px;padding:2px 6px;}
-    .subtitle{font-size:10px;margin-bottom:10px;}
-    .stage{gap:10px;}
-    .board-wrap{padding:8px;width:100%;}
-    .side{width:100%;padding:10px;gap:8px;}
-    .side h2{font-size:11px;margin-bottom:5px;padding-bottom:4px;}
-    .jelly-row{margin-bottom:6px;padding:4px 5px;}
+    .marquee{margin-bottom:6px;}
+    h1{font-size:20px;margin:0 0 2px;padding:2px 6px;}
+    .subtitle{font-size:10px;margin-bottom:8px;}
+
+    /* Reflow order: title -> compact HP HUD -> board -> turn banner (inside
+       board-wrap already) -> log/controls. .side becomes a pass-through so
+       its children can be reordered independently of the board. */
+    .stage{display:flex;flex-direction:column;gap:8px;width:100%;}
+    .side{display:contents;}
+    .jellies-hud{order:1;width:100%;padding:8px;}
+    .board-wrap{order:2;padding:8px;width:100%;}
+    .log-section{order:3;width:100%;padding:10px;}
+    .controls{order:4;width:100%;padding:0 2px;}
+
+    .jellies-hud h2{display:none;} /* the compact HUD is self-explanatory */
+    #jellyList{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+    .jelly-row{flex-direction:column;align-items:stretch;gap:3px;padding:6px;margin-bottom:0;}
+    .jelly-dot{width:10px;height:10px;}
+    .jelly-name{font-size:10px;}
+    .weapon-tag{font-size:8px;}
+
     .banner{font-size:12px;}
     footer{margin-top:14px;}
 
@@ -230,13 +244,31 @@
     }
     .log-section:not(.collapsed) .log{max-height:38vh;margin-top:8px;padding:6px 6px 2px;}
     .log-section h2{display:none;} /* replaced by the toggle button on mobile */
+
+    /* How to Play must never trap the Start button off-screen. */
+    .overlay{padding:8px;}
+    .overlay-card{
+      width:calc(100% - 16px);
+      max-width:calc(100% - 16px);
+      max-height:calc(100dvh - 16px);
+      overflow-y:auto;
+      -webkit-overflow-scrolling:touch;
+      padding:20px 18px;
+      margin:0;
+    }
+  }
+  /* On the shortest phones (e.g. 360x640) drop the purely decorative lines
+     so title -> HP HUD -> board -> controls all fit without scrolling. */
+  @media (max-width: 480px) and (max-height: 700px){
+    .subtitle, footer{display:none;}
+    .marquee{margin-bottom:4px;}
   }
   @media (max-width: 480px) and (orientation: landscape){
     body{padding:8px calc(8px + env(safe-area-inset-right,0px)) 8px calc(8px + env(safe-area-inset-left,0px));}
     .stage{flex-direction:row;flex-wrap:nowrap;align-items:flex-start;}
     h1,.subtitle,.marquee{display:none;} /* reclaim vertical space in landscape */
     #board{max-width:min(78vh, 92vw);}
-    .side{width:220px;}
+    .side{display:flex;flex-direction:column;width:220px;} /* reset the portrait display:contents */
   }
 </style>
 </head>
@@ -257,7 +289,7 @@
   </div>
 
   <div class="hud-card side">
-    <div>
+    <div class="jellies-hud">
       <h2>Jellies</h2>
       <div id="jellyList"></div>
     </div>
