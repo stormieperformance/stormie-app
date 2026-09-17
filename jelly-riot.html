@@ -599,6 +599,15 @@ function drawBoard(){
     dropShadows = dropShadows.filter(s => (now - s.start) < s.dur);
   }
 
+  // Spotlight: dim the board itself while a weapon effect is demonstrating,
+  // so the acting jelly (drawn afterward, on top) reads as the focal point.
+  if(spotlightJelly){
+    ctx.save();
+    ctx.fillStyle = 'rgba(6,7,10,0.5)';
+    ctx.fillRect(PAD, PAD, GRID*CELL, GRID*CELL);
+    ctx.restore();
+  }
+
   // jump ground shadows — shrink and fade as the jelly rises, grow back on landing
   for(const j of jellies){
     if(!j.alive || !(j.jumpLift > 0.5)) continue;
@@ -1731,18 +1740,18 @@ function resolveHandbagSwings(list, i, done){
   const px = boardToPx(j.px)+CELL/2, py = boardToPx(j.py)+CELL/2;
 
   if(!targets.length){
-    setTimeout(()=> resolveHandbagSwings(list, i+1, done), 200);
+    setTimeout(()=> resolveHandbagSwings(list, i+1, done), 150);
     return;
   }
 
-  spawnWeaponBanner('Handbag', tdef.color);
+  announceEffectBanner(j, 'Handbag', tdef.color);
   announce(`${j.name} swings the handbag at ${targets.map(t=>t.name).join(', ')}!`);
   playSfx('handbagSwing'); // anticipation whoosh before the impact lands
   drawBoard();
 
   setTimeout(()=>{
     addShockwave(px, py, tdef.color, 45);
-    burst(px, py, tdef.color, 20);
+    burst(px, py, tdef.color, 14);
     playSfx('handbagWhack');
     shake(9);
 
@@ -1752,7 +1761,7 @@ function resolveHandbagSwings(list, i, done){
         j.rageCharge = false;
         renderSidebar();
         drawBoard();
-        setTimeout(()=> resolveHandbagSwings(list, i+1, done), 300);
+        finishEffect(()=> resolveHandbagSwings(list, i+1, done));
         return;
       }
       damageJelly(j, targets[idx], 35, 'sideWhack', dirBetween(j, targets[idx]), 1);
@@ -1945,6 +1954,46 @@ function spawnWeaponBanner(label, color){
   weaponBanners.push({label: label.toUpperCase(), color, life:1});
 }
 
+// Cinematic queue infrastructure — every weapon effect is a strictly
+// exclusive beat: spotlight the actor, announce "NAME'S TURN -> WEAPON",
+// play out completely, then force-clear every trace before the next begins.
+let spotlightJelly = null;
+function announceEffectBanner(j, label, color){
+  const who = j.isPlayer ? 'YOUR' : `${j.name.toUpperCase()}'S`;
+  spotlightJelly = j;
+  spawnWeaponBanner(`${who} TURN \u2192 ${label.toUpperCase()}`, color);
+}
+
+// Force every temporary visual/audio-adjacent piece of state back to empty
+// so nothing from this effect can bleed into the next one.
+function clearAllEffectVisuals(){
+  particles = [];
+  floatTexts = [];
+  explosionCells = [];
+  shockwaves = [];
+  screenFlash.alpha = 0;
+  weaponBanners = [];
+  dropShadows = [];
+  fallingObjects = [];
+  airStrikeReticles = [];
+  laserCharge = null;
+  laserBeamFx = null;
+  nukeCountdown = null;
+  shakeAmt = 0;
+  hitStopUntil = 0;
+  landFlashes = [];
+  spotlightJelly = null;
+}
+
+// Every weapon-style effect must call this instead of `done()` directly:
+// clear the board completely, hold it clean for a readable beat, THEN
+// signal completion — never a fixed timing shorter than the animation.
+function finishEffect(done){
+  clearAllEffectVisuals();
+  drawBoard();
+  setTimeout(done, 300);
+}
+
 function damageJelly(source, target, amt, hitType, forceDir, severity){
   if(target.shielded){
     target.shielded = false;
@@ -2099,11 +2148,11 @@ function drawDropObject(shape, size){
 // flatten them on impact, then let them peel back off the tile.
 function detonateRandomDrop(j, done){
   const tdef = TILE_DEFS.randomdrop;
-  spawnWeaponBanner('Random Drop', tdef.color);
+  announceEffectBanner(j, 'Random Drop', tdef.color);
   const pool = otherJellies(j).filter(k => !k.invisible);
   if(!pool.length){
     announce(`${j.name} grabbed a Random Drop, but everyone nearby was invisible!`);
-    done();
+    finishEffect(done);
     return;
   }
   const target = pool[Math.floor(Math.random()*pool.length)];
@@ -2123,15 +2172,15 @@ function detonateRandomDrop(j, done){
       else playSfx('explosion');
       const px = boardToPx(target.px)+CELL/2, py = boardToPx(target.py)+CELL/2;
       addShockwave(px, py, tdef.color, 50);
-      burst(px, py, tdef.color, 24);
-      flashScreen(tdef.color, 0.22);
+      burst(px, py, tdef.color, 16);
+      flashScreen(tdef.color, 0.18);
       shake(12);
       damageJelly(j, target, variant.dmg, 'flatten');
       j.rageCharge = false;
       renderSidebar();
       drawBoard();
       // hold on the flattened pose so the "peel off and reform" is visible
-      setTimeout(done, 520);
+      setTimeout(()=> finishEffect(done), 520);
     }, fallDur);
   }, shadowDur);
 }
@@ -2143,7 +2192,7 @@ function spawnDropShadow(x,y,dur){ dropShadows.push({x,y,start:performance.now()
 // targets them), telegraphed with a reticle before it drops.
 function detonateAirStrike(j, done){
   const tdef = TILE_DEFS.airstrike;
-  spawnWeaponBanner('Air Strike', tdef.color);
+  announceEffectBanner(j, 'Air Strike', tdef.color);
 
   const aliveCount = jellies.filter(k=>k.alive).length;
   const missileCount = aliveCount >= 4 ? 9 : aliveCount === 3 ? 6 : 3;
@@ -2162,7 +2211,7 @@ function detonateAirStrike(j, done){
     if(idx >= targets.length){
       airStrikeReticles = [];
       j.rageCharge = false;
-      done();
+      finishEffect(done);
       return;
     }
     const t = targets[idx];
@@ -2172,8 +2221,8 @@ function detonateAirStrike(j, done){
     setTimeout(()=>{
       const px = boardToPx(t.x)+CELL/2, py = boardToPx(t.y)+CELL/2;
       markExplosion([{x:t.x,y:t.y}], tdef.color);
-      addShockwave(px, py, tdef.color, 45);
-      burst(px, py, tdef.color, 18);
+      addShockwave(px, py, tdef.color, 40);
+      burst(px, py, tdef.color, 12);
       shake(8);
       playSfx('explosion');
       const victim = jellies.find(k => k.alive && k.x===t.x && k.y===t.y);
@@ -2196,7 +2245,7 @@ let laserBeamFx = null; // {x,y,start,dur,color}
 
 function detonateLaser(j, done){
   const tdef = TILE_DEFS.laser;
-  spawnWeaponBanner('Laser', tdef.color);
+  announceEffectBanner(j, 'Laser', tdef.color);
   const chargeDur = 450;
   laserCharge = {x:j.x, y:j.y, start:performance.now(), dur:chargeDur};
   playSfx('chargeLaser');
@@ -2207,7 +2256,7 @@ function detonateLaser(j, done){
     const beamDur = 260;
     laserBeamFx = {x:j.x, y:j.y, start:performance.now(), dur:beamDur, color:tdef.color};
     playSfx('laserFire');
-    flashScreen('#ffffff', 0.25);
+    flashScreen('#ffffff', 0.2);
     shake(5);
 
     const lineCells = cellsInLine(j.x, j.y);
@@ -2222,11 +2271,9 @@ function detonateLaser(j, done){
     function hitNext(){
       if(idx >= hits.length){
         setTimeout(()=>{
-          laserBeamFx = null;
           j.rageCharge = false;
           playSfx('crackle');
-          drawBoard();
-          done();
+          finishEffect(done);
         }, 150);
         return;
       }
@@ -2254,7 +2301,7 @@ let scorchUntil = 0;      // lingering dark overlay after the blast
 
 function detonateNuke(j, done){
   const tdef = TILE_DEFS.nuke;
-  spawnWeaponBanner('NUKE', tdef.color);
+  announceEffectBanner(j, 'NUKE', tdef.color);
   playSfx('alarm');
   panicUntil = performance.now() + 700;
   drawBoard();
@@ -2263,10 +2310,10 @@ function detonateNuke(j, done){
   function tickCountdown(){
     if(count <= 0){
       nukeCountdown = null;
-      flashScreen('#ffffff', 0.55);
+      flashScreen('#ffffff', 0.45);
       const cx = canvas.width/2, cy = canvas.height/2;
-      addShockwave(cx, cy, tdef.color, 240);
-      addShockwave(cx, cy, '#ffffff', 280);
+      addShockwave(cx, cy, tdef.color, 200);
+      addShockwave(cx, cy, '#ffffff', 240);
       shake(30); // stronger than any other weapon
       playSfx('nukeFlash');
       drawBoard();
@@ -2280,7 +2327,7 @@ function detonateNuke(j, done){
           : `${j.name} triggers a NUKE, but no one else is around.`);
         let idx = 0;
         function hitNext(){
-          if(idx >= hits.length){ j.rageCharge = false; done(); return; }
+          if(idx >= hits.length){ j.rageCharge = false; finishEffect(done); return; }
           const target = hits[idx];
           damageJelly(j, target, 30, 'nukeLaunch', dirBetween(j, target), 1);
           renderSidebar();
@@ -2434,7 +2481,7 @@ function detonate(j, type, done){
 
   // Telegraph: the weapon name announces itself and the danger zone flashes
   // white/warning before anything actually goes off.
-  spawnWeaponBanner(def.label, tdef.color);
+  announceEffectBanner(j, def.label, tdef.color);
   markExplosion(cells, '#ffffff');
   playSfx(type === 'blast' ? 'blastCharge' : 'telegraph');
   drawBoard();
@@ -2443,8 +2490,8 @@ function detonate(j, type, done){
     markExplosion(cells, tdef.color);
     const px = boardToPx(j.px)+CELL/2, py = boardToPx(j.py)+CELL/2;
     addShockwave(px, py, tdef.color, 40 + cells.length*3);
-    burst(px, py, tdef.color, Math.min(40, 14 + cells.length));
-    flashScreen(tdef.color, def.radius >= 2 ? 0.5 : 0.2);
+    burst(px, py, tdef.color, Math.min(22, 12 + cells.length));
+    flashScreen(tdef.color, def.radius >= 2 ? 0.4 : 0.18);
     shake(6 + Math.min(20, cells.length));
     playSfx(type === 'blast' ? 'pressureWave' : 'explosion');
 
@@ -2458,7 +2505,7 @@ function detonate(j, type, done){
     // instead of every victim reacting on the exact same frame.
     let idx = 0;
     function hitNext(){
-      if(idx >= hits.length){ j.rageCharge = false; done(); return; }
+      if(idx >= hits.length){ j.rageCharge = false; finishEffect(done); return; }
       const target = hits[idx];
       let dmg, hitType, forceDir, severity;
       if(type === 'blast'){
