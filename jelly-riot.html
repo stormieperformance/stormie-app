@@ -309,21 +309,21 @@ const TILE_DEFS = {
 };
 const TILE_TYPES = Object.keys(TILE_DEFS);
 
-// Weighted spawn rarity — strong weapons must be significantly rarer than
-// health/status/utility tiles, and Nuke/Air Strike are never guaranteed.
-const TILE_RARITY = {
-  health:'common', shield:'common', teleport:'common', freeze:'common',
-  mine:'uncommon', handbag:'uncommon', rage:'uncommon', invisible:'uncommon', debonus:'uncommon', triplejump:'uncommon',
-  blast:'rare', laser:'rare', randomdrop:'rare', superjelly:'rare',
-  airstrike:'veryrare', nuke:'veryrare'
+// Weighted spawn table — the game direction is aggressive and weapon-heavy:
+// weapons/hazards make up ~60% of spawn weight, Nuke stays rare but present.
+const TILE_WEIGHT = {
+  blast:8, randomdrop:8, laser:8, handbag:8, mine:8, airstrike:8,
+  nuke:3,
+  health:4, shield:4, teleport:4, freeze:4,
+  rage:3, invisible:3, debonus:3, triplejump:3,
+  superjelly:3
 };
-const RARITY_WEIGHT = {common:10, uncommon:5, rare:2, veryrare:1};
 function weightedTileType(){
-  const entries = Object.entries(TILE_RARITY);
-  const total = entries.reduce((s,[,r])=>s+RARITY_WEIGHT[r], 0);
+  const entries = Object.entries(TILE_WEIGHT);
+  const total = entries.reduce((s,[,w])=>s+w, 0);
   let roll = Math.random()*total;
-  for(const [t,r] of entries){
-    roll -= RARITY_WEIGHT[r];
+  for(const [t,w] of entries){
+    roll -= w;
     if(roll <= 0) return t;
   }
   return entries[0][0];
@@ -375,7 +375,7 @@ function makeTiles(){
   }
   // ~9-11 special tiles to start, weighted so strong weapons are rare —
   // never a guaranteed one-of-each anymore.
-  const specialCount = 11 + Math.floor(Math.random()*3); // 11, 12 or 13
+  const specialCount = 16 + Math.floor(Math.random()*5); // 16-20
   const pool = tiles.slice();
   for(let i=0;i<specialCount;i++){
     const pick = Math.floor(Math.random()*pool.length);
@@ -418,7 +418,7 @@ function shiftTilesDown(){
       // new row: mostly empty, occasional fresh icon weighted toward common tiles
       const row = [];
       for(let x=0;x<GRID;x++){
-        row.push(Math.random() < 0.20 ? weightedTileType() : 'plain');
+        row.push(Math.random() < 0.30 ? weightedTileType() : 'plain');
       }
       shifted.push(row);
     } else {
@@ -597,19 +597,6 @@ function drawBoard(){
       ctx.restore();
     });
     dropShadows = dropShadows.filter(s => (now - s.start) < s.dur);
-  }
-
-  // Spotlight: a subtle dark tint over the board with a clear radial cutout
-  // around the acting jelly, so it never reads as a strong coloured cloud.
-  if(spotlightJelly){
-    ctx.save();
-    const sx = boardToPx(spotlightJelly.px) + CELL/2, sy = boardToPx(spotlightJelly.py) + CELL/2;
-    const grad = ctx.createRadialGradient(sx, sy, CELL*0.9, sx, sy, CELL*3.2);
-    grad.addColorStop(0, 'rgba(6,7,10,0)');
-    grad.addColorStop(1, 'rgba(6,7,10,0.32)');
-    ctx.fillStyle = grad;
-    ctx.fillRect(PAD, PAD, GRID*CELL, GRID*CELL);
-    ctx.restore();
   }
 
   // jump ground shadows — shrink and fade as the jelly rises, grow back on landing
@@ -1038,6 +1025,21 @@ function drawJelly(cx,cy,j){
   ctx.save();
   ctx.globalAlpha = deathAlpha;
 
+  if(j === spotlightJelly){
+    // The ONLY way we mark "this is the acting jelly" now: a bright solid
+    // gold ring, pulsing faster than the player's own dashed identifier ring.
+    const sp = 1 + Math.sin(performance.now()/140)*0.16;
+    ctx.save();
+    ctx.strokeStyle = '#ffd35c';
+    ctx.lineWidth = 3.5;
+    ctx.shadowColor = '#ffd35c';
+    ctx.shadowBlur = 10;
+    ctx.beginPath();
+    ctx.arc(cx, cy, (r+13)*sp, 0, Math.PI*2);
+    ctx.stroke();
+    ctx.restore();
+  }
+
   if(j.isPlayer){
     const pulse = 1 + Math.sin(performance.now()/260)*0.12;
     ctx.save();
@@ -1406,6 +1408,33 @@ function predictTileAt(x, y){
 // Scores one possible destination for an AI jelly. useCorrectShift decides
 // whether it reads the post-shift tile (accurate) or the current one
 // (a misjudged guess) — this is what separates the difficulty tiers.
+// Roughly estimate a weapon's damage, whether it can hit multiple rivals from
+// (x,y), and whether it can finish off a weakened/vulnerable opponent.
+function estimateWeaponThreat(type, x, y, opponents){
+  let approxDmg, inRange;
+  if(type === 'laser'){
+    approxDmg = 28;
+    inRange = opponents.filter(o => o.x===x || o.y===y);
+  } else if(type === 'blast'){
+    approxDmg = 30;
+    inRange = opponents.filter(o => Math.max(Math.abs(o.x-x),Math.abs(o.y-y)) <= 4);
+  } else if(type === 'handbag'){
+    approxDmg = 35;
+    inRange = opponents.filter(o => Math.max(Math.abs(o.x-x),Math.abs(o.y-y)) <= 1);
+  } else if(type === 'nuke'){
+    approxDmg = 30; inRange = opponents.slice();
+  } else if(type === 'airstrike'){
+    approxDmg = 30; inRange = opponents.slice();
+  } else if(type === 'randomdrop'){
+    approxDmg = 30; inRange = opponents.slice();
+  } else {
+    approxDmg = 20; inRange = opponents.slice();
+  }
+  const vulnerable = inRange.filter(o => !o.shielded && !o.invisible);
+  const killable = vulnerable.some(o => o.hp <= approxDmg);
+  return { vulnerableCount: vulnerable.length, killable };
+}
+
 function scoreDestination(mover, x, y, useCorrectShift, opponents){
   let score = 0;
   const predicted = useCorrectShift ? predictTileAt(x, y) : tileAt(x, y);
@@ -1414,46 +1443,53 @@ function scoreDestination(mover, x, y, useCorrectShift, opponents){
 
   if(def){
     if(def.cat === 'weapon'){
-      const rivalsNearby = opponents.filter(o => Math.max(Math.abs(o.x-x),Math.abs(o.y-y)) <= 3).length;
-      let weaponScore = type==='nuke' ? 90 : (rivalsNearby>=2 ? 70 : 45);
-      // Easy/Normal don't hunt down the ultimates or Laser the way Hard does.
+      const threat = estimateWeaponThreat(type, x, y, opponents);
+      let weaponScore;
+      if(threat.killable) weaponScore = 220;          // finish an opponent this turn
+      else if(threat.vulnerableCount >= 2) weaponScore = 130; // hits multiple rivals
+      else if(threat.vulnerableCount >= 1) weaponScore = 85;
+      else weaponScore = 35; // reposition for later even with no one in range yet
+      if(type === 'nuke') weaponScore += 10;
+      // Easy/Normal are still aggressive, just less precise about the ultimates.
       if((type==='nuke' || type==='airstrike' || type==='laser') && difficulty !== 'hard'){
-        weaponScore *= 0.35;
+        weaponScore *= (difficulty === 'easy' ? 0.6 : 0.85);
       }
       score += weaponScore;
     } else if(type === 'health'){
-      score += mover.hp < 60 ? 60 : 15;
+      score += mover.hp < 35 ? 90 : mover.hp < 60 ? 25 : -25; // never detour for health near full HP
     } else if(type === 'superjelly'){
-      score += mover.hp < 70 ? 85 : 20;
+      score += mover.hp < 45 ? 110 : mover.hp < 70 ? 20 : -25;
     } else if(type === 'shield'){
-      score += mover.shielded ? 5 : 55;
+      score += (!mover.shielded && mover.hp < 55) ? 65 : (mover.shielded ? 5 : 15);
     } else if(type === 'rage'){
-      score += mover.rageCharge ? 5 : 40;
+      score += mover.rageCharge ? 5 : 60; // feeds straight into the next attack
     } else if(type === 'triplejump'){
-      score += mover.tripleJump ? 5 : 25;
+      score += mover.tripleJump ? 5 : 22;
     } else if(type === 'mine'){
       score -= 70;
     } else if(type === 'freeze' || type === 'debonus'){
-      score += 25;
-    } else if(type === 'invisible'){
-      score += mover.invisible ? 5 : 30;
-    } else if(type === 'teleport'){
-      score += mover.hp < 40 ? 20 : -5;
-    } else if(type === 'handbag'){
       score += 35;
+    } else if(type === 'invisible'){
+      score += mover.invisible ? 5 : 18; // less appealing than before — the AI wants to fight, not hide
+    } else if(type === 'teleport'){
+      score += mover.hp < 25 ? 15 : -10;
+    } else if(type === 'handbag'){
+      score += 45;
     }
   }
 
-  // Landing on another jelly risks a Jelly Off.
+  // Landing on another jelly triggers a Jelly Off — deliberately pursue this
+  // against a weak opponent, avoid it against a healthier one.
   const occupant = opponents.find(o => o.x===x && o.y===y);
-  if(occupant) score += mover.hp > occupant.hp ? 10 : -20;
+  if(occupant){
+    if(occupant.hp < 35) score += 55;
+    else score += mover.hp > occupant.hp ? 15 : -15;
+  }
 
-  // Danger zones: close range (Blast/Handbag) or aligned (Laser).
+  // Weakened opponents get actively hunted, not just avoided or ignored.
   opponents.forEach(o=>{
     const dist = Math.max(Math.abs(o.x-x), Math.abs(o.y-y));
-    if(dist <= 1) score -= 15;
-    else if(dist <= 2) score -= 6;
-    if(o.x === x || o.y === y) score -= 8;
+    if(o.hp < 35 && dist <= 3) score += 22;
   });
 
   return score;
@@ -1464,8 +1500,9 @@ function scoreDestination(mover, x, y, useCorrectShift, opponents){
 // avoid an invisible jelly (item 8's "AI should not intentionally target").
 function chooseAiMove(j, opts, opponents){
   if(difficulty === 'easy'){
-    // Mostly random; only sometimes even tries to read the (often wrong) tile.
-    if(Math.random() < 0.25){
+    // Still aggressive, just less accurate about it — attack more often than
+    // not, but sometimes just take the best-looking nearby option blindly.
+    if(Math.random() < 0.55){
       const scored = opts.map(o => ({o, s: scoreDestination(j, o.x, o.y, false, opponents)}));
       scored.sort((a,b)=>b.s-a.s);
       return scored[0].o;
@@ -1481,7 +1518,7 @@ function chooseAiMove(j, opts, opponents){
   const correctShift = Math.random() < 0.8; // "correctly predicts most of the time"
   const scored = opts.map(o => ({o, s: scoreDestination(j, o.x, o.y, correctShift, opponents)}));
   scored.sort((a,b)=>b.s-a.s);
-  const topN = scored.slice(0, Math.min(3, scored.length));
+  const topN = scored.slice(0, Math.min(2, scored.length));
   return topN[Math.floor(Math.random()*topN.length)].o;
 }
 
@@ -2161,7 +2198,11 @@ function detonateRandomDrop(j, done){
     finishEffect(done);
     return;
   }
-  const target = pool[Math.floor(Math.random()*pool.length)];
+  // Mostly targets the weakest opponent (kill pressure), but "Random" Drop
+  // keeps a little unpredictability rather than being fully deterministic.
+  const target = Math.random() < 0.7
+    ? pool.reduce((weakest,o)=> o.hp < weakest.hp ? o : weakest, pool[0])
+    : pool[Math.floor(Math.random()*pool.length)];
   const variant = pickDropVariant();
   const shadowDur = 420;
   spawnDropShadow(target.x, target.y, shadowDur);
@@ -2636,7 +2677,10 @@ function resolveActualTileEffect(j, type, done){
     case 'freeze': {
       const pool = otherJellies(j); // anywhere on the board, not just nearby
       if(pool.length){
-        const target = pool[Math.floor(Math.random()*pool.length)];
+        // Slight bias toward freezing whoever's already weak, to help finish them.
+        const target = Math.random() < 0.5
+          ? pool.reduce((weakest,o)=> o.hp < weakest.hp ? o : weakest, pool[0])
+          : pool[Math.floor(Math.random()*pool.length)];
         target.frozen = true;
         playBuffReaction(target);
         announce(`${j.name} froze ${target.name} in place!`);
