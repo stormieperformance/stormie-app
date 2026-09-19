@@ -20,7 +20,7 @@
   <meta name="twitter:image" content="https://stormie.app/stormie-app-og-v3.jpg" />
   <link rel="canonical" href="https://stormie.app" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=Press+Start+2P&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=Press+Start+2P&display=swap" rel="stylesheet">
   <noscript><style>body{opacity:1!important;transform:none!important}.gateway-label,.gateway-title,.games-grid,.soon,.about-title,.about-body p{opacity:1!important;transform:none!important;filter:none!important}.about-rule{width:96px!important}#surpriseBtn{display:none}</style></noscript>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -402,6 +402,16 @@
       gap: 14px;
       align-items: center;
     }
+    .quick-play { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+    .quick-label { font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(232,228,220,0.5); margin-right: 4px; }
+    .quick-play a {
+      display: inline-flex; align-items: center; min-height: 44px; padding: 0 16px;
+      font-size: 12px; font-weight: 500; letter-spacing: 0.08em; color: var(--text); text-decoration: none;
+      border: 1px solid rgba(232,228,220,0.22); background: rgba(12,12,11,0.35);
+      transition: border-color 0.25s ease, color 0.25s ease, background 0.25s ease;
+    }
+    .quick-play a:active { border-color: var(--gold); background: rgba(201,169,110,0.14); }
+    @media (hover: hover) { .quick-play a:hover { border-color: var(--gold); color: #fff8ec; } }
     .trust-badges {
       display: flex;
       align-items: center;
@@ -500,17 +510,20 @@
       pointer-events: none;
     }
     .enter-btn span { position: relative; z-index: 2; }
-    .enter-btn:hover, .enter-btn:focus-visible {
+    .enter-btn:focus-visible, .enter-btn.is-hover {
       color: #fff8ec;
       border-color: var(--gold);
       box-shadow: 0 0 24px rgba(201,169,110,0.22), 0 0 48px rgba(201,169,110,0.12);
       transform: translateY(-1px);
     }
-    .enter-btn:hover::before, .enter-btn:focus-visible::before {
+    .enter-btn:focus-visible::before {
       opacity: 0.96;
       filter: drop-shadow(0 0 4px rgba(201,169,110,0.16)) drop-shadow(0 0 12px rgba(201,169,110,0.12));
     }
-    .enter-btn:active { transform: translateY(0); }
+    @media (hover: hover) {
+      .enter-btn:hover { color: #fff8ec; border-color: var(--gold); box-shadow: 0 0 24px rgba(201,169,110,0.22), 0 0 48px rgba(201,169,110,0.12); transform: translateY(-1px); }
+      .enter-btn:hover::before { opacity: 0.96; }
+    }
     button.enter-btn { font-family: var(--sans); -webkit-appearance: none; appearance: none; cursor: pointer; }
     .enter-btn { min-height: 50px; }
     .enter-btn--ghost {
@@ -520,7 +533,7 @@
       color: var(--text);
     }
     .enter-btn--ghost::before { display: none; }
-    .enter-btn--ghost:hover, .enter-btn--ghost:focus-visible {
+    .enter-btn--ghost:focus-visible {
       border-color: var(--gold);
       box-shadow: 0 0 24px rgba(201,169,110,0.16);
     }
@@ -535,7 +548,7 @@
       position: relative;
       background:
         linear-gradient(180deg, #0c0c0b 0%, rgba(12,12,11,0.7) 14%, rgba(12,12,11,0.7) 86%, #0c0c0b 100%),
-        url('./about-bg.png') center 42% / cover no-repeat;
+        url('./about-bg.webp') center 42% / cover no-repeat;
     }
     .about-wrap { max-width: 1080px; margin: 0 auto; padding: 0 48px 88px; }
     .about-label {
@@ -610,7 +623,7 @@
       position: relative;
       background:
         linear-gradient(180deg, #0c0c0b 0%, rgba(12,12,11,0.52) 18%, rgba(12,12,11,0.52) 80%, #0c0c0b 100%),
-        url('./games-bg.png') center 55% / cover no-repeat;
+        url('./games-bg.webp') center 55% / cover no-repeat;
     }
     .gateway { max-width: 1080px; margin: 0 auto; padding: 0 48px 72px; scroll-margin-top: 72px; }
     .gateway-label {
@@ -638,6 +651,15 @@
       filter: blur(6px);
       transition: opacity 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.05s, transform 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.05s, filter 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.05s;
     }
+    .gateway-note {
+      margin: -22px 0 34px;
+      font-size: 12px;
+      letter-spacing: 0.06em;
+      color: rgba(232,228,220,0.5);
+      opacity: 0;
+      transition: opacity 0.9s ease 0.15s;
+    }
+    .gateway.in-view .gateway-note { opacity: 1; }
     .games-grid {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -688,7 +710,8 @@
       pointer-events: none;
     }
     .tilt-shine { position: absolute; inset: 0; z-index: 3; pointer-events: none; opacity: 0; transition: opacity 0.3s; }
-    .game-card:hover .gc-screen, .gc-screen:focus-visible {
+    .gc-screen:focus-visible,
+    .game-card:active .gc-screen {
       border-color: #221b12;
       box-shadow:
         inset 0 2px 0 rgba(255,255,255,0.09),
@@ -696,6 +719,16 @@
         0 0 0 2px var(--gold-line),
         0 28px 56px rgba(0,0,0,0.65);
     }
+    @media (hover: hover) { .game-card:hover .gc-screen {
+      border-color: #221b12;
+      box-shadow:
+        inset 0 2px 0 rgba(255,255,255,0.09),
+        inset 0 -3px 6px rgba(0,0,0,0.65),
+        0 0 0 2px var(--gold-line),
+        0 28px 56px rgba(0,0,0,0.65);
+    } }
+    .enter-btn:active { border-color: var(--gold); background: rgba(201,169,110,0.14); transform: scale(0.985); }
+    a, button, .topbar-burger { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
     .gc-body { display: flex; flex-direction: column; flex: 1; padding-top: 22px; }
     .gc-genre {
       font-family: var(--sans); font-weight: 500; font-size: 10px; letter-spacing: 0.18em;
@@ -870,6 +903,9 @@
       .soon { max-width: 520px; margin-left: auto; margin-right: auto; }
     }
     @media (max-width: 480px) {
+      .quick-label { flex: 1 1 100%; margin: 0 0 2px; }
+      .quick-play { gap: 8px; }
+      .quick-play a { flex: 1 1 auto; justify-content: center; padding: 0 12px; }
       .trust-badges { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 14px; width: 100%; }
       .trust-badges span { font-size: 10px; letter-spacing: 0.1em; }
     }
@@ -907,6 +943,8 @@
       .enter-btn::before { animation: none !important; }
       body { opacity: 1; transform: none; transition: none; }
       .hero-video { opacity: 1 !important; transition: none !important; }
+      .hero-label { clip-path: none !important; }
+      .quick-play a, .enter-btn { transition: none !important; }
     }
   </style>
 </head>
@@ -917,7 +955,7 @@
       <div class="hud-frame-inner">
         <div class="topbar">
           <div class="topbar-left">
-            <img class="topbar-logo" src="logo-white.png" alt="Stormie Games">
+            <img class="topbar-logo" src="logo-white.png" alt="Stormie Games" width="912" height="215">
           </div>
           <div class="topbar-menu">
             <button class="topbar-burger" id="menuToggle" aria-label="Open games menu" aria-expanded="false" aria-controls="gamesMenu">
@@ -951,7 +989,7 @@
         <p class="hero-label">I have five minutes. Give me a game.</p>
 
         <div class="hero-brand">
-          <img class="hero-logo-img" src="logo-white.png" alt="Stormie Games">
+          <img class="hero-logo-img" src="logo-white.png" alt="Stormie Games" width="912" height="215">
         </div>
 
         <h1 class="hero-headline">FIVE-MINUTE GAMES FOR YOUR BREAK.</h1>
@@ -963,6 +1001,12 @@
               <a class="enter-btn" href="#gateway"><span>Play a game</span></a>
               <button class="enter-btn enter-btn--ghost" id="surpriseBtn" type="button"><span>Surprise me</span></button>
             </div>
+            <nav class="quick-play" aria-label="Jump straight into a game">
+              <span class="quick-label">Jump straight in</span>
+              <a href="https://game.stormie.app">Storm//Duel</a>
+              <a href="tiny-kiwi.html">Tiny Kiwi</a>
+              <a href="jelly-riot.html">Jelly Riot</a>
+            </nav>
             <div class="trust-badges">
               <span>5 minutes</span>
               <span>Play instantly</span>
@@ -983,6 +1027,7 @@
     <section class="gateway" id="gateway">
       <p class="gateway-label">Games</p>
       <h2 class="gateway-title">PICK ONE. PRESS PLAY.</h2>
+      <p class="gateway-note">Built for a five-minute break. Playtimes are approximate.</p>
 
       <ul class="games-grid" id="gamesGrid">
       <li class="game-card" data-playable>
@@ -995,7 +1040,7 @@
           <h3 class="gc-name">Storm//Duel</h3>
           <p class="gc-desc">Read the wind-up. Dodge. Counter. Pick an upgrade and go deeper.</p>
           <ul class="gc-meta">
-            <li class="gc-time">3–5 min</li>
+            <li class="gc-time">3 to 5 min</li>
             <li>Mobile + desktop</li>
           </ul>
           <a class="enter-btn gc-play" href="https://game.stormie.app" aria-label="Play Storm//Duel now"><span>Play now</span></a>
@@ -1027,7 +1072,7 @@
           <h3 class="gc-name">Jelly Riot</h3>
           <p class="gc-desc">Four jellies, one board. Last jelly wobbling wins.</p>
           <ul class="gc-meta">
-            <li class="gc-time">3–5 min</li>
+            <li class="gc-time">3 to 5 min</li>
             <li>Mobile + desktop</li>
           </ul>
           <a class="enter-btn gc-play" href="jelly-riot.html" aria-label="Play Jelly Riot now"><span>Play now</span></a>
@@ -1072,7 +1117,7 @@
 
     <div class="hud-frame footer-shell">
     <footer>
-      <img class="footer-logo" src="logo-white.png" alt="Stormie Games">
+      <img class="footer-logo" src="logo-white.png" alt="Stormie Games" width="912" height="215" loading="lazy">
       <p class="footer-tagline">Free five-minute browser games.</p>
 
       <div class="footer-network">
@@ -1140,11 +1185,12 @@
     window.addEventListener('load', () => {
       document.body.classList.add('page-loaded');
 
-      // Load the hero video after the page is ready (skipped on Save-Data)
+      // Load the hero video after the page is ready (skipped on Save-Data and for reduced motion)
       const video = document.getElementById('hero-video');
       if (video) {
         const saveData = navigator.connection && navigator.connection.saveData;
-        if (saveData) {
+        const calm = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        if (saveData || calm) {
           video.remove();
         } else {
           video.addEventListener('canplaythrough', () => video.classList.add('loaded'), { once: true });
