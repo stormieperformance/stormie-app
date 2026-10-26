@@ -662,8 +662,11 @@
     .gateway.in-view .gateway-note { opacity: 1; }
     .games-grid {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 30px;
+      max-width: 1040px;
+      margin-left: auto;
+      margin-right: auto;
       list-style: none;
       opacity: 0;
       transform: translateY(28px);
@@ -962,6 +965,7 @@
               <span></span><span></span><span></span>
             </button>
             <nav class="games-menu" id="gamesMenu">
+              <a href="stormbound.html">Stormbound</a>
               <a href="https://game.stormie.app">Storm//Duel</a>
               <a href="tiny-kiwi.html">Tiny Kiwi</a>
               <a href="jelly-riot.html">Jelly Riot</a>
@@ -1003,6 +1007,7 @@
             </div>
             <nav class="quick-play" aria-label="Jump straight into a game">
               <span class="quick-label">Jump straight in</span>
+              <a href="stormbound.html">Stormbound</a>
               <a href="https://game.stormie.app">Storm//Duel</a>
               <a href="tiny-kiwi.html">Tiny Kiwi</a>
               <a href="jelly-riot.html">Jelly Riot</a>
@@ -1030,6 +1035,22 @@
       <p class="gateway-note">Built for a five-minute break. Playtimes are approximate.</p>
 
       <ul class="games-grid" id="gamesGrid">
+      <li class="game-card" data-playable>
+        <a class="gc-screen" href="stormbound.html" data-name="Stormbound" aria-hidden="true" tabindex="-1">
+          <img src="stormbound-preview.jpg" alt="" width="960" height="600" loading="lazy" decoding="async" onerror="this.style.display='none'">
+          <span class="tilt-shine"></span>
+        </a>
+        <div class="gc-body">
+          <p class="gc-genre">Action · Roguelite</p>
+          <h3 class="gc-name">Stormbound</h3>
+          <p class="gc-desc">Hook the lightning, zip through the horde and chain kills in the air.</p>
+          <ul class="gc-meta">
+            <li class="gc-time">3 to 5 min</li>
+            <li>Mobile + desktop</li>
+          </ul>
+          <a class="enter-btn gc-play" href="stormbound.html" aria-label="Play Stormbound now"><span>Play now</span></a>
+        </div>
+      </li>
       <li class="game-card" data-playable>
         <a class="gc-screen" href="https://game.stormie.app" data-name="Storm//Duel" aria-hidden="true" tabindex="-1">
           <img src="https://game.stormie.app/og-image.jpg?v=2" alt="" width="960" height="600" loading="lazy" decoding="async" onerror="this.style.display='none'">
