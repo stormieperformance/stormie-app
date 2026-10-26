@@ -92,7 +92,7 @@ canvas{display:block;width:100%;height:100%;image-rendering:pixelated;image-rend
 <div class="screen" id="sTitle">
   <h1 class="title"><small>Stormie Games presents</small>Last<br>Arrow</h1>
   <p class="tag">Bank shots off steel. Cut the ropes. Light the barrels. Clear every target.</p>
-  <div class="how"><span><b>Drag back</b>to aim</span><span><b>Let go</b>to shoot</span><span><b>R</b>instant retry</span></div>
+  <div class="how"><span><b>Drag</b>toward target</span><span><b>Let go</b>to shoot</span><span><b>R</b>instant retry</span></div>
   <div class="btns"><button class="btn" id="play" type="button">Play</button><button class="tb musicBtn" type="button">Music on</button></div>
   <div class="orient-t"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg><span>Best played upright. One thumb is enough.</span></div>
   <a class="home" href="/">More Stormie Games</a>
@@ -172,7 +172,7 @@ function makeWorld(L) {
   for (const [x1, y1, x2, y2] of L.plates || []) w.plates.push({ x1, y1, x2, y2, mat: 'metal' });
   for (const g of L.gates || []) w.gates.push({ x: g[0], y: g[1], w: g[2], h: g[3], open: 0, timer: 0, dur: g[4] || 3 });
   const mkBody = (o) => {
-    const b = { kind: o.kind || 'target', x: o.x, y: o.y, vx: 0, vy: 0, r: o.kind === 'crate' ? 8 : o.kind === 'barrel' ? 8 : 7, alive: true, dyn: !!o.dyn, move: o.move || null, home: { x: o.x, y: o.y }, id: w.bodies.length };
+    const b = { kind: o.kind || 'target', x: o.x, y: o.y, vx: 0, vy: 0, r: o.r || (o.kind === 'crate' ? 8 : o.kind === 'barrel' ? 8 : 7), alive: true, dyn: !!o.dyn, move: o.move || null, home: { x: o.x, y: o.y }, id: w.bodies.length };
     w.bodies.push(b); return b;
   };
   for (const o of L.targets || []) mkBody({ kind: 'target', ...o });
@@ -204,7 +204,7 @@ function moverPos(b, t) {
 function shoot(w, ang, pow) {
   if (w.arrowsLeft <= 0 || w.won) return null;
   const L = w.L, sp = V_MIN + (V_MAX - V_MIN) * pow;
-  const a = { x: L.archer.x + BOW.dx, y: L.archer.y + BOW.dy, vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp, st: 'fly', bounces: 0, hits: 0, ang, stuck: null, life: 0, trail: [] };
+  const a = { x: L.archer.x + BOW.dx, y: L.archer.y + BOW.dy, vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp, st: 'fly', bounces: 0, hits: 0, ang, stuck: null, life: 0, trail: [], nearD: 1e9, nearX: 0, nearY: 0 };
   w.arrows.push(a); w.arrowsLeft--; w.shots++; w.settle = 0;
   w.ev.push({ t: 'shoot', x: a.x, y: a.y, pow });
   return a;
@@ -237,6 +237,12 @@ function popBalloon(w, bl) { if (!bl.alive) return; bl.alive = false; w.ev.push(
 function hitSwitch(w, s) { const g = w.gates[s.gate]; if (!g) return; s.hit = 1; g.timer = g.dur; w.ev.push({ t: 'switch', x: s.x, y: s.y }); }
 
 function stepArrow(w, a, dt) {
+  const was = a.st;
+  stepArrow2(w, a, dt);
+  if (a.st === 'fly') for (const b of w.bodies) if (b.alive && b.kind === 'target') { const d = Math.hypot(b.x - a.x, b.y - a.y) - b.r; if (d < a.nearD) { a.nearD = d; a.nearX = b.x; a.nearY = b.y; } }
+  if (was === 'fly' && a.st !== 'fly') w.ev.push({ t: 'land', x: a.x, y: a.y, hits: a.hits, near: a.nearD, nearX: a.nearX, nearY: a.nearY, st: a.st, out: a.x < -20 || a.x > FW + 20 || a.y > FH + 20 });
+}
+function stepArrow2(w, a, dt) {
   if (a.st === 'stuck') { if (a.stuck && a.stuck.body) { const b = a.stuck.body; a.x = b.x + a.stuck.ox; a.y = b.y + a.stuck.oy; if (!b.alive) a.st = 'gone'; } return; }
   if (a.st !== 'fly') return;
   a.life += dt;
@@ -255,7 +261,7 @@ function stepArrow(w, a, dt) {
     const lim = solid ? solid.t : 1;
     /* pass-through: targets, ropes, balloons */
     const pass = [];
-    for (const b of w.bodies) if (b.alive && b.kind === 'target') { const t = segCircle(x0, y0, x1, y1, b.x, b.y, b.r + 1); if (t >= 0 && t <= lim) pass.push([t, 'target', b]); }
+    for (const b of w.bodies) if (b.alive && b.kind === 'target') { const t = segCircle(x0, y0, x1, y1, b.x, b.y, b.r + 3); if (t >= 0 && t <= lim) pass.push([t, 'target', b]); }
     for (const r of w.ropes) if (!r.cut) { const ap = ropeAnchor(r); const t = seg2(x0, y0, x1, y1, ap.x, ap.y, r.body.x, r.body.y - r.body.r); if (t >= 0 && t <= lim) pass.push([t, 'rope', r]); }
     for (const bl of w.balloons) if (bl.alive) { const t = segCircle(x0, y0, x1, y1, bl.x, bl.y, bl.r + 1); if (t >= 0 && t <= lim) pass.push([t, 'balloon', bl]); }
     pass.sort((p, q) => p[0] - q[0]);
@@ -356,7 +362,7 @@ function previewPath(w, ang, pow, after, maxLen = 9999) {
   const L = w.L, sp = V_MIN + (V_MAX - V_MIN) * pow;
   let x = L.archer.x + BOW.dx, y = L.archer.y + BOW.dy, vx = Math.cos(ang) * sp, vy = Math.sin(ang) * sp, bounced = 0, post = 0;
   const pts = [[x, y]], marks = [], rects = solidRects(w); let len = 0;
-  for (let i = 0; i < 360; i++) {
+  for (let i = 0; i < 840; i++) {
     vy += G_ARROW * DT;
     let x1 = x + vx * DT, y1 = y + vy * DT, hit = null;
     for (const R of rects) { const h = segRect(x, y, x1, y1, R); if (h && (!hit || h.t < hit.t)) hit = { ...h, mat: R.mat }; }
@@ -379,10 +385,10 @@ if (typeof module !== 'undefined') module.exports = { makeWorld, shoot, stepWorl
 
 /* ---------- ten levels; each one introduces one idea ---------- */
 const LEVELS = [
-  { name: 'First Light', preview: 9999, tip: 'Drag back anywhere to aim. Let go to shoot.', arrows: 3, par: 1, sky: 0, archer: { x: 24, y: 340 },
-    blocks: [[174, 262, 12, 78]], targets: [{ x: 180, y: 254 }] },
+  { name: 'First Light', preview: 9999, tip: 'Drag toward the target to aim. Let go to shoot.', arrows: 5, par: 1, sky: 0, archer: { x: 24, y: 340 },
+    blocks: [[174, 262, 12, 78]], targets: [{ x: 180, y: 252, r: 9 }] },
   { name: 'Over the Wall', preview: 9999, tip: 'Arrows fall as they fly. Lob one over.', arrows: 3, par: 1, sky: 0, archer: { x: 24, y: 340 },
-    blocks: [[112, 196, 16, 144], [190, 326, 14, 14]], targets: [{ x: 197, y: 318 }] },
+    blocks: [[112, 196, 16, 144], [190, 326, 14, 14]], targets: [{ x: 197, y: 316, r: 9 }] },
   { name: 'Bank Shot', preview: 9999, tip: 'Steel bounces arrows. Wood catches them.', arrows: 3, par: 1, sky: 1, archer: { x: 24, y: 340 },
     blocks: [[128, 150, 10, 98], [128, 140, 58, 10], [138, 240, 48, 8], [222, 24, 18, 316, 'metal']], targets: [{ x: 166, y: 226 }] },
   { name: 'Skewer', preview: 170, tip: 'Arrows fly straight through targets. Line them up.', arrows: 2, par: 1, sky: 1, archer: { x: 24, y: 340 },
@@ -519,6 +525,7 @@ const sfx = {
   win() { jingle(['D5', 'F#5', 'A5', 'D6', null, 'A5', 'D6'], .1, .25, .1, 5); },
   star(i) { if (!AC) return; voice(SFX, .125, mtof(84 + [0, 4, 7][i]), AC.currentTime, .3, .07, { env: 'pluck' }); voice(SFX, 'tri', mtof(96 + [0, 4, 7][i]), AC.currentTime, .3, .08, { env: 'pluck' }); },
   lose() { jingle(['A4', 'G4', 'F4', 'E4'], .14, .5, .08, 3); },
+  miss() { if (!AC) return; voice(SFX, 'tri', 260, AC.currentTime, .14, .12, { f2: 150, env: 'pluck' }); },
   click() { if (!AC) return; voice(SFX, .25, 880, AC.currentTime, .04, .04, { env: 'pluck' }); }
 };
 
@@ -611,7 +618,7 @@ try { save = Object.assign(save, JSON.parse(localStorage.getItem('lastarrow-v1')
 function persist() { try { localStorage.setItem('lastarrow-v1', JSON.stringify(save)); } catch (e) {} }
 function loadLevel(i, quick) {
   levelIdx = i; world = makeWorld(LEVELS[i]); buildScene(LEVELS[i]);
-  parts = []; pops = []; aim = null; endT = 0; slowT = 0; hitStop = 0; shake = 0; flash = quick ? .5 : 0;
+  parts = []; pops = []; landMarks = []; aim = null; endT = 0; slowT = 0; hitStop = 0; shake = 0; flash = quick ? .5 : 0;
   state = 'play'; hideScreens(); $('hud').hidden = false;
   $('hName').textContent = `${i + 1} · ${LEVELS[i].name}`;
   showTip(quick ? '' : LEVELS[i].tip);
@@ -637,6 +644,7 @@ function handleEvents() {
       case 'boom': sfx.boom(); hitStop = Math.max(hitStop, .08); shake = Math.max(shake, 10); flash = Math.max(flash, .5); burst(e.x, e.y, 30, ['#ffe08a', '#ff8a2a', '#e8343a', '#ffffff'], 160, 120, .7, 1); burst(e.x, e.y, 16, ['#3a3040', '#5a5060'], 60, -30, 1.2, 2); parts.push({ ring: true, x: e.x, y: e.y, r: 4, life: .35, max: .35 }); break;
       case 'switch': sfx.switch(); popText(e.x, e.y - 12, 'OPEN', '#7affb0'); break;
       case 'thud': sfx.thud(e.v); burst(e.x, e.y + 6, 4, ['#8a6a4a'], 30, 200, .3); break;
+      case 'land': onLand(e); break;
       case 'win': winLevel(); break;
       case 'lose': setTimeout(() => { if (world && world.lost && state === 'play') failLevel(); }, 300); break;
     }
@@ -661,7 +669,9 @@ function retry() { if (!world) return; sfx.click(); loadLevel(levelIdx, true); }
 
 /* ---------- aiming ---------- */
 const PULL_FULL = 78;
-function aimVec() { const dx = aim.sx - aim.x, dy = aim.sy - aim.y, L = Math.hypot(dx, dy); return { ang: Math.atan2(dy, dx), pow: clamp((L - 6) / PULL_FULL, 0, 1), L }; }
+let lastAim = { ang: -0.72, pow: .4 };
+/* drag toward where you want the arrow to go; the line shows from the first touch */
+function aimVec() { const dx = aim.x - aim.sx, dy = aim.y - aim.sy, L = Math.hypot(dx, dy); if (L < 6) return { ang: lastAim.ang, pow: lastAim.pow, L, idle: true }; return { ang: Math.atan2(dy, dx), pow: clamp((L - 6) / PULL_FULL, .02, 1), L }; }
 function toWorld(e) { const r = cv.getBoundingClientRect(); return { x: (e.clientX - r.left) / r.width * FW, y: (e.clientY - r.top) / r.height * FH }; }
 const appEl = $('app');
 appEl.addEventListener('pointerdown', e => {
@@ -671,7 +681,7 @@ appEl.addEventListener('pointerdown', e => {
   try { appEl.setPointerCapture(e.pointerId); } catch (_) {}
 });
 appEl.addEventListener('pointermove', e => { if (!aim || e.pointerId !== aim.id) return; const p = toWorld(e); aim.x = p.x; aim.y = p.y; const k = Math.floor(aimVec().pow * 10); if (k !== lastTick) { if (k > lastTick && k > 0) sfx.tick(k); lastTick = k; } });
-const endAim = e => { if (!aim || e.pointerId !== aim.id) return; const v = aimVec(); aim = null; if (v.pow > .04 && state === 'play') { shoot(world, v.ang, .12 + v.pow * .88); } };
+const endAim = e => { if (!aim || e.pointerId !== aim.id) return; const v = aimVec(); aim = null; if (!v.idle && state === 'play') { lastAim = { ang: v.ang, pow: v.pow }; shoot(world, v.ang, .12 + v.pow * .88); } };
 appEl.addEventListener('pointerup', endAim); appEl.addEventListener('pointercancel', () => { aim = null; });
 addEventListener('keydown', e => { const k = e.key.toLowerCase(); initAudio(); if (k === 'r' && (state === 'play' || state === 'fail' || state === 'clear')) retry(); if ((k === 'enter' || k === ' ') && state === 'clear' && !$('cNext').hidden) $('cNext').click(); if ((k === 'enter' || k === ' ') && state === 'fail') retry(); if (k === 'escape' && state === 'play') openLevels(); if (k === 'm') toggleMusic(); });
 const noZoom = e => { if (e.cancelable) e.preventDefault(); };
@@ -679,12 +689,13 @@ const noZoom = e => { if (e.cancelable) e.preventDefault(); };
 document.addEventListener('touchmove', e => { if (!e.target.closest('.screen')) noZoom(e); }, { passive: false });
 
 /* ---------- draw ---------- */
-function drawArrow(x, y, ang, col = '#efe6d2', len = 10) {
-  const cx = Math.cos(ang), sy = Math.sin(ang), tx = x - cx * len, ty = y - sy * len;
-  pline(ax, tx, ty, x, y, '#8a5a32');
-  ax.fillStyle = '#c8d4ea'; ax.fillRect(Math.round(x), Math.round(y), 1, 1); ax.fillRect(Math.round(x - cx), Math.round(y - sy), 1, 1);
-  const nx = -sy, ny = cx;
-  ax.fillStyle = '#e8344a'; ax.fillRect(Math.round(tx + nx * 1.5), Math.round(ty + ny * 1.5), 1, 1); ax.fillRect(Math.round(tx - nx * 1.5), Math.round(ty - ny * 1.5), 1, 1); ax.fillRect(Math.round(tx + cx + nx * 1.5), Math.round(ty + sy + ny * 1.5), 1, 1); ax.fillRect(Math.round(tx + cx - nx * 1.5), Math.round(ty + sy - ny * 1.5), 1, 1);
+function drawArrow(x, y, ang, col = '#efe6d2', len = 13) {
+  const cx = Math.cos(ang), sy = Math.sin(ang), tx = x - cx * len, ty = y - sy * len, nx = -sy, ny = cx;
+  for (const o of [-1, 1]) pline(ax, tx + nx * o * .7, ty + ny * o * .7, x + nx * o * .7, y + ny * o * .7, OUT);
+  pline(ax, tx, ty, x, y, '#c8884a');
+  ax.fillStyle = OUT; ax.fillRect(Math.round(x + cx * 2) - 1, Math.round(y + sy * 2) - 1, 3, 3);
+  ax.fillStyle = '#ffffff'; ax.fillRect(Math.round(x + cx), Math.round(y + sy), 1, 1); ax.fillRect(Math.round(x + cx * 2), Math.round(y + sy * 2), 1, 1);
+  ax.fillStyle = '#e8344a'; for (const k of [0, 1, 2]) for (const o of [-1.6, 1.6]) ax.fillRect(Math.round(tx + cx * k + nx * o), Math.round(ty + sy * k + ny * o), 1, 1);
 }
 function draw() {
   const L = world.L, sx = Math.round((R() - .5) * shake), sy = Math.round((R() - .5) * shake);
@@ -703,7 +714,7 @@ function draw() {
   const ar = L.archer, bx = ar.x + BOW.dx, by = ar.y + BOW.dy;
   ax.drawImage(ARCHER, ar.x - 6, ar.y - 19);
   ax.drawImage(QUIVER, ar.x - 8, ar.y - 15);
-  const v = aim ? aimVec() : null, bang = v && v.pow > .04 ? v.ang : -0.6, pull = v ? v.pow : 0;
+  const v = aim ? aimVec() : null, bang = v ? v.ang : -0.6, pull = v && !v.idle ? v.pow : v ? .15 : 0;
   { const ca = Math.cos(bang), sa = Math.sin(bang), nx = -sa, ny = ca;
     for (let k = -8; k <= 8; k++) { const bend = 3 - (k * k) / 22; ax.fillStyle = Math.abs(k) > 6 ? '#3a2a20' : '#8a5a32'; ax.fillRect(Math.round(bx + nx * k + ca * bend), Math.round(by + ny * k + sa * bend), 1, 1); }
     const tx = bx + nx * -8 + ca * .1, ty = by + ny * -8, bx2 = bx + nx * 8, by2 = by + ny * 8, px = bx - ca * (1 + pull * 7), py = by - sa * (1 + pull * 7);
@@ -712,18 +723,14 @@ function draw() {
   /* arrows */
   for (const a of world.arrows) {
     if (a.st === 'gone') continue;
-    if (a.st === 'fly') { a.trail.push([a.x, a.y]); if (a.trail.length > 10) a.trail.shift(); a.trail.forEach(([tx, ty], i) => { ax.globalAlpha = i / a.trail.length * .5; ax.fillStyle = a.bounces ? '#ffe08a' : '#ffffff'; ax.fillRect(Math.round(tx), Math.round(ty), 1, 1); }); ax.globalAlpha = 1; }
+    if (a.st === 'fly') { a.trail.push([a.x, a.y]); if (a.trail.length > 22) a.trail.shift(); a.trail.forEach(([tx, ty], i) => { ax.globalAlpha = (i / a.trail.length) * .85; ax.fillStyle = a.bounces ? '#ffd23a' : '#ffffff'; const s = i > a.trail.length * .6 ? 2 : 1; ax.fillRect(Math.round(tx) - (s > 1 ? 1 : 0), Math.round(ty) - (s > 1 ? 1 : 0), s, s); }); ax.globalAlpha = 1; }
     drawArrow(a.x, a.y, a.ang);
   }
-  /* aim preview */
-  if (aim && v.pow > .04) {
-    const pv = previewPath(world, v.ang, .12 + v.pow * .88, 46, L.preview);
-    let acc = 0, prev = pv.pts[0], k = 0;
-    for (let i = 1; i < pv.pts.length; i++) { const p = pv.pts[i], d = Math.hypot(p[0] - prev[0], p[1] - prev[1]); acc += d; if (acc >= 4) { acc = 0; k++; ax.globalAlpha = clamp(1 - i / pv.pts.length * .55, .35, 1); ax.fillStyle = k % 2 ? '#ffffff' : '#ffe08a'; ax.fillRect(Math.round(p[0]), Math.round(p[1]), 1, 1); } prev = p; }
-    ax.globalAlpha = 1;
-    for (const [mx, my, mat] of pv.marks) { if (mat === 'metal') { pring(ax, mx, my, 3, '#ffe08a'); ax.fillStyle = '#ffffff'; ax.fillRect(Math.round(mx), Math.round(my), 1, 1); } else { ax.fillStyle = '#ffffff'; for (const [dx, dy] of [[-1, -1], [1, 1], [-1, 1], [1, -1], [0, 0]]) ax.fillRect(Math.round(mx) + dx, Math.round(my) + dy, 1, 1); } }
-    /* power ring at the archer */
-    ax.fillStyle = 'rgba(0,0,0,.35)'; ax.fillRect(ar.x - 10, ar.y + 3, 22, 3); ax.fillStyle = pull > .85 ? '#ff8a3a' : '#ffe08a'; ax.fillRect(ar.x - 10, ar.y + 3, Math.round(22 * pull), 3);
+  /* aim preview is drawn on the crisp layer below */
+  let pv = null;
+  if (aim) {
+    pv = previewPath(world, v.ang, .12 + v.pow * .88, 46, L.preview);
+    ax.fillStyle = 'rgba(0,0,0,.4)'; ax.fillRect(ar.x - 11, ar.y + 3, 24, 4); ax.fillStyle = pull > .85 ? '#ff8a3a' : '#ffd23a'; ax.fillRect(ar.x - 10, ar.y + 4, Math.round(22 * pull), 2);
   }
   for (const p of parts) {
     if (p.ring) { ax.globalAlpha = p.life / p.max; pring(ax, p.x, p.y, p.r, '#fff0b0'); pring(ax, p.x, p.y, p.r * .7, '#ff8a2a'); continue; }
@@ -736,12 +743,73 @@ function draw() {
   if (flash > 0) { ax.fillStyle = `rgba(255,248,230,${flash * .5})`; ax.fillRect(0, 0, FW, FH); }
   if (slowT > 0) { ax.fillStyle = `rgba(20,10,30,${Math.min(.25, slowT * .4)})`; ax.fillRect(0, 0, FW, 6); ax.fillRect(0, FH - 6, FW, 6); }
   ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.imageSmoothingEnabled = false; ctx.drawImage(art, 0, 0, FW * S3, FH * S3);
+  overlay(pv, v);
   for (const p of pops) { ctx.globalAlpha = clamp(p.life * 1.5, 0, 1); ptext(p.text, p.x * S3, (p.y - (1.1 - p.life) * 14) * S3, 16, p.col); }
   ctx.globalAlpha = 1;
   ctx.font = `700 15px ${PF}`; ctx.textAlign = 'left'; ctx.fillStyle = OUT; ctx.fillText(`${world.arrowsLeft}`, (10 + L.arrows * 7) * S3 + 4 + 2, 28 * S3 + 2); ctx.fillStyle = '#fff6e0'; ctx.fillText(`${world.arrowsLeft}`, (10 + L.arrows * 7) * S3 + 4, 28 * S3);
 }
 const PF = '"Pixelify Sans","Silkscreen","Courier New",monospace';
 function ptext(s, x, y, size, col) { ctx.font = `700 ${size}px ${PF}`; ctx.textAlign = 'center'; const o = 2; ctx.fillStyle = OUT; for (const [dx, dy] of [[-o, 0], [o, 0], [0, -o], [0, o], [o, o + 1]]) ctx.fillText(s, x + dx, y + dy); ctx.fillStyle = col; ctx.fillText(s, x, y); }
+
+/* ---------- crisp overlay: aim line, drag band, misses, off-screen arrows, tutorial ---------- */
+let landMarks = [];
+function onLand(e) {
+  if (e.hits) return;
+  if (e.near < 16 && targetsLeft(world) > 0) { popText(e.nearX, e.nearY - 16, 'SO CLOSE!', '#ffd23a'); landMarks.push({ x: e.nearX, y: e.nearY, life: 1.2, kind: 'close' }); }
+  else if (!e.out) popText(e.x, e.y - 10, 'MISS', '#f0e0d0');
+  if (e.out) landMarks.push({ x: clamp(e.x, 6, FW - 6), y: clamp(e.y, 6, FH - 6), life: 1, kind: 'out' });
+  else landMarks.push({ x: e.x, y: e.y, life: 1.2, kind: 'hit' });
+  sfx.miss && sfx.miss();
+}
+function dot(x, y, r, col) { ctx.fillStyle = OUT; ctx.beginPath(); ctx.arc(x, y, r + 2, 0, 6.283); ctx.fill(); ctx.fillStyle = col; ctx.beginPath(); ctx.arc(x, y, r, 0, 6.283); ctx.fill(); }
+function drawPreview(pv, alphaMul = 1) {
+  const pts = pv.pts; let acc = 0, prev = pts[0], k = 0;
+  const total = pts.length, march = (time * 40) % 9;
+  for (let i = 1; i < total; i++) {
+    const p = pts[i], d = Math.hypot(p[0] - prev[0], p[1] - prev[1]); acc += d; prev = p;
+    if (acc >= 9 - (k === 0 ? march : 0)) { acc = 0; k++; ctx.globalAlpha = alphaMul * clamp(1 - i / total * .5, .45, 1); dot(p[0] * S3, p[1] * S3, k % 3 === 0 ? 4 : 3, '#ffffff'); }
+  }
+  ctx.globalAlpha = alphaMul;
+  for (const [mx, my, mat] of pv.marks) {
+    const X = mx * S3, Y = my * S3;
+    if (mat === 'metal') { ctx.strokeStyle = OUT; ctx.lineWidth = 6; ctx.beginPath(); ctx.arc(X, Y, 11, 0, 6.283); ctx.stroke(); ctx.strokeStyle = '#ffd23a'; ctx.lineWidth = 3; ctx.stroke(); dot(X, Y, 3, '#ffffff'); }
+    else { ctx.lineCap = 'round'; for (const [w, c] of [[8, OUT], [4, '#ff5a5a']]) { ctx.strokeStyle = c; ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(X - 8, Y - 8); ctx.lineTo(X + 8, Y + 8); ctx.moveTo(X + 8, Y - 8); ctx.lineTo(X - 8, Y + 8); ctx.stroke(); } }
+  }
+  if (!pv.marks.length && pts.length > 1) { const [ex, ey] = pts[pts.length - 1]; dot(ex * S3, ey * S3, 5, '#ffd23a'); }
+  ctx.globalAlpha = 1;
+}
+function drawBand(sx, sy, x, y, a = 1) {
+  ctx.globalAlpha = .55 * a; ctx.lineCap = 'round';
+  for (const [w, c] of [[7, OUT], [3, '#ffffff']]) { ctx.strokeStyle = c; ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(sx * S3, sy * S3); ctx.lineTo(x * S3, y * S3); ctx.stroke(); }
+  ctx.globalAlpha = .8 * a; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(sx * S3, sy * S3, 16, 0, 6.283); ctx.stroke();
+  ctx.fillStyle = 'rgba(255,255,255,.35)'; ctx.beginPath(); ctx.arc(x * S3, y * S3, 22, 0, 6.283); ctx.fill(); ctx.strokeStyle = '#ffffff'; ctx.beginPath(); ctx.arc(x * S3, y * S3, 22, 0, 6.283); ctx.stroke();
+  ctx.globalAlpha = 1;
+}
+function overlay(pv, v) {
+  ctx.lineCap = 'round';
+  if (pv) { drawPreview(pv, v && v.idle ? .55 : 1); drawBand(aim.sx, aim.sy, aim.x, aim.y, v && v.idle ? .6 : 1); }
+  /* tutorial: show the gesture until the first shot of the first level */
+  if (levelIdx === 0 && world.shots === 0 && !aim && state === 'play') {
+    const T = time % 2.6, k = clamp((T - .3) / .9, 0, 1), e = k * k * (3 - 2 * k), sx = 70, sy = 250, dx = 36, dy = -30;
+    const fx = sx + dx * e, fy = sy + dy * e, fade = T > 2.2 ? 1 - (T - 2.2) / .4 : 1;
+    if (e > .1) { const ang = Math.atan2(dy, dx), pow = clamp((Math.hypot(dx, dy) * e - 6) / PULL_FULL, 0, 1); drawPreview(previewPath(world, ang, .12 + pow * .88, 46, 9999), .8 * fade); drawBand(sx, sy, fx, fy, fade); }
+    else { ctx.globalAlpha = fade; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(sx * S3, sy * S3, 22 + Math.sin(time * 8) * 4, 0, 6.283); ctx.stroke(); ctx.globalAlpha = 1; }
+    ctx.globalAlpha = fade; ptext('DRAG TOWARD THE TARGET', 120 * S3, (sy + 46) * S3, 22, '#ffffff'); ptext('LET GO TO SHOOT', 120 * S3, (sy + 58) * S3, 18, '#ffd23a'); ctx.globalAlpha = 1;
+  }
+  /* where arrows went */
+  for (const mk2 of landMarks) {
+    const a = clamp(mk2.life, 0, 1), X = mk2.x * S3, Y = mk2.y * S3, r = 14 + (1.2 - mk2.life) * 30;
+    ctx.globalAlpha = a; ctx.strokeStyle = mk2.kind === 'close' ? '#ffd23a' : mk2.kind === 'out' ? '#ff5a5a' : '#ffffff'; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(X, Y, r, 0, 6.283); ctx.stroke();
+    if (mk2.kind === 'out') ptext('MISS', X + (mk2.x > FW - 30 ? -40 : mk2.x < 30 ? 40 : 0), Y + (mk2.y < 30 ? 50 : -24), 20, '#ff8a8a');
+  }
+  ctx.globalAlpha = 1;
+  /* arrows flying off the top or sides */
+  for (const a of world.arrows) {
+    if (a.st !== 'fly') continue;
+    if (a.y < 2) { const X = clamp(a.x, 8, FW - 8) * S3, h = Math.min(60, 10 + (-a.y) / 6); ctx.fillStyle = OUT; ctx.beginPath(); ctx.moveTo(X, 8); ctx.lineTo(X - 14, 30); ctx.lineTo(X + 14, 30); ctx.fill(); ctx.fillStyle = '#ffd23a'; ctx.beginPath(); ctx.moveTo(X, 13); ctx.lineTo(X - 9, 27); ctx.lineTo(X + 9, 27); ctx.fill(); ptext(Math.round(-a.y / 10) + 'm', X, 54, 16, '#ffffff'); }
+    else if (a.x > FW - 2 || a.x < 2) { const right = a.x > FW - 2, X = right ? FW * S3 - 10 : 10, Y = clamp(a.y, 8, FH - 8) * S3; ctx.fillStyle = '#ffd23a'; ctx.beginPath(); ctx.moveTo(X, Y); ctx.lineTo(X + (right ? -16 : 16), Y - 12); ctx.lineTo(X + (right ? -16 : 16), Y + 12); ctx.fill(); }
+  }
+}
 
 /* ---------- loop ---------- */
 let acc = 0, last = performance.now();
@@ -758,6 +826,7 @@ function frame(now) {
       parts = parts.filter(p => p.life > 0); if (parts.length > 500) parts.splice(0, parts.length - 500);
     }
     for (const p of pops) p.life -= dt; pops = pops.filter(p => p.life > 0);
+    for (const q of landMarks) q.life -= dt; landMarks = landMarks.filter(q => q.life > 0);
     shake = Math.max(0, shake - dt * 30); flash = Math.max(0, flash - dt * 2.5);
     draw();
   } else if (!world) titleDraw();
