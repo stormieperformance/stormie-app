@@ -481,12 +481,12 @@ const sfx = {
   kill() { if (!AC) return; const t = AC.currentTime; nz(SFX, 'long', .35, .04, t, .38, .25); voice(SFX, .25, 880, t, .15, .06, { f2: 220, steps: 5, env: 'pluck' }); },
   hurt() { if (!AC) return; const t = AC.currentTime; voice(SFX, .5, 600, t, .3, .12, { f2: 120, steps: 8, decay: .9 }); nz(SFX, 'long', .3, .1, t, .2, .14); },
   pour() { if (!AC) return; const t = AC.currentTime; for (let i = 0; i < 6; i++) voice(SFX, 'tri', 300 + R() * 300, t + i * .08, .07, .12, { env: 'pluck', f2: 600 + R() * 300 }); },
-  chest() { jingle(['C6', 'E6', 'G6', 'C7', 'E7'], .07, .25, .1, 4); },
+  chest() { jingle(['G5', 'A5', 'B5', 'D6', null, 'G6'], .085, .5, .1, 6); },
   unlock() { if (!AC) return; const t = AC.currentTime; nz(SFX, 'short', .8, .4, t, .12, .1); voice(SFX, .5, 1200, t + .1, .08, .06, { env: 'pluck' }); },
   door() { if (!AC) return; nz(SFX, 'long', .15, .5, AC.currentTime, .6, .12); },
   page() { if (!AC) return; nz(SFX, 'short', 1, .6, AC.currentTime, .08, .05); },
   rite() { jingle(['D5', 'F#5', 'A5', 'D6', 'F#6', 'A6', 'D7'], .12, .125, .09, 8); },
-  quest() { jingle(['G5', 'B5', 'D6', 'G6', null, 'D6', 'G6'], .09, .25, .11, 4); },
+  quest() { jingle(['E6', 'C6', 'G6', 'E6', 'C7'], .07, .125, .09, 5); },
   grunt() { if (!AC) return; const t = AC.currentTime; voice(SFX, 'tri', 110, t, .4, .3, { f2: 70, steps: 5 }); nz(SFX, 'long', .15, .08, t, .35, .1); },
   buzz() { if (!AC) return; voice(SFX, .125, 220, AC.currentTime, .3, .025, { vib: true, vibD: .05, vibR: 30 }); },
   whistle() { if (!AC) return; const t = AC.currentTime; voice(SFX, .125, 1800, t, .25, .07, { f2: 2600 }); voice(SFX, .125, 2600, t + .3, .35, .07, { f2: 1900 }); },
@@ -505,59 +505,124 @@ const sfx = {
   howl() { if (!AC) return; const t = AC.currentTime; voice(SFX, 'tri', 280, t, .5, .25, { f2: 620 }); voice(SFX, 'tri', 620, t + .5, .9, .25, { f2: 300 }); }
 };
 
-/* ---------- music: an original score for nine worlds ---------- */
-const ARP = {
-  G: ['G3', 'B3', 'D4', 'G4'], D: ['D4', 'F#4', 'A4', 'D5'], Em: ['E3', 'G3', 'B3', 'E4'], C: ['C4', 'E4', 'G4', 'C5'], F: ['F3', 'A3', 'C4', 'F4'],
-  Dm: ['D4', 'F4', 'A4', 'D5'], Bb: ['Bb3', 'D4', 'F4', 'Bb4'], Am: ['A3', 'C4', 'E4', 'A4'], B7: ['B2', 'D#3', 'F#3', 'A3'], E: ['E4', 'G#4', 'B4', 'E5'],
-  Bm: ['B3', 'D4', 'F#4', 'B4'], A: ['A3', 'C#4', 'E4', 'A4'], Cm: ['C4', 'Eb4', 'G4', 'C5'], D7: ['D3', 'F#3', 'A3', 'C4'], Eb: ['Eb4', 'G4', 'Bb4', 'Eb5'], Gm: ['G3', 'Bb3', 'D4', 'G4']
-};
-const ROOT = { G: 'G', D: 'D', Em: 'E', C: 'C', F: 'F', Dm: 'D', Bb: 'Bb', Am: 'A', B7: 'B', E: 'E', Bm: 'B', A: 'A', Cm: 'C', D7: 'D', Eb: 'Eb', Gm: 'G' };
+/* ---------- music: an original adventure score (heroic marches, harp sweeps, waltzes, dungeon drones) ---------- */
 const REST = '. . . . . . . . . . . . . . . .';
-const arp16 = c => Array.from({ length: 16 }, (_, i) => ARP[c][i % 4]).join(' ');
-const arp8 = c => Array.from({ length: 16 }, (_, i) => i % 2 ? '.' : ARP[c][[0, 1, 2, 3, 2, 1, 0, 1][i / 2]]).join(' ');
-const boxArp = c => Array.from({ length: 16 }, (_, i) => i % 2 ? '.' : ARP[c][[3, 2, 1, 2, 3, 2, 1, 0][i / 2]].replace(/\d/, d => +d + 1)).join(' ');
-const bassSlow = c => { const r = ROOT[c]; return `${r}2 - - - - - - - ${r}2 - - - ${r}3 - - -`; };
-const bass8 = c => { const r = ROOT[c]; return `${r}2 . ${r}3 . ${r}2 . ${r}3 . ${r}2 . ${r}3 . ${r}2 . ${r}3 .`; };
-const bassRun = c => { const r = ROOT[c]; return `${r}2 - ${r}3 ${r}2 . ${r}2 ${r}3 . ${r}2 - ${r}3 ${r}2 . ${r}2 ${r}3 .`; };
-const DR = {
-  light: 'k . h . . . h . k . h . . . h .', tabor: 'k . . h k . h . k . . h k . h .', gallop: 'k . h k s . h k k . h k s . h h',
-  march: 'k . s . k . s . k . s . k s s s', heart: 'k . k . . . . . k . k . . . . .', drip: '. . . . . . h . . . . . . . . .',
-  c: 'k h h h s h h h k h k h s h h h', f: 's s s s s . s s s s . s s s s s', none: REST
+const PC = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
+const QUAL = { '': [0, 4, 7], m: [0, 3, 7], '7': [0, 4, 7, 10], m7: [0, 3, 7, 10], maj7: [0, 4, 7, 11], dim: [0, 3, 6], sus: [0, 5, 7] };
+function chord(c) { const m = /^([A-G])([#b]?)(.*)$/.exec(c); const r = 48 + PC[m[1]] + (m[2] === '#' ? 1 : m[2] === 'b' ? -1 : 0); return QUAL[m[3]].map(i => r + i); }
+const rep = (n, f) => Array.from({ length: n }, (_, i) => f(i)).join(' ');
+const G_ = {
+  harp: (c, n) => { const t = chord(c).slice(0, 3), seq = [t[0], t[1], t[2], t[0] + 12, t[1] + 12, t[2] + 12, t[0] + 24].map(v => v + 12); return rep(n, i => i < (n === 12 ? 6 : 7) ? seq[i] : '.'); },
+  harpDown: (c, n) => { const t = chord(c).slice(0, 3), seq = [t[0] + 24, t[2] + 12, t[1] + 12, t[0] + 12, t[2], t[1], t[0]].map(v => v + 12); return rep(n, i => i % 2 ? '.' : seq[(i / 2) % 7]); },
+  arp: (c, n) => { const t = chord(c); return rep(n, i => t[i % 3] + 12 + (i % 6 > 2 ? 12 : 0)); },
+  broken: (c, n) => { const t = chord(c); return rep(n, i => i % 2 ? '.' : [t[0], t[2], t[1], t[2]][(i / 2) % 4] + 12); },
+  box: (c, n) => { const t = chord(c); return rep(n, i => i % 3 ? '.' : [t[2] + 24, t[1] + 24, t[0] + 24, t[1] + 24][(i / 3) % 4]); },
+  none: (c, n) => rep(n, () => '.')
 };
-function mkSong(bpm, intro, body) {
-  const bars = intro.concat(body);
-  bars.forEach(b => { b.L = parse(b.lead || REST); b.H = b.harm === 'echo' ? null : parse(b.harm || REST); b.B = parse(b.bass || REST); b.D = (b.drum || REST).split(/\s+/); });
-  return { bpm, bars, loop: intro.length };
+const B_ = {
+  march: c => { const r = chord(c)[0] - 12, f = chord(c)[2] - 24; return `${r} . ${r + 12} ${r + 12} ${r} . ${r + 12} . ${r} . ${r + 12} ${r + 12} ${f} . ${r + 12} .`; },
+  waltz: c => { const t = chord(c), r = t[0] - 12; return `${r} - - - ${t[2] - 12} . . . ${t[1] - 12} . . .`; },
+  jig: c => { const t = chord(c), r = t[0] - 12; return `${r} . . ${t[2] - 12} . . ${r} . . ${t[2] - 12} . .`; },
+  creep: c => { const r = chord(c)[0] - 12; return `${r} . ${r + 7} . ${r} . ${r + 1} . ${r} . ${r + 7} . ${r} . ${r - 2} .`; },
+  sink: c => { const r = chord(c)[0] - 12; return `${r} - - - - - - - ${r - 1} - - - - - - -`; },
+  gallop: c => { const r = chord(c)[0] - 12, f = chord(c)[2] - 12; return `${r} . ${r} ${r} ${f} . ${r} ${r} ${r} . ${r} ${r} ${f} . ${r + 12} ${r}`; },
+  pump: c => { const r = chord(c)[0] - 12; return rep(16, i => i % 2 ? r + 12 : r); },
+  pedal: c => { const r = chord(c)[0] - 12; return `${r} - - - - - - - ${chord(c)[2] - 12} - - - - - - -`; }
+};
+const DRUM = {
+  heroic: 'k . h . s . h . k . h k s . r .', march: 'k . . . s . . . k . k . s . r r', fill: 'r r r r s . r r s . s s r r r r',
+  waltz: 'k . . . h . . . h . . .', waltzS: 'k . . . s . . . s . . .', jig: 'k . h s . h k . h s . h',
+  creep: 't . . . . . h . t . . . . . h .', dungeon: 't . . . . . . . . . t . . . . .', gallop: 'k . k k s . k k k . k k s . r r',
+  boss: 'k h s h k k s h k h s h k k r r', none: null
+};
+function mkSong(bpm, bars, loop) {
+  bars.forEach(b => { b.n = b.lead.split(/\s+/).length; b.L = parse(b.lead); b.H = b.harm ? parse(b.harm) : null; b.B = parse(b.bass || rep(b.n, () => '.')); b.D = b.drum ? b.drum.split(/\s+/) : []; });
+  return { bpm, bars, loop };
 }
 function parse(str) {
   const tk = str.split(/\s+/), ev = [];
-  for (let i = 0; i < tk.length; i++) { const t = tk[i]; if (t === '.' || t === '-') continue; let l = 1; while (tk[i + l] === '-') l++; ev.push({ s: i, n: t, l }); }
+  for (let i = 0; i < tk.length; i++) { const t = tk[i]; if (t === '.' || t === '-') continue; let l = 1; while (tk[i + l] === '-') l++; ev.push({ s: i, m: /^\d+$/.test(t) ? +t : nm(t), l }); }
   return ev;
 }
 const SONGS = {};
-function song(name, bpm, chords, leads, o = {}) {
-  const body = [];
-  chords.forEach((c, i) => body.push({ lead: leads[i], harm: (o.harm || arp8)(c), bass: (o.bass || bassSlow)(c), drum: o.drum || DR.none, duty: o.duty || .25, pluck: o.pluck, vibD: o.vibD, vibR: o.vibR }));
-  chords.forEach((c, i) => body.push({ lead: leads[i], harm: o.harm2 === 'echo' ? 'echo' : (o.harm2 || o.harm || arp8)(c), bass: (o.bass2 || o.bass || bassSlow)(c), drum: o.drum2 || o.drum || DR.none, duty: o.duty2 || .5, pluck: o.pluck2, vibD: o.vibD2 ?? o.vibD, vibR: o.vibR }));
-  SONGS[name] = mkSong(bpm, [{ harm: (o.harm || arp8)(chords[0]), bass: (o.bass || bassSlow)(chords[0]), drum: o.drum || DR.none }], body);
+/* rows: [chord, lead, drumKey?]; o: { harm, bass, drum, duty, under, echo, lv, vib, pluck, intro } */
+function score(name, bpm, rows, o = {}) {
+  const n = rows[0][1].split(/\s+/).length;
+  const bars = rows.map(([c, lead, dk]) => ({ lead, harm: o.harm === 'none' ? null : G_[o.harm || 'arp'](c, n), harp: (o.harm || '').startsWith('harp') || o.harm === 'box', bass: B_[o.bass || 'march'](c), drum: DRUM[dk || o.drum || 'none'], duty: o.duty || .5, under: o.under ? chord(c) : null, echo: o.echo, lv: o.lv || .08, vibD: o.vibD, vibR: o.vibR, pluck: o.pluck }));
+  const intro = o.intro ? [{ lead: rep(n, () => '.'), harm: G_[o.introHarm || 'harp'](rows[0][0], n), harp: true, bass: B_[o.bass || 'march'](rows[0][0]), drum: DRUM[o.intro] }] : [];
+  SONGS[name] = mkSong(bpm, intro.concat(bars), intro.length);
 }
-song('forest', 112, ['G', 'D', 'Em', 'C', 'G', 'D', 'C', 'D'], ['B4 - D5 - G5 - - - F#5 - E5 - D5 - - -', 'A4 - - - D5 - F#5 - A5 - - - G5 - F#5 -', 'G5 - - - E5 - - - B4 - D5 - E5 - - -', 'C5 - E5 - G5 - - - A5 - G5 - E5 - - -', 'D5 - - - G5 - B5 - D6 - - - B5 - G5 -', 'A5 - - - F#5 - D5 - A5 - B5 - A5 - F#5 -', 'E5 - - - G5 - C6 - B5 - A5 - G5 - E5 -', 'F#5 - - - A5 - - - D5 - - - . . . .'], { bass: bass8, drum: DR.light, harm2: 'echo' });
-song('cabin', 88, ['F', 'C', 'Dm', 'Bb', 'F', 'C', 'Bb', 'C'], ['A4 - - - C5 - F5 - E5 - - - C5 - - -', 'G4 - - - C5 - E5 - G5 - - - - - - -', 'F5 - - - A5 - - - D5 - - - F5 - - -', 'D5 - - - F5 - Bb5 - A5 - - - F5 - - -', 'A5 - - - G5 - F5 - C6 - - - A5 - - -', 'G5 - - - E5 - C5 - E5 - G5 - C6 - - -', 'Bb5 - - - A5 - G5 - F5 - D5 - Bb4 - - -', 'C5 - - - E5 - G5 - F5 - - - . . . .'], { harm: boxArp, duty: .25, duty2: .125, pluck2: true });
-song('dark', 100, ['Em', 'C', 'Am', 'B7', 'Em', 'C', 'B7', 'Em'], ['E5 - - - G5 - B5 - A5 - G5 - F#5 - - -', 'E5 - - - C5 - E5 - G5 - - - E5 - - -', 'A4 - C5 - E5 - A5 - G5 - E5 - C5 - - -', 'D#5 - - - F#5 - A5 - B5 - - - F#5 - - -', 'B5 - - - A5 - G5 - F#5 - G5 - E5 - - -', 'C6 - - - B5 - A5 - G5 - E5 - C5 - - -', 'D#5 - E5 - F#5 - A5 - B5 - - - D#5 - - -', 'E5 - - - - - - - . . . . . . . .'], { bass: bass8, drum: DR.heart, duty: .5, vibD: .02, vibR: 4.8, duty2: .25, vibD2: .03 });
-song('deep', 96, ['Dm', 'G', 'Dm', 'C', 'Dm', 'G', 'Am', 'Dm'], ['D5 - - - - - A5 - - - G5 - F5 - - -', 'B4 - - - D5 - - - G5 - - - F5 - E5 -', 'D5 - F5 - A5 - - - C6 - - - A5 - - -', 'C5 - - - E5 - G5 - E5 - - - C5 - - -', 'A5 - - - - - G5 - F5 - E5 - D5 - - -', 'B5 - - - G5 - - - D5 - - - B4 - - -', 'C5 - - - E5 - A5 - G5 - E5 - C5 - - -', 'D5 - - - - - - - . . . . . . . .'], { harm: boxArp, drum: DR.drip, duty: .5, vibD: .018, duty2: .125, pluck2: true });
-song('vale', 84, ['D', 'E', 'Bm', 'A', 'G', 'E', 'D', 'A'], ['F#5 - - - A5 - - - E6 - - - D6 - - -', 'G#5 - - - B5 - - - E6 - - - B5 - - -', 'F#5 - - - D5 - - - B4 - - - D5 - - -', 'E5 - - - C#5 - - - A4 - - - C#5 - - -', 'B5 - - - G5 - - - D5 - - - G5 - - -', 'G#5 - - - E5 - - - B4 - - - E5 - - -', 'F#5 - - - A5 - - - D6 - - - F#6 - - -', 'E6 - - - - - - - C#6 - - - . . . .'], { harm: boxArp, duty: .125, pluck: true, duty2: .25, vibD2: .012 });
-song('glen', 126, ['Am', 'G', 'Am', 'Em', 'C', 'G', 'Am', 'Am'], ['A4 - C5 - E5 - D5 C5 B4 - A4 - G4 - A4 -', 'G4 - B4 - D5 - C5 B4 A4 - G4 - F#4 - G4 -', 'A4 - C5 - E5 - A5 - G5 - E5 - D5 - E5 -', 'B4 - - - E5 - - - G5 - F#5 - E5 - - -', 'C5 - E5 - A5 - G5 F#5 E5 - D5 - C5 - B4 -', 'D5 - G5 - B5 - A5 G5 F#5 - E5 - D5 - - -', 'E5 - C5 - A4 - C5 - E5 - G5 - A5 - - -', 'A5 - - - E5 - - - A4 - - - . . . .'], { bass: bass8, drum: DR.tabor, duty: .25, duty2: .5 });
-song('wilds', 138, ['Em', 'D', 'C', 'D', 'Em', 'D', 'C', 'B7'], ['E5 - B4 - E5 - G5 - F#5 - E5 - D5 - B4 -', 'D5 - A4 - D5 - F#5 - E5 - D5 - C#5 - A4 -', 'C5 - E5 - G5 - C6 - B5 - A5 - G5 - E5 -', 'D5 - F#5 - A5 - D6 - C6 - B5 - A5 - F#5 -', 'G5 - - - E5 - - - B5 - - - G5 - - -', 'F#5 - - - D5 - - - A5 - - - F#5 - - -', 'E5 - G5 - C6 - B5 - A5 - G5 - E5 - C5 -', 'D#5 - F#5 - B5 - - - A5 - - - . . . .'], { harm: arp16, bass: bassRun, drum: DR.gallop, harm2: 'echo' });
-song('castle', 118, ['C', 'G', 'Am', 'F', 'C', 'G', 'F', 'G'], ['C5 - - - E5 G5 - - C6 - - - G5 - E5 -', 'D5 - - - G5 B5 - - D6 - - - B5 - G5 -', 'E5 - - - A5 C6 - - E6 - - - C6 - A5 -', 'F5 - - - A5 C6 - - F6 - - - C6 - A5 -', 'G5 - - - E5 - C5 - G5 - E5 - C6 - - -', 'B5 - - - G5 - D5 - B5 - G5 - D6 - - -', 'C6 - - - A5 - F5 - A5 - C6 - F6 - - -', 'D6 - - - B5 - G5 - D5 - - - . . . .'], { bass: bass8, drum: DR.march, duty: .5, duty2: .25 });
-song('haunt', 92, ['Gm', 'Cm', 'D7', 'Gm', 'Eb', 'Cm', 'D7', 'Gm'], ['G5 - - - Bb5 - D6 - - - Bb5 - A5 - - -', 'G5 - - - Eb5 - C5 - - - Eb5 - G5 - - -', 'F#5 - - - A5 - C6 - - - A5 - F#5 - - -', 'G5 - - - - - D5 - Bb4 - - - G4 - - -', 'G5 - - - Bb5 - Eb6 - - - Bb5 - G5 - - -', 'C6 - - - G5 - Eb5 - C5 - - - Eb5 - - -', 'D5 - - - F#5 - A5 - C6 - - - Bb5 - A5 -', 'G5 - - - - - - - . . . . . . . .'], { harm: boxArp, drum: DR.heart, duty: .5, vibD: .025, vibR: 5, duty2: .125, pluck2: true });
-song('home', 80, ['C', 'G', 'Am', 'F', 'F', 'G', 'C', 'C'], ['E5 - - - G5 - - - C6 - - - G5 - - -', 'D5 - - - G5 - - - B5 - - - G5 - - -', 'C5 - - - E5 - - - A5 - - - E5 - - -', 'F5 - - - A5 - - - C6 - - - - - - -', 'A5 - - - C6 - - - F6 - - - C6 - - -', 'B5 - - - D6 - - - G6 - - - D6 - - -', 'C6 - - - G5 - - - E5 - - - G5 - - -', 'C6 - - - - - - - . . . . . . . .'], { harm: boxArp, duty: .25, duty2: .125, pluck2: true });
-{
-  const CX = ['Em', 'C', 'Am', 'B7'];
-  const LX = ['B5 A5 B5 - - - A5 G5 F#5 E5 D#5 - E5 - - -', 'E5 - G5 - C6 - B5 A5 G5 - E5 - C5 - E5 -', 'A5 G5 A5 - E5 - C5 - A4 - C5 - E5 - A5 -', 'D#5 - F#5 - A5 - B5 - A5 G5 F#5 E5 D#5 - - -'];
-  const body = [];
-  for (let k = 0; k < 2; k++) CX.forEach((c, i) => body.push({ lead: LX[i], harm: k ? 'echo' : arp16(c), bass: bassRun(c), drum: i === 3 ? DR.f : DR.c, duty: k ? .5 : .25, vibD: .015 }));
-  SONGS.boss = mkSong(150, [{ harm: arp16('Em'), bass: bassRun('Em'), drum: DR.f }], body);
-}
+/* I · The Forest: heroic overworld march */
+score('forest', 138, [
+  ['C', 'G4 - C5 - E5 - - - - - D5 C5 D5 - E5 -'], ['C', 'G5 - - - - - - - E5 - F5 - G5 - A5 -'], ['Bb', 'Bb5 - - - A5 - F5 - - - D5 - F5 - Bb5 -'], ['Bb', 'A5 - - - - - G5 F5 G5 - - - - - - -'],
+  ['Ab', 'Ab5 - - - C6 - - - Eb5 - - - Ab5 - G5 F5'], ['Bb', 'G5 - - - F5 - - - D5 - Eb5 - F5 - G5 -'], ['C', 'E5 - G5 - C6 - - - - - B5 - C6 - D6 -'], ['G', 'D6 - - - - - - - B5 - G5 - D5 - . .', 'fill'],
+  ['Am', 'E5 - - - A5 - - - C6 - B5 - A5 - E5 -', 'march'], ['F', 'F5 - - - A5 - C6 - F6 - E6 - C6 - A5 -', 'march'], ['C', 'G5 - - - E5 - G5 - C6 - - - G5 - E5 -', 'march'], ['G', 'D5 - G5 - B5 - D6 - - - C6 - B5 - A5 -', 'march'],
+  ['Am', 'A5 - - - - - G5 A5 B5 - C6 - - - A5 -', 'march'], ['F', 'C6 - - - - - A5 C6 F6 - - - E6 - C6 -', 'march'], ['Bb', 'D6 - - - Bb5 - F5 - D6 - Eb6 - F6 - - -', 'march'], ['G', 'G6 - - - - - - - F6 - D6 - B5 - G5 -', 'fill']
+], { harm: 'broken', bass: 'march', drum: 'heroic', under: true, duty: .5, intro: 'fill' });
+/* II · Cabin of the Elder Wisp: candlelit waltz with harp */
+score('cabin', 96, [
+  ['F', 'C5 - - - F5 - A5 - - - G5 -'], ['Dm', 'F5 - - - D5 - - - - - E5 F5'], ['Bb', 'D5 - - - Bb4 - D5 - F5 - Bb5 -'], ['C', 'A5 - - - G5 - - - - - . .'],
+  ['F', 'A5 - - - C6 - - - A5 - F5 -'], ['Am', 'E5 - - - A5 - - - G5 - E5 -'], ['Bb', 'F5 - D5 - Bb4 - D5 - F5 - G5 -'], ['C', 'E5 - - - - - G5 - - - . .'],
+  ['Dm', 'D5 - F5 - A5 - - - D6 - C6 -'], ['Bb', 'Bb5 - - - F5 - - - D5 - F5 -'], ['F', 'A5 - G5 - F5 - C5 - F5 - A5 -'], ['C', 'G5 - - - - - E5 - C5 - - -'],
+  ['Dm', 'F5 - - - A5 - D6 - - - C6 -'], ['Gm', 'Bb5 - - - D6 - - - G5 - A5 -'], ['C7', 'Bb5 - A5 - G5 - E5 - C5 - E5 -'], ['F', 'F5 - - - - - - - . . . .']
+], { harm: 'harp', bass: 'waltz', drum: 'waltz', duty: .125, lv: .075, vibD: .014 });
+/* III · The Dark Woods: creeping ostinato */
+score('dark', 104, [
+  ['Em', 'E5 - - - - - - - F#5 - G5 - - - B4 -'], ['Em', 'C5 - - - B4 - - - - - - - . . . .'], ['C', 'E5 - - - G5 - - - F#5 - E5 - D5 - C5 -'], ['B7', 'B4 - - - - - - - D#5 - - - F#5 - - -'],
+  ['Em', 'G5 - - - - - F#5 G5 A5 - - - B5 - - -'], ['Em', 'C6 - - - B5 - - - - - G5 - E5 - - -'], ['Am', 'A5 - - - C6 - - - B5 - A5 - G5 - F#5 -'], ['B7', 'D#5 - - - - - - - F5 - - - F#5 - . .']
+], { harm: 'box', bass: 'creep', drum: 'creep', duty: .5, lv: .07, vibD: .028, vibR: 4.5, echo: true });
+/* IV · The Underdeep: dungeon drone */
+score('deep', 84, [
+  ['Dm', 'D5 - - - - - - - - - - - A5 - - -'], ['Dm', 'Bb5 - - - - - A5 - - - - - - - - -'], ['Bb', 'F5 - - - - - - - G5 - - - F5 - E5 -'], ['A', 'E5 - - - - - - - C#5 - - - - - - -'],
+  ['Dm', 'D5 - - - F5 - - - A5 - - - D6 - - -'], ['Dm', 'C#6 - - - - - - - A5 - - - - - - -'], ['Gm', 'Bb5 - - - - - G5 - - - Bb5 - D6 - - -'], ['A7', 'C#6 - - - - - - - - - - - . . . .']
+], { harm: 'harpDown', bass: 'sink', drum: 'dungeon', duty: .25, lv: .07, vibD: .03, vibR: 4, echo: true });
+/* V · Whimsy Vale: fairy waltz, all harp */
+score('vale', 80, [
+  ['Eb', 'G5 - - - - - Bb5 - - - A5 -'], ['Ab', 'C6 - - - - - - - Eb6 - D6 -'], ['Eb', 'Bb5 - - - G5 - - - Eb5 - F5 -'], ['Ab', 'G5 - - - - - - - . . . .'],
+  ['Cm', 'G5 - - - C6 - - - Eb6 - D6 -'], ['Ab', 'C6 - - - Ab5 - - - Eb5 - C6 -'], ['Bb', 'D6 - - - F6 - - - Bb5 - C6 -'], ['Bb', 'D6 - - - - - - - . . . .']
+], { harm: 'harp', bass: 'waltz', drum: 'none', duty: .125, lv: .1, vibD: .012, echo: true });
+/* VI · The Enchanted Glen: jaunty village jig */
+score('glen', 120, [
+  ['G', 'B4 - C5 D5 - G5 B5 - A5 G5 - D5'], ['C', 'E5 - G5 C6 - B5 A5 - G5 E5 - C5'], ['G', 'D5 - G5 B5 - D6 G6 - F#6 E6 - D6'], ['D', 'C6 - B5 A5 - F#5 D5 - - - . .'],
+  ['G', 'G5 - A5 B5 - G5 D5 - B4 D5 - G5'], ['C', 'E5 - C5 E5 - G5 C6 - B5 A5 - G5'], ['D', 'F#5 - A5 D6 - C6 A5 - F#5 D5 - F#5'], ['G', 'G5 - - - - - . . . . . .'],
+  ['Em', 'B5 - - G5 - - E5 - - G5 - B5'], ['C', 'C6 - - G5 - - E5 - G5 C6 - E6'], ['G', 'D6 - - B5 - - G5 - B5 D6 - G6'], ['D', 'F#6 - - - - - E6 - D6 C6 - A5'],
+  ['Em', 'B5 - - G5 - B5 E6 - D6 B5 - G5'], ['C', 'A5 - - E5 - A5 C6 - B5 A5 - E5'], ['D', 'F#5 - G5 A5 - B5 C6 - D6 E6 - F#6'], ['D', 'G6 - - - - - D6 - - . . .']
+], { harm: 'none', bass: 'jig', drum: 'jig', duty: .25, under: true, lv: .075 });
+/* VII · Rosethorn Wilds: galloping chase */
+score('wilds', 156, [
+  ['Dm', 'D5 - - A4 D5 - F5 - A5 - - - G5 - F5 -'], ['C', 'E5 - - C5 E5 - G5 - C6 - - - Bb5 - A5 -'], ['Bb', 'Bb5 - - F5 Bb5 - D6 - - - C6 - Bb5 - A5 -'], ['C', 'G5 - - - E5 - C5 - E5 - G5 - Bb5 - - -'],
+  ['Dm', 'A5 - - - D6 - - - C6 - A5 - F5 - A5 -'], ['C', 'G5 - - - C6 - - - Bb5 - G5 - E5 - G5 -'], ['Bb', 'F5 - - - Bb5 - D6 - F6 - - - E6 - D6 -'], ['A', 'C#6 - - - - - - - A5 - E5 - C#5 - . .', 'fill'],
+  ['Gm', 'D5 - G5 - Bb5 - - - A5 - G5 - D5 - - -'], ['Dm', 'F5 - A5 - D6 - - - C6 - A5 - F5 - - -'], ['Bb', 'D5 - F5 - Bb5 - D6 - C6 - Bb5 - A5 - G5 -'], ['C', 'E5 - G5 - C6 - E6 - D6 - C6 - Bb5 - - -'],
+  ['Gm', 'Bb5 - - - D6 - - - G6 - - - F6 - D6 -'], ['Dm', 'F6 - - - D6 - - - A5 - - - D6 - F6 -'], ['E', 'E6 - - - G#5 - - - B5 - - - D6 - - -'], ['A', 'C#6 - - - - - - - E6 - - - A5 - . .', 'fill']
+], { harm: 'arp', bass: 'gallop', drum: 'gallop', duty: .5, under: true });
+/* VIII · The Royal Keep: tense regal march */
+score('castle', 116, [
+  ['Cm', 'C5 - - - G5 - - - G5 - Ab5 G5 F5 - Eb5 -'], ['Cm', 'D5 - Eb5 - F5 - G5 - - - - - . . . .', 'fill'], ['Ab', 'Ab5 - - - C6 - - - Eb6 - D6 C6 Bb5 - Ab5 -'], ['Bb', 'Bb5 - - - - - D6 - F6 - - - . . . .', 'fill'],
+  ['Cm', 'G5 - - - C6 - - - Eb6 - - - D6 - C6 -'], ['Fm', 'Ab5 - - - C6 - - - F6 - Eb6 - D6 - C6 -'], ['G', 'B5 - - - D6 - - - G6 - - - F6 - D6 -'], ['G', 'B5 - - - - - - - G5 - - - . . . .', 'fill'],
+  ['Ab', 'C6 - - - Eb6 - - - Ab6 - - - G6 - F6 -'], ['Bb', 'D6 - - - F6 - - - Bb6 - - - Ab6 - G6 -'], ['Gm', 'G6 - - - F6 - - - D6 - - - Bb5 - - -'], ['Cm', 'C6 - - - - - Eb6 - D6 - C6 - G5 - - -'],
+  ['Ab', 'Ab5 - Bb5 - C6 - Eb6 - Ab6 - - - G6 - F6 -'], ['Bb', 'Bb5 - C6 - D6 - F6 - Bb6 - - - Ab6 - G6 -'], ['G', 'G6 - - - D6 - - - B5 - - - G5 - - -'], ['G', 'F5 - - - D5 - - - B4 - - - . . . .', 'fill']
+], { harm: 'broken', bass: 'march', drum: 'march', duty: .5, under: true, intro: 'fill' });
+/* IX · Willowmere: haunted music-box waltz */
+score('haunt', 84, [
+  ['Gm', 'D5 - - - G5 - - - Bb5 - A5 -'], ['Cm', 'G5 - - - Eb5 - - - C5 - D5 -'], ['D', 'F#5 - - - A5 - - - C6 - Bb5 -'], ['Gm', 'A5 - - - G5 - - - - - . .'],
+  ['Eb', 'G5 - - - Bb5 - - - Eb6 - D6 -'], ['Cm', 'C6 - - - G5 - - - Eb5 - C5 -'], ['D', 'D5 - - - F#5 - A5 - C6 - Bb5 -'], ['D', 'A5 - - - - - - - . . . .'],
+  ['Gm', 'Bb5 - - - D6 - - - G6 - F#6 -'], ['Eb', 'G6 - - - Eb6 - - - Bb5 - G5 -'], ['Cm', 'C6 - - - Eb6 - - - G5 - Ab5 -'], ['D', 'F#5 - - - A5 - - - D6 - - -'],
+  ['Gm', 'D6 - C6 - Bb5 - A5 - G5 - D5 -'], ['Cm', 'Eb5 - - - G5 - - - C6 - Bb5 -'], ['D', 'A5 - - - F#5 - - - D5 - F#5 -'], ['Gm', 'G5 - - - - - - - . . . .']
+], { harm: 'box', bass: 'waltz', drum: 'waltz', duty: .125, lv: .07, vibD: .03, vibR: 5, echo: true });
+/* Home: warm hymn for the ending */
+score('home', 72, [
+  ['C', 'E5 - - - - - - - G5 - - - C6 - - -'], ['G', 'B5 - - - - - - - A5 - G5 - D5 - - -'], ['Am', 'C5 - - - - - - - E5 - - - A5 - - -'], ['Em', 'G5 - - - - - - - - - - - . . . .'],
+  ['F', 'A5 - - - - - - - C6 - - - F6 - - -'], ['C', 'E6 - - - - - D6 - C6 - - - G5 - - -'], ['F', 'A5 - - - G5 - - - F5 - - - D5 - - -'], ['G', 'D5 - - - - - - - . . . . . . . .'],
+  ['C', 'E5 - - - G5 - - - C6 - - - E6 - - -'], ['G', 'D6 - - - - - - - B5 - - - G5 - - -'], ['Am', 'C6 - - - - - - - A5 - - - E5 - - -'], ['F', 'F5 - - - A5 - - - C6 - - - - - - -'],
+  ['C', 'G5 - - - - - - - E6 - - - D6 - C6 -'], ['Dm', 'D6 - - - - - - - F5 - - - A5 - - -'], ['G', 'G5 - - - - - - - B5 - - - D6 - - -'], ['C', 'C6 - - - - - - - . . . . . . . .']
+], { harm: 'harp', bass: 'pedal', drum: 'none', duty: .25, under: true, lv: .095, vibD: .015 });
+/* Boss battles */
+score('boss', 168, [
+  ['Em', 'E5 - - - B5 - - - G5 - - - F#5 - E5 -'], ['Em', 'D5 - - - E5 - - - B4 - - - . . . .', 'fill'], ['C', 'C6 - - - G5 - - - E5 - - - G5 - C6 -'], ['D', 'D6 - - - A5 - - - F#5 - - - A5 - D6 -'],
+  ['Em', 'E6 - - - - - D6 - B5 - - - G5 - - -'], ['Em', 'F#5 - G5 - A5 - B5 - - - A5 - G5 - F#5 -'], ['C', 'G5 - - - E5 - - - C6 - - - B5 - A5 -'], ['B7', 'B5 - - - D#6 - - - F#6 - - - A6 - - -', 'fill'],
+  ['Am', 'A6 - - - E6 - - - C6 - - - A5 - - -'], ['Am', 'B5 - C6 - B5 - A5 - G5 - - - E5 - - -'], ['Em', 'G5 - - - B5 - - - E6 - - - G6 - - -'], ['Em', 'F#6 - - - E6 - - - B5 - - - . . . .'],
+  ['C', 'C6 - - - E6 - - - G6 - - - E6 - C6 -'], ['D', 'D6 - - - F#6 - - - A6 - - - F#6 - D6 -'], ['B7', 'D#6 - - - F#6 - - - B6 - - - A6 - F#6 -'], ['B7', 'D#6 - - - - - - - B5 - - - . . . .', 'fill']
+], { harm: 'arp', bass: 'pump', drum: 'boss', duty: .5, under: true });
 
 const mus = { on: false, song: null, name: '', bar: 0, next: 0, timer: 0 };
 let pendingSong = null;
@@ -571,20 +636,28 @@ function musStop() { mus.on = false; mus.name = ''; pendingSong = null; }
 function musDuck(v) { if (MUS) MUS.gain.setTargetAtTime(v, AC.currentTime, .1); }
 function musTick() {
   if (!mus.on || !AC || AC.state !== 'running') return;
-  const S0 = mus.song, sd = 60 / S0.bpm / 4, bl = sd * 16;
+  const S0 = mus.song, sd = 60 / S0.bpm / 4;
   if (mus.next < AC.currentTime - .2) mus.next = AC.currentTime + .02;
-  while (mus.next < AC.currentTime + .25) { playBar(S0.bars[mus.bar], mus.next, sd); mus.next += bl; mus.bar++; if (mus.bar >= S0.bars.length) mus.bar = S0.loop; }
+  while (mus.next < AC.currentTime + .25) { const b = S0.bars[mus.bar]; playBar(b, mus.next, sd); mus.next += sd * b.n; mus.bar++; if (mus.bar >= S0.bars.length) mus.bar = S0.loop; }
 }
+function underNote(m, ch) { let best = null; for (let o = -24; o <= 24; o += 12) for (const c of ch) { const v = c + o + 12; if (v <= m - 3 && (best === null || v > best)) best = v; } return best; }
 function playBar(b, t0, sd) {
-  for (const e of b.L) voice(MUS, b.duty || .25, mtof(nm(e.n)), t0 + e.s * sd, b.pluck ? Math.max(e.l, 2) * sd : e.l * sd * .92, b.pluck ? .075 : .08, b.pluck ? { env: 'pluck' } : { decay: .75, vib: true, vibD: b.vibD, vibR: b.vibR });
-  if (b.H) for (const e of b.H) voice(MUS, .125, mtof(nm(e.n)), t0 + e.s * sd, sd * 1.6, .03, { env: 'pluck' });
-  else for (const e of b.L) voice(MUS, .125, mtof(nm(e.n)), t0 + (e.s + 3) * sd, e.l * sd * .9, .028, { decay: .7, vib: true, vibD: b.vibD, vibR: b.vibR });
-  for (const e of b.B) voice(MUS, 'tri', mtof(nm(e.n)), t0 + e.s * sd, e.l * sd * .9, .25, { decay: 1 });
+  const lopt = b.pluck ? { env: 'pluck' } : { decay: .78, vib: true, vibD: b.vibD, vibR: b.vibR, vibDelay: .14 };
+  for (const e of b.L) {
+    const f = mtof(e.m), t = t0 + e.s * sd, d = e.l * sd * .93;
+    voice(MUS, b.duty || .5, f, t, d, b.lv || .08, lopt);
+    if (b.under) { const u = underNote(e.m, b.under); if (u) voice(MUS, .25, mtof(u), t, d, (b.lv || .08) * .42, { decay: .7 }); }
+    if (b.echo) voice(MUS, .125, f, t + 3 * sd, d * .9, (b.lv || .08) * .3, { decay: .7 });
+  }
+  if (b.H) for (const e of b.H) voice(MUS, b.harp ? .25 : .125, mtof(e.m), t0 + e.s * sd, b.harp ? sd * 4 : sd * 1.6, b.harp ? .03 : .028, { env: 'pluck' });
+  for (const e of b.B) voice(MUS, 'tri', mtof(e.m), t0 + e.s * sd, e.l * sd * .9, .26, { decay: 1 });
   b.D.forEach((d, i) => {
     const t = t0 + i * sd;
     if (d === 'k') { voice(MUS, 'tri', 170, t, .09, .3, { f2: 50, env: 'pluck' }); nz(MUS, 'long', .12, null, t, .03, .05); }
     else if (d === 's') nz(MUS, 'long', .45, .3, t, .13, .12);
+    else if (d === 'r') { for (let k = 0; k < 3; k++) nz(MUS, 'long', .5, .35, t + k * sd / 3, .05, .05 + k * .025); }
     else if (d === 'h') nz(MUS, 'short', 1, null, t, .03, .03);
+    else if (d === 't') voice(MUS, 'tri', 110, t, .3, .32, { f2: 55, env: 'pluck' });
   });
 }
 
