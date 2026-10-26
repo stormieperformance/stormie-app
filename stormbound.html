@@ -274,20 +274,122 @@ function sprite(map, pal, mono) {
   return c;
 }
 function spriteSet(map, pal) { return { n: sprite(map, pal), w: sprite(map, pal, '#ffffff'), c: sprite(map, pal, '#6fe8ff') }; }
-const PT = ["....kkkk....", "...kcccck...", "..kcccccck..", "..kcceeeck..", "..kcdddddk..", "...kkccck...", "..kcccccck..", ".kccdcccdck.", ".kcdccccdck.", "..kccccccck."];
-const PPAL = { k: '#05040f', c: '#4048a0', d: '#252a66', e: '#b4fcff' };
-const PS = {
-  idle: spriteSet(PT.concat(["..kddkkddk..", "..kdk..kdk..", "..kdk..kdk..", ".kkk...kkk.."]), PPAL),
-  run1: spriteSet(PT.concat(["..kddkkddk..", ".kdk....kdk.", "kdk......kdk", "kk........kk"]), PPAL),
-  run2: spriteSet(PT.concat(["..kddkkddk..", "...kdkkdk...", "...kdkkdk...", "...kkkkkk..."]), PPAL),
-  jump: spriteSet(PT.concat(["..kdddddk...", "..kdk.kdk...", "...kk..kk...", "............"]), PPAL)
+/* ---------- sprites: posed rigs, auto-shaded and outlined ---------- */
+const OUTLINE = '#05040f';
+function Rig(w, h) { this.w = w; this.h = h; this.g = new Uint8Array(w * h); }
+Rig.prototype.set = function (x, y, id) { x = Math.floor(x); y = Math.floor(y); if (x >= 0 && y >= 0 && x < this.w && y < this.h) this.g[y * this.w + x] = id; };
+Rig.prototype.get = function (x, y) { return (x < 0 || y < 0 || x >= this.w || y >= this.h) ? 0 : this.g[y * this.w + x]; };
+Rig.prototype.ell = function (cx, cy, rx, ry, id) { for (let y = 0; y < this.h; y++) for (let x = 0; x < this.w; x++) { const dx = (x + .5 - cx) / rx, dy = (y + .5 - cy) / ry; if (dx * dx + dy * dy <= 1) this.set(x, y, id); } };
+Rig.prototype.disc = function (cx, cy, r, id) { this.ell(cx, cy, r, r, id); };
+Rig.prototype.seg = function (x1, y1, x2, y2, r, id) { const n = Math.ceil(Math.hypot(x2 - x1, y2 - y1) * 4) + 1; for (let i = 0; i <= n; i++) this.disc(lerp(x1, x2, i / n), lerp(y1, y2, i / n), r, id); };
+Rig.prototype.poly = function (pts, id) {
+  for (let y = 0; y < this.h; y++) for (let x = 0; x < this.w; x++) {
+    const px = x + .5, py = y + .5; let ins = false;
+    for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) { const [xi, yi] = pts[i], [xj, yj] = pts[j]; if ((yi > py) !== (yj > py) && px < (xj - xi) * (py - yi) / (yj - yi) + xi) ins = !ins; }
+    if (ins) this.set(x, y, id);
+  }
 };
-const HT = ["...kkkkk....", "..kgggggk...", ".kgggggggk..", ".kgoggogggk.", ".kgggggggk..", "kgghhhhhggk.", "kgghkkkhggk.", "kggggggggggk", ".kgggggggggk", ".kgk.kgk.kgk"];
-const HPAL = { k: '#05040f', g: '#5a3d5e', h: '#2c1d34', o: '#ffb347' };
-const HS = [
-  spriteSet(HT.concat(["..kggggggk..", "..kgk..kgk..", "..kgk..kgk..", ".kkk...kkk.."]), HPAL),
-  spriteSet(HT.concat(["..kggggggk..", "..kgk.kgk...", "...kgkgk....", "...kkkkk...."]), HPAL)
-];
+Rig.prototype.limb = function (x, y, a1, l1, bend, l2, r, id) {
+  const A = a1 * Math.PI / 180, B = (a1 + bend) * Math.PI / 180;
+  const kx = x + Math.cos(A) * l1, ky = y + Math.sin(A) * l1, ex = kx + Math.cos(B) * l2, ey = ky + Math.sin(B) * l2;
+  this.seg(x, y, kx, ky, r, id); this.seg(kx, ky, ex, ey, r, id); return [ex, ey];
+};
+/* REG: id -> { p: [dark, mid, light] | c: flat colour, z, emit } */
+function bake(rig, REG) {
+  const { w, h } = rig, out = {};
+  const [cN, xN] = mk(w, h), [cW, xW] = mk(w, h), [cC, xC] = mk(w, h), [cE, xE] = mk(w, h);
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    const id = rig.get(x, y);
+    if (!id) {
+      if (rig.get(x - 1, y) || rig.get(x + 1, y) || rig.get(x, y - 1) || rig.get(x, y + 1)) { xN.fillStyle = OUTLINE; xN.fillRect(x, y, 1, 1); xW.fillStyle = '#ffffff'; xW.fillRect(x, y, 1, 1); xC.fillStyle = '#3fb6e8'; xC.fillRect(x, y, 1, 1); }
+      continue;
+    }
+    const R0 = REG[id]; let col;
+    if (R0.c) col = R0.c;
+    else {
+      const nb = [rig.get(x, y - 1), rig.get(x - 1, y), rig.get(x, y + 1), rig.get(x + 1, y)];
+      const shadowed = nb.some(n => n && n !== id && REG[n].z > R0.z && !REG[n].emit);
+      if (shadowed) col = R0.p[0];
+      else if (nb[0] === 0 || (nb[1] === 0 && nb[0] !== id)) col = R0.p[2];
+      else if (nb[2] === 0 || nb[3] === 0) col = R0.p[0];
+      else col = R0.p[1];
+    }
+    xN.fillStyle = col; xN.fillRect(x, y, 1, 1);
+    xW.fillStyle = '#ffffff'; xW.fillRect(x, y, 1, 1);
+    xC.fillStyle = R0.emit ? '#ffffff' : '#8ff7ff'; xC.fillRect(x, y, 1, 1);
+    if (R0.emit) { xE.fillStyle = R0.c; xE.fillRect(x, y, 1, 1); }
+  }
+  return { n: cN, w: cW, c: cC, e: cE };
+}
+const HREG = {
+  1: { p: ['#1a1446', '#2c2272', '#43369e'], z: 1 },
+  2: { p: ['#141a48', '#232d70', '#33429a'], z: 2 },
+  3: { p: ['#18205a', '#2a3684', '#3d4fb0'], z: 3 },
+  4: { p: ['#1f2766', '#3647a6', '#5470e0'], z: 4 },
+  5: { p: ['#6b3416', '#c06a28', '#ffb347'], z: 5 },
+  6: { p: ['#26307a', '#4458c4', '#7b95ff'], z: 6 },
+  7: { c: '#0a0820', z: 7 },
+  8: { c: '#c8fdff', z: 8, emit: true },
+  9: { p: ['#1c2462', '#2f3d8e', '#4a5fbe'], z: 9 },
+  10: { p: ['#26307a', '#4458c4', '#7088f4'], z: 10 }
+};
+function heroRig(o) {
+  const R = new Rig(22, 24), L = o.lean || 0, bt = o.bt || 0, hy = o.hy ?? 14.6;
+  const hx = 10, sy = 10.2 + bt, cl = o.cloak ?? .3;
+  R.poly([[hx - 2.2 + L, sy - .5], [hx - .5 + L, sy], [hx - .6, hy + 1.2], [hx - 3.2 - cl * 3.2, hy + 2.2 - cl * 2.4], [hx - 4.2 - cl * 2.4, sy + 2 - cl]], 1);
+  const back = (s, a, b) => { const e = R.limb(hx + s, hy, a, 3.8, b, 3.8, 1.1, 2); R.seg(e[0], e[1], e[0] + 1.6, e[1] + .2, .8, 2); };
+  back(-.6, o.lb[0], o.lb[1]);
+  R.limb(hx - 1.6 + L, sy + .6, o.ab[0], 2.7, o.ab[1], 2.5, .95, 3);
+  R.poly([[hx - 2.6 + L, sy - .4], [hx + 2.6 + L, sy - .4], [hx + 2.2, hy + .6], [hx - 2.4, hy + .6]], 4);
+  R.seg(hx - 2.3 + L * .3, hy - .6, hx + 2.3 + L * .3, hy - .6, .55, 5);
+  const cx = hx + .6 + L, cyy = 5.6 + bt;
+  R.poly([[cx - 2.6, cyy - 2.4], [cx - 5.6, cyy + 1.6 + cl], [cx - 1.6, cyy + 1.8]], 6);
+  R.disc(cx, cyy, 3.9, 6);
+  for (let y = 0; y < R.h; y++) for (let x = 0; x < R.w; x++) if (R.get(x, y) === 6 && x + .5 > cx - .2 && y + .5 > cyy - 1.4 && y + .5 < cyy + 2.2 && x + .5 < cx + 3.6) R.set(x, y, 7);
+  R.set(cx + 1.2, cyy + .2, 8); R.set(cx + 2.9, cyy + .2, 8);
+  const fe = R.limb(hx + .6, hy, o.lf[0], 3.8, o.lf[1], 3.8, 1.1, 9); R.seg(fe[0], fe[1], fe[0] + 1.7, fe[1] + .2, .8, 9);
+  const he = R.limb(hx + 1.6 + L, sy + .6, o.af[0], 2.7, o.af[1], 2.5, 1, 10); R.disc(he[0], he[1], 1.15, 10);
+  return bake(R, HREG);
+}
+const PS = { idle: [], run: [] };
+PS.idle.push(heroRig({ lb: [98, 0], lf: [82, 0], ab: [102, -12], af: [80, 14], bt: 0, cloak: .25 }));
+PS.idle.push(heroRig({ lb: [98, 0], lf: [82, 0], ab: [104, -12], af: [82, 14], bt: 1, cloak: .35 }));
+for (let i = 0; i < 6; i++) {
+  const p = i / 6 * Math.PI * 2, s = Math.sin(p);
+  const leg = k => [90 - 46 * k, k < 0 ? 75 * -k : 12 * k];
+  PS.run.push(heroRig({ lf: leg(s), lb: leg(-s), af: [90 + 55 * s, -55], ab: [90 - 55 * s, -55], bt: Math.abs(s) > .7 ? 1 : 0, lean: 1, cloak: .75 + .25 * Math.cos(p), hy: 14.6 - (Math.abs(s) < .5 ? .8 : 0) }));
+}
+PS.jump = heroRig({ lf: [40, 85], lb: [110, 60], af: [-55, -25], ab: [215, 10], cloak: .9, hy: 14 });
+PS.fall = heroRig({ lf: [78, 18], lb: [108, 12], af: [-25, -10], ab: [200, 0], cloak: .15 });
+PS.zip = heroRig({ lf: [150, 25], lb: [168, 10], af: [-4, 0], ab: [168, 0], lean: 2, cloak: 1, hy: 14 });
+PS.slash = heroRig({ lf: [62, 22], lb: [118, 0], af: [-18, 8], ab: [150, 10], lean: 1, cloak: .6 });
+
+const KREG = {
+  1: { p: ['#1a0f20', '#2e1b38', '#432a50'], z: 1 },
+  2: { p: ['#1e1124', '#2e1b38', '#432a50'], z: 2 },
+  3: { p: ['#9a8468', '#cdb894', '#efe3c6'], z: 3 },
+  4: { p: ['#24152c', '#462a52', '#6a4476'], z: 4 },
+  5: { p: ['#2a182f', '#4e2f5a', '#73497f'], z: 5 },
+  6: { c: '#0d0610', z: 6 },
+  7: { c: '#e8dcc0', z: 7 },
+  8: { c: '#ffb347', z: 8, emit: true },
+  9: { p: ['#2c1a34', '#53335f', '#7a5086'], z: 9 }
+};
+function huskRig(ph, low) {
+  const R = new Rig(24, 20), s = Math.sin(ph), b = low ? 1 : 0;
+  R.limb(9, 13 + b, 90 + 28 * s, 2.8, 10, 2.6, 1.2, 2);
+  R.limb(10, 9 + b, 110 - 18 * s, 4, -30, 4, 1.1, 1);
+  for (const [x, y, hgt] of [[6, 6.5, 3.4], [9.5, 4.8, 4], [13, 5.2, 3]]) R.poly([[x - 1.6, y + 2 + b], [x + .2, y - hgt + b], [x + 1.6, y + 2 + b]], 3);
+  R.ell(10.5, 9.5 + b, 6.6, 4.6, 4);
+  R.limb(13, 13 + b, 90 - 28 * s, 2.8, 10, 2.6, 1.3, 5);
+  R.ell(17.2, 10.6 + b, 3.6, 3.2, 4);
+  for (let x = 16; x <= 20; x++) R.set(x, 12 + b, 6);
+  R.set(17, 12 + b, 7); R.set(19, 12 + b, 7); R.set(18, 13 + b, 6); R.set(19, 13 + b, 6);
+  R.set(17, 9 + b, 8); R.set(19, 9 + b, 8);
+  const he = R.limb(15, 8.5 + b, 70 + 20 * s, 4, 25, 4.2, 1.15, 9); R.disc(he[0], he[1], 1.3, 9);
+  return bake(R, KREG);
+}
+const HS = [0, 1, 2, 3].map(i => huskRig(i / 4 * Math.PI * 2, i % 2 === 1));
 const HEART = sprite([".rr.rr.", "rwrrrrr", "rrrrrrr", ".rrrrr.", "..rrr..", "...r..."], { r: '#ff4f6d', w: '#ffd0d8' });
 const HEART0 = sprite([".rr.rr.", "rrrrrrr", "rrrrrrr", ".rrrrr.", "..rrr..", "...r..."], { r: '#2f2658' });
 
@@ -799,7 +901,7 @@ function strike(int = 1) {
 const hitstop = t => { hs = Math.max(hs, t); };
 
 /* ---------- gameplay ---------- */
-const cy = e => e.type === 'husk' ? e.y - 7 : e.y;
+const cy = e => e.type === 'husk' ? e.y - 8 : e.y;
 function landPhys(o, prevY, drop) {
   o.ground = false;
   if (o.y >= FLOOR) { o.y = FLOOR; if (o.vy > 0) o.vy = 0; o.ground = true; return; }
@@ -1020,7 +1122,7 @@ function step(dt) {
   if (state === 'play') { updatePlayer(dt); updateEnemies(dt); updateOrbs(dt); updateFlow(dt); }
   else if (state === 'dead') { deathT += dt; updateEnemies(dt); updateOrbs(dt); }
   for (const a of ANCH) { a.cd = Math.max(0, a.cd - dt); a.y = a.by + Math.sin(time * 1.6 + a.ph) * 2; }
-  const neckX = P.x - P.face * 2, neckY = P.y - 9;
+  const neckX = P.x - P.face * 2, neckY = P.y - 15;
   scarf[0].x = neckX; scarf[0].y = neckY;
   for (let i = 1; i < scarf.length; i++) {
     const p = scarf[i], q = scarf[i - 1];
@@ -1059,11 +1161,12 @@ function spr(img, x, y, face, ox, oy) {
   else ctx.drawImage(img, x - ox, y - oy);
 }
 function playerFrame() {
-  if (P.state === 'zip' || !P.ground) return PS.jump;
-  if (Math.abs(P.vx) > 10) return Math.floor(P.anim) % 2 ? PS.run1 : PS.run2;
-  return PS.idle;
+  if (P.state === 'zip') return PS.zip;
+  if (P.slashT > 0) return PS.slash;
+  if (!P.ground) return P.vy < 40 ? PS.jump : PS.fall;
+  if (Math.abs(P.vx) > 10) return PS.run[Math.floor(P.anim) % 6];
+  return PS.idle[Math.floor(time * 2.2) % 2];
 }
-function eyePx(x, face, col) { return face > 0 ? x - 6 + col : x + 6 - 1 - col; }
 
 function drawWisp(c, e) {
   const x = Math.round(e.x), y = Math.round(e.y), tel = e.shoot < .5 && e.spawn <= 0;
@@ -1110,15 +1213,15 @@ function draw() {
   ctx.drawImage(fg, 0, 0);
   for (const e of enemies) {
     if (e.spawn > 0 || e.type !== 'husk') continue;
-    const set = HS[Math.floor(e.anim) % 2];
-    spr(e.flash > 0 ? set.w : set.n, e.x, e.y, e.face, 6, 14);
+    const set = HS[Math.floor(e.anim) % 4];
+    spr(e.flash > 0 ? set.w : set.n, e.x, e.y, e.face, 11, 20);
   }
   for (const p of parts) if (!p.em) { ctx.globalAlpha = clamp(p.life / p.max, 0, 1); ctx.fillStyle = p.col; ctx.fillRect(Math.round(p.x), Math.round(p.y), p.sz, p.sz); }
   ctx.globalAlpha = 1;
   if (state !== 'dead' || deathT < .05) {
-    const f = playerFrame(), bob = (f === PS.idle && Math.floor(time * 2.2) % 2) ? 1 : 0;
+    const f = playerFrame();
     const blink = P.inv > 0 && P.state !== 'zip' && Math.floor(time * 18) % 2;
-    if (!blink) spr(f.n, P.x, P.y + bob, P.face, 6, 14);
+    if (!blink) spr(f.n, P.x, P.y, P.face, 11, 24);
   }
 
   // darkness
@@ -1149,14 +1252,13 @@ function draw() {
       continue;
     }
     if (e.type === 'wisp') drawWisp(ctx, e);
-    else { ctx.fillStyle = '#ffd27a'; const ey = Math.round(e.y) - 14 + 3; ctx.fillRect(eyePx(Math.round(e.x), e.face, 3), ey, 1, 1); ctx.fillRect(eyePx(Math.round(e.x), e.face, 6), ey, 1, 1); }
+    else spr(HS[Math.floor(e.anim) % 4].e, e.x, e.y, e.face, 11, 20);
   }
-  for (const a of after) { ctx.globalAlpha = a.life / .26 * .7; spr(PS.jump.c, a.x, a.y, a.face, 6, 14); }
+  for (const a of after) { ctx.globalAlpha = a.life / .26 * .7; spr(PS.zip.c, a.x, a.y, a.face, 11, 24); }
   ctx.globalAlpha = 1;
   if (state !== 'dead' || deathT < .05) {
     for (let i = 0; i < scarf.length - 1; i++) pline(ctx, [[scarf[i].x, scarf[i].y], [scarf[i + 1].x, scarf[i + 1].y]], i < 3 ? '#e6feff' : i < 7 ? '#8ff7ff' : '#3f8fd0');
-    ctx.fillStyle = '#e6feff'; const vy = Math.round(P.y) - 11 + ((playerFrame() === PS.idle && Math.floor(time * 2.2) % 2) ? 1 : 0);
-    for (const col of [5, 6, 7]) ctx.fillRect(eyePx(Math.round(P.x), P.face, col), vy, 1, 1);
+    if (!(P.inv > 0 && P.state !== 'zip' && Math.floor(time * 18) % 2)) spr(playerFrame().e, P.x, P.y, P.face, 11, 24);
     if (P.zt && P.state === 'zip') {
       const tx = P.zt.x, ty = P.zt.kind === 'anchor' ? P.zt.y : cy(P.zt), d = Math.hypot(tx - P.x, ty - P.y);
       const pts = jag(P.x, P.y - 8, tx, ty, Math.max(3, Math.round(d / 10)), 6);
@@ -1189,14 +1291,14 @@ function draw() {
   // glow pass
   ctx.globalCompositeOperation = 'lighter';
   if (state !== 'dead' || deathT < .05) {
-    glow(ctx, GL.cyan, P.x + P.face * 1, P.y - 11, 9, .5);
+    glow(ctx, GL.cyan, P.x + P.face * 3, P.y - 18, 9, .5);
     for (let i = 2; i < scarf.length; i += 2) glow(ctx, GL.cyan, scarf[i].x, scarf[i].y, 7, .28);
   }
   for (const a of ANCH) glow(ctx, GL.cyan, a.x, a.y, a.cd > 0 ? 8 : 18 + Math.sin(time * 4 + a.ph) * 3, a.cd > 0 ? .2 : .65);
   for (const e of enemies) {
     if (e.spawn > 0) { glow(ctx, GL.violet, e.x, cy(e), 26, .8); continue; }
     if (e.type === 'wisp') glow(ctx, GL.ember, e.x, e.y, e.shoot < .5 ? 26 : 18, .8);
-    else glow(ctx, GL.gold, e.x + e.face * 1, e.y - 11, 6, .45);
+    else glow(ctx, GL.gold, e.x + e.face * 7, e.y - 11, 7, .5);
   }
   for (const o of orbs) glow(ctx, o.friendly ? GL.cyan : GL.ember, o.x, o.y, 12, .9);
   for (const p of parts) if (p.em && p.sz > 1) glow(ctx, p.col === '#8ff7ff' || p.col === '#ffffff' ? GL.cyan : GL.ember, p.x, p.y, 5, clamp(p.life / p.max, 0, 1) * .6);
