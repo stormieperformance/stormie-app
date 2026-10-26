@@ -433,7 +433,7 @@ function voice(bus, wave, f1, t, dur, vol, o = {}) {
   g.gain.setValueAtTime(vol, t);
   if (o.env === 'pluck') g.gain.exponentialRampToValueAtTime(vol * .05 + .0001, t + dur);
   else { g.gain.setValueAtTime(vol, t); g.gain.linearRampToValueAtTime(vol * dec, t + Math.min(.12, dur * .5)); g.gain.setValueAtTime(vol * dec, t + dur - .012); g.gain.linearRampToValueAtTime(0, t + dur); }
-  if (o.vib && dur > .3) { const l = AC.createOscillator(), lg = AC.createGain(); l.frequency.value = 5.5; lg.gain.setValueAtTime(0, t); lg.gain.setValueAtTime(f1 * .012, t + .18); l.connect(lg); lg.connect(osc.frequency); l.start(t); l.stop(t + dur + .02); }
+  if (o.vib && dur > .3) { const l = AC.createOscillator(), lg = AC.createGain(); l.frequency.value = o.vibR || 5.5; lg.gain.setValueAtTime(0, t); lg.gain.linearRampToValueAtTime(f1 * (o.vibD || .012), t + (o.vibDelay ?? .18)); l.connect(lg); lg.connect(osc.frequency); l.start(t); l.stop(t + dur + .02); }
   osc.connect(g); g.connect(bus); osc.start(t); osc.stop(t + dur + .03);
 }
 function nz(bus, kind, r1, r2, t, dur, vol) {
@@ -470,26 +470,29 @@ const sfx = {
   clear() { jingle(['A5', 'C6', 'E6', 'A6', null, 'E6', 'A6'], .09, .25, .11, 4); },
   over() { jingle(['E5', 'D5', 'C5', 'B4', 'A4', 'G#4', 'A4'], .15, .5, .1, 5); },
   shot() { if (!AC) return; voice(SFX, .125, 520, AC.currentTime, .09, .035, { f2: 260, steps: 3, env: 'pluck' }); },
+  bell() { if (!AC) return; const t = AC.currentTime; for (const [f, v] of [[196, .16], [392, .05], [466, .03]]) voice(SFX, f > 300 ? .125 : 'tri', f, t, 2.6, v, { env: 'pluck' }); },
+  owl() { if (!AC) return; const t = AC.currentTime; voice(SFX, 'tri', 420, t, .22, .1, { f2: 380 }); voice(SFX, 'tri', 420, t + .32, .4, .08, { f2: 360, vib: true }); },
+  farhowl() { if (!AC) return; const t = AC.currentTime; voice(SFX, 'tri', 300, t, .5, .07, { f2: 560 }); voice(SFX, 'tri', 560, t + .5, 1.2, .06, { f2: 330, vib: true, vibD: .02 }); },
   tele() { if (!AC) return; voice(SFX, .125, 1800, AC.currentTime, .2, .05, { f2: 300, steps: 6 }); }
 };
 
-/* ---------- music: an original score in four moods ---------- */
-const ARP = { Am: ['A3', 'C4', 'E4', 'A4'], F: ['F3', 'A3', 'C4', 'F4'], G: ['G3', 'B3', 'D4', 'G4'], E: ['E3', 'G#3', 'B3', 'E4'], Dm: ['D4', 'F4', 'A4', 'D5'], Em: ['E3', 'G3', 'B3', 'E4'], B: ['B2', 'D#3', 'F#3', 'B3'], C: ['C4', 'E4', 'G4', 'C5'], Bb: ['Bb3', 'D4', 'F4', 'Bb4'], A: ['A3', 'C#4', 'E4', 'A4'] };
-const ROOT = { Am: 'A', F: 'F', G: 'G', E: 'E', Dm: 'D', Em: 'E', B: 'B', C: 'C', Bb: 'Bb', A: 'A' };
+/* ---------- music: an original Halloween score ---------- */
+const ARP = { Dm: ['D4', 'F4', 'A4', 'D5'], Gm: ['G3', 'Bb3', 'D4', 'G4'], Bb: ['Bb3', 'D4', 'F4', 'Bb4'], A7: ['A3', 'C#4', 'E4', 'G4'], Edim: ['E3', 'G3', 'Bb3', 'E4'],
+  Em: ['E3', 'G3', 'B3', 'E4'], Am: ['A3', 'C4', 'E4', 'A4'], B7: ['B2', 'D#3', 'F#3', 'A3'], F: ['F3', 'A3', 'C4', 'F4'], C: ['C4', 'E4', 'G4', 'C5'], G: ['G3', 'B3', 'D4', 'G4'] };
+const ROOT = { Dm: 'D', Gm: 'G', Bb: 'Bb', A7: 'A', Edim: 'E', Em: 'E', Am: 'A', B7: 'B', F: 'F', C: 'C', G: 'G' };
 const REST = '. . . . . . . . . . . . . . . .';
 const arp16 = c => Array.from({ length: 16 }, (_, i) => ARP[c][i % 4]).join(' ');
 const arp8 = c => Array.from({ length: 16 }, (_, i) => i % 2 ? '.' : ARP[c][[0, 1, 2, 3, 2, 1, 0, 1][i / 2]]).join(' ');
+const boxArp = c => Array.from({ length: 16 }, (_, i) => i % 2 ? '.' : ARP[c][[3, 2, 1, 2, 3, 2, 1, 0][i / 2]].replace(/\d/, d => +d + 1)).join(' ');
 const bassSlow = c => { const r = ROOT[c]; return `${r}2 - - - - - - - ${r}2 - - - ${r}3 - - -`; };
-const bass8 = c => { const r = ROOT[c]; return `${r}2 . ${r}3 . ${r}2 . ${r}3 . ${r}2 . ${r}3 . ${r}2 . ${r}3 .`; };
 const bassRun = c => { const r = ROOT[c]; return `${r}2 - ${r}3 ${r}2 . ${r}2 ${r}3 . ${r}2 - ${r}3 ${r}2 . ${r}2 ${r}3 .`; };
 const DR = {
-  soft: 'h . . . . . h . . . h . . . . .',
-  pulse: 'k . . . h . . . k . . . h . h .',
-  a: 'k . h . s . h . k . k h s . h h',
-  b: 'k . h k s . h . k . h k s . s s',
+  heart: 'k . k . . . . . k . k . . . . .',
+  heart2: 'k . k . . . h . k . k . . . h .',
+  gallop: 'k . h k s . h k k . h k s . h h',
   c: 'k h h h s h h h k h k h s h h h',
   f: 's s s s s . s s s s . s s s s s',
-  dark: 'k . . . s . . . k . k . s . . .',
+  toll: 'k . . . . . . . . . . . . . . .',
   none: REST
 };
 function mkSong(bpm, intro, body) {
@@ -503,48 +506,53 @@ function parse(str) {
   return ev;
 }
 const SONGS = {};
-{
-  const CA = ['Am', 'F', 'G', 'E', 'Am', 'F', 'G', 'E'], CB = ['Dm', 'Am', 'E', 'Am', 'Dm', 'Am', 'E', 'Am'];
-  const LA = ['A4 - - - C5 - E5 - D5 - C5 - B4 - - -', 'A4 - - - - - - - F4 - A4 - C5 - - -', 'B4 - - - D5 - G5 - F5 - E5 - D5 - - -', 'E5 - - - - - - - G#4 - B4 - E5 - - -',
-    'A5 - - - G5 - E5 - C5 - - - E5 - - -', 'F5 - - - E5 - C5 - A4 - - - C5 - - -', 'D5 - - - B4 - G4 - B4 - D5 - G5 - F5 -', 'E5 - - - - - - - - - - - . . . .'];
-  const LB = ['D5 - - - F5 - A5 - G5 - F5 - E5 - D5 -', 'C5 - - - E5 - - - A4 - - - - - - -', 'B4 - - - G#4 - B4 - D5 - - - C5 - B4 -', 'A4 - - - - - - - - - - - . . . .',
-    'D5 - - - F5 - A5 - D6 - C6 - A5 - F5 -', 'E5 - - - C5 - - - A4 - C5 - E5 - - -', 'G#5 - - - E5 - - - B4 - D5 - B4 - G#4 -', 'A4 - - - E5 - A5 - - - - - . . . .'];
+{ /* The Hollow: graveyard waltz of an organ and a music box, over a creeping chromatic bass and a heartbeat */
+  const CH = ['Dm', 'Bb', 'Gm', 'A7', 'Dm', 'Edim', 'A7', 'Dm'];
+  const LA = ['D5 - - - F5 - E5 - D5 - C#5 - D5 - - -', 'F5 - - - G5 - F5 - E5 - D5 - Bb4 - - -', 'G4 - Bb4 - D5 - G5 - F5 - E5 - D5 - - -', 'C#5 - - - E5 - - - G5 - - - A5 - - -',
+    'A5 - - - G5 - F5 - E5 - F5 - D5 - - -', 'G5 - - - E5 - Bb4 - C#5 - E5 - G5 - - -', 'F5 - E5 - D5 - C#5 - E5 - - - A4 - - -', 'D5 - - - - - - - . . . . . . . .'];
+  const BS = ['D2 - - - A2 - - - D2 - - - C#2 - - -', 'Bb1 - - - F2 - - - Bb1 - - - A1 - - -', 'G1 - - - D2 - - - G1 - - - Bb1 - - -', 'A1 - - - E2 - - - A1 - - - C#2 - - -',
+    'D2 - - - A2 - - - D2 - - - C2 - - -', 'E2 - - - Bb1 - - - E2 - - - G2 - - -', 'A1 - - - E2 - - - G2 - - - C#2 - - -', 'D2 - - - A1 - - - D2 - - - - - - -'];
+  const CB = ['Gm', 'Dm', 'Edim', 'A7', 'Gm', 'Dm', 'Edim', 'Dm'];
+  const LB = ['G5 . Bb5 . D6 . Bb5 . G5 . F#5 . G5 - - -', 'F5 . A5 . D6 . A5 . F5 . E5 . D5 - - -', 'E5 . G5 . Bb5 . G5 . E5 . C#5 . E5 - - -', 'A5 . G5 . F5 . E5 . D5 . C#5 . A4 - - -',
+    'G5 . Bb5 . D6 . Bb5 . G5 . F#5 . G5 - - -', 'F5 . A5 . D6 . A5 . F5 . E5 . D5 - - -', 'E5 . G5 . Bb5 . C#6 . Bb5 . G5 . E5 - - -', 'D5 - - - A4 - - - D4 - - - . . . .'];
   const body = [];
-  CA.forEach((c, i) => body.push({ lead: LA[i], harm: arp8(c), bass: bassSlow(c), drum: DR.soft, duty: .25 }));
-  CB.forEach((c, i) => body.push({ lead: LB[i], harm: arp8(c), bass: bassSlow(c), drum: DR.pulse, duty: .25 }));
-  CA.forEach((c, i) => body.push({ lead: LA[i], harm: 'echo', bass: bassSlow(c), drum: DR.pulse, duty: .5 }));
-  SONGS.hollow = mkSong(92, [{ harm: arp8('Am'), bass: bassSlow('Am') }, { harm: arp8('E'), bass: bassSlow('E') }], body);
+  CH.forEach((c, i) => body.push({ lead: LA[i], harm: boxArp(c), bass: BS[i], drum: DR.heart, duty: .5, vibD: .022, vibR: 4.6 }));
+  CB.forEach((c, i) => body.push({ lead: LB[i], harm: arp8(c), bass: bassSlow(c), drum: DR.heart2, duty: .125, pluck: true }));
+  CH.forEach((c, i) => body.push({ lead: LA[i], harm: 'echo', bass: BS[i], drum: DR.heart2, duty: .25, vibD: .03, vibR: 6.2 }));
+  SONGS.hollow = mkSong(96, [{ harm: boxArp('Dm'), bass: BS[0], drum: DR.toll }, { harm: boxArp('A7'), bass: BS[3], drum: DR.heart }], body);
 }
-{
-  const CF = ['Dm', 'Bb', 'C', 'A', 'Dm', 'Bb', 'C', 'A'];
-  const LF = ['D5 - D5 F5 - D5 A5 - G5 - F5 - E5 F5 - .', 'D5 - - - Bb4 - D5 - F5 - - - E5 - D5 -', 'E5 - E5 G5 - E5 C6 - Bb5 - A5 - G5 A5 - .', 'A5 - - - - - - - C#5 - E5 - A5 - G5 -',
-    'F5 - F5 A5 - F5 D6 - C6 - Bb5 - A5 Bb5 - .', 'Bb5 - - - A5 - G5 - F5 - - - D5 - - -', 'G5 - G5 Bb5 - G5 E6 - D6 - C6 - Bb5 C6 - .', 'A5 - - - G5 - F5 - E5 - D5 - C#5 - - -'];
+{ /* Broomstick Gallop: a frantic harmonic-minor chase */
+  const CF = ['Dm', 'Gm', 'A7', 'Dm', 'Bb', 'Edim', 'A7', 'Dm'];
+  const LF = ['D5 - F5 - A5 - G5 F5 E5 - D5 - C#5 - D5 -', 'Bb5 - A5 G5 F5 - G5 - D5 - - - Bb4 - D5 -', 'C#5 - E5 - G5 - Bb5 - A5 - G5 - E5 - C#5 -', 'D5 - - - A4 - D5 - F5 - E5 - D5 - - -',
+    'F5 - Bb5 - D6 - C6 Bb5 A5 - G5 - F5 - - -', 'G5 - Bb5 - E6 - D6 C#6 Bb5 - G5 - E5 - - -', 'A5 G5 F5 E5 D5 C#5 Bb4 A4 G4 - A4 - C#5 - E5 -', 'D5 - - - - - - - D6 - - - . . . .'];
   const body = [];
-  CF.forEach((c, i) => body.push({ lead: LF[i], harm: arp16(c), bass: bassRun(c), drum: i === 7 ? DR.f : DR.a, duty: .25 }));
-  CF.forEach((c, i) => body.push({ lead: LF[i], harm: 'echo', bass: bassRun(c), drum: i === 7 ? DR.f : DR.c, duty: .5 }));
-  SONGS.flight = mkSong(168, [{ harm: arp16('Dm'), bass: bass8('Dm'), drum: DR.f }], body);
+  CF.forEach((c, i) => body.push({ lead: LF[i], harm: arp16(c), bass: bassRun(c), drum: i === 7 ? DR.f : DR.gallop, duty: .25 }));
+  CF.forEach((c, i) => body.push({ lead: LF[i], harm: 'echo', bass: bassRun(c), drum: i === 7 ? DR.f : DR.c, duty: .5, vibD: .018 }));
+  SONGS.flight = mkSong(160, [{ harm: arp16('Dm'), bass: bassRun('Dm'), drum: DR.f }], body);
 }
-{
-  const CT = ['Em', 'B', 'C', 'B', 'Em', 'Am', 'C', 'B'];
-  const LT = ['E5 - - - - - - - G5 - F#5 - E5 - - -', 'D#5 - - - - - - - F#5 - - - B4 - - -', 'E5 - - - G5 - C6 - B5 - - - A5 - G5 -', 'F#5 - - - - - - - D#5 - - - B4 - - -',
-    'B5 - - - A5 - G5 - F#5 - G5 - A5 - - -', 'C6 - - - B5 - A5 - E5 - - - A5 - - -', 'G5 - - - E5 - C5 - E5 - G5 - B5 - - -', 'B5 - - - - - - - . . . . . . . .'];
+{ /* The Tower: a theremin wobbling over a bass that sinks one semitone at a time */
+  const CT = ['Em', 'Em', 'Am', 'B7', 'Em', 'F', 'B7', 'Em'];
+  const LT = ['E5 - - - - - F5 - E5 - - - B4 - - -', 'C5 - - - B4 - - - A#4 - - - B4 - - -', 'A4 - C5 - E5 - - - F5 - E5 - D#5 - - -', 'D#5 - - - F#5 - - - A5 - - - B5 - - -',
+    'G5 - - - F#5 - - - F5 - - - E5 - - -', 'F5 - - - A5 - - - C6 - - - B5 - A5 -', 'A5 - - - F#5 - D#5 - B4 - C5 - D#5 - - -', 'E5 - - - - - - - . . . . . . . .'];
+  const BT = ['E2 - - - - - - - D#2 - - - - - - -', 'D2 - - - - - - - C#2 - - - - - - -', 'C2 - - - - - - - A1 - - - - - - -', 'B1 - - - - - - - B1 - - - A1 - - -',
+    'G1 - - - - - - - G#1 - - - - - - -', 'F1 - - - - - - - F1 - - - A1 - - -', 'B1 - - - - - - - D#2 - - - F#2 - - -', 'E2 - - - - - - - E1 - - - - - - -'];
   const body = [];
-  CT.forEach((c, i) => body.push({ lead: LT[i], harm: arp8(c), bass: bass8(c), drum: DR.dark, duty: .5 }));
-  CT.forEach((c, i) => body.push({ lead: LT[i], harm: arp16(c), bass: bassRun(c), drum: DR.dark, duty: .25 }));
-  SONGS.tower = mkSong(118, [{ harm: arp8('Em'), bass: bass8('Em'), drum: DR.dark }], body);
+  CT.forEach((c, i) => body.push({ lead: LT[i], harm: arp8(c), bass: BT[i], drum: DR.heart, duty: .25, vibD: .035, vibR: 5.8 }));
+  CT.forEach((c, i) => body.push({ lead: LT[i], harm: boxArp(c), bass: BT[i], drum: DR.heart2, duty: .5, vibD: .02, vibR: 4.2 }));
+  SONGS.tower = mkSong(104, [{ harm: arp8('Em'), bass: BT[0], drum: DR.toll }], body);
 }
-{
-  const CX = ['Em', 'C', 'Am', 'B'];
-  const LX = ['E5 E5 G5 E5 B5 - A5 G5 F#5 G5 A5 - G5 F#5 E5 -', 'C5 E5 G5 E5 C6 - B5 A5 G5 A5 B5 - A5 G5 E5 -', 'A4 C5 E5 C5 A5 - G5 E5 F#5 - G5 - A5 - B5 -', 'B5 - - - A5 - - - F#5 - - - D#5 - - -'];
+{ /* Midnight Duel: an ornamented organ fury for the bosses */
+  const CX = ['Em', 'C', 'Am', 'B7'];
+  const LX = ['B5 A5 B5 - - - A5 G5 F#5 E5 D#5 - E5 - - -', 'E5 - G5 - C6 - B5 A5 G5 - E5 - C5 - E5 -', 'A5 G5 A5 - E5 - C5 - A4 - C5 - E5 - A5 -', 'D#5 - F#5 - A5 - B5 - A5 G5 F#5 E5 D#5 - - -'];
   const body = [];
-  for (let k = 0; k < 2; k++) CX.forEach((c, i) => body.push({ lead: LX[i], harm: k ? 'echo' : arp16(c), bass: bassRun(c), drum: i === 3 ? DR.f : DR.c, duty: k ? .5 : .25 }));
-  SONGS.boss = mkSong(150, [{ harm: arp16('Em'), bass: bass8('Em'), drum: DR.f }], body);
+  for (let k = 0; k < 2; k++) CX.forEach((c, i) => body.push({ lead: LX[i], harm: k ? 'echo' : arp16(c), bass: bassRun(c), drum: i === 3 ? DR.f : DR.c, duty: k ? .5 : .25, vibD: .015 }));
+  SONGS.boss = mkSong(150, [{ harm: arp16('Em'), bass: bassRun('Em'), drum: DR.f }], body);
 }
-{
+{ /* Dawn: the night lets go */
   const CD = ['C', 'G', 'Am', 'F'];
   const LD = ['E5 - - - G5 - - - C6 - - - G5 - - -', 'D5 - - - G5 - - - B5 - - - G5 - - -', 'C5 - - - E5 - - - A5 - - - E5 - - -', 'F5 - - - A5 - - - C6 - - - - - - -'];
   const body = [];
-  for (let k = 0; k < 2; k++) CD.forEach((c, i) => body.push({ lead: LD[i], harm: arp8(c), bass: bassSlow(c), drum: k ? DR.soft : DR.none, duty: .25 }));
+  for (let k = 0; k < 2; k++) CD.forEach((c, i) => body.push({ lead: LD[i], harm: arp8(c), bass: bassSlow(c), drum: DR.none, duty: .25 }));
   SONGS.dawn = mkSong(84, [], body);
 }
 const mus = { on: false, song: null, name: '', bar: 0, next: 0, timer: 0 };
@@ -564,9 +572,9 @@ function musTick() {
   while (mus.next < AC.currentTime + .25) { playBar(S0.bars[mus.bar], mus.next, sd); mus.next += bl; mus.bar++; if (mus.bar >= S0.bars.length) mus.bar = S0.loop; }
 }
 function playBar(b, t0, sd) {
-  for (const e of b.L) voice(MUS, b.duty || .25, mtof(nm(e.n)), t0 + e.s * sd, e.l * sd * .92, .08, { decay: .75, vib: true });
+  for (const e of b.L) voice(MUS, b.duty || .25, mtof(nm(e.n)), t0 + e.s * sd, b.pluck ? Math.max(e.l, 2) * sd : e.l * sd * .92, b.pluck ? .075 : .08, b.pluck ? { env: 'pluck' } : { decay: .75, vib: true, vibD: b.vibD, vibR: b.vibR });
   if (b.H) for (const e of b.H) voice(MUS, .125, mtof(nm(e.n)), t0 + e.s * sd, sd * 1.6, .03, { env: 'pluck' });
-  else for (const e of b.L) voice(MUS, .125, mtof(nm(e.n)), t0 + (e.s + 3) * sd, e.l * sd * .9, .028, { decay: .7 });
+  else for (const e of b.L) voice(MUS, .125, mtof(nm(e.n)), t0 + (e.s + 3) * sd, e.l * sd * .9, .028, { decay: .7, vib: true, vibD: b.vibD, vibR: b.vibR });
   for (const e of b.B) voice(MUS, 'tri', mtof(nm(e.n)), t0 + e.s * sd, e.l * sd * .9, .25, { decay: 1 });
   b.D.forEach((d, i) => {
     const t = t0 + i * sd;
@@ -1450,7 +1458,9 @@ function step(dt) {
   scarf[0].x = nx; scarf[0].y = ny;
   for (let i = 1; i < scarf.length; i++) { const p = scarf[i], q = scarf[i - 1]; p.x = lerp(p.x, q.x - P.face * 2.4 + Math.sin(time * 8 + i) * .5, .5); p.y = lerp(p.y, q.y + .6 + Math.cos(time * 6 + i) * .5, .5); }
 }
+let ambT = 6;
 function ambient(dt) {
+  if (state === 'play' && scene && scene.kind === 'side' && sceneId !== 'cottage') { ambT -= dt; if (ambT <= 0) { ambT = 14 + R() * 12; const r = R(); if (sceneId === 'chapel') (r < .45 ? sfx.bell : r < .75 ? sfx.owl : sfx.farhowl)(); else (r < .5 ? sfx.farhowl : sfx.bell)(); } }
   shake = Math.max(0, shake - dt * 22); hurtV = Math.max(0, hurtV - dt * 2.2); flash = Math.max(0, flash - dt * 2.4);
   for (const p of parts) { p.vy += p.g * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt; if (scene && scene.kind === 'side' && p.y > FLOOR && p.g > 0) { p.y = FLOOR; p.vy *= -.3; p.vx *= .6; } }
   parts = parts.filter(p => p.life > 0); if (parts.length > 600) parts.splice(0, parts.length - 600);
