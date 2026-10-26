@@ -45,7 +45,7 @@ canvas{display:block;width:100%;height:100%;image-rendering:crisp-edges;image-re
 .hud{position:absolute;top:max(8px,2.2cqw);right:max(8px,2.4cqw);display:flex;gap:max(10px,2.4cqw);align-items:center;
   font-family:var(--label);font-size:clamp(10px,1.45cqw,18px);letter-spacing:.08em;color:var(--muted);pointer-events:none}
 .hud b{color:var(--ink);font-weight:400;font-variant-numeric:tabular-nums}
-.hud button{pointer-events:auto;font:inherit;color:var(--muted);background:rgba(7,6,26,.4);border:1px solid #3a3270;padding:.5em .8em;cursor:pointer;letter-spacing:.08em;min-height:30px}
+.hud button{pointer-events:auto;touch-action:manipulation;font:inherit;color:var(--muted);background:rgba(7,6,26,.4);border:1px solid #3a3270;padding:.5em .8em;cursor:pointer;letter-spacing:.08em;min-height:30px}
 .hud button:hover,.hud button:focus-visible{color:var(--cyan);border-color:var(--cyan);outline:none}
 .app[data-mode=port] .hud .wv{display:none}
 .banner{position:absolute;left:0;right:0;top:22%;text-align:center;pointer-events:none;
@@ -520,7 +520,7 @@ const stick = { id: null, ox: 0, oy: 0, dx: 0, dy: 0 };
 const zone = $('stickzone'), sbase = $('sbase'), sknob = $('sknob'), SR = 52;
 function restStick() {
   const z = zone.getBoundingClientRect();
-  sbase.style.left = Math.min(z.width * .42, 120) + 'px'; sbase.style.top = (z.height - Math.max(96, ins.b + 86)) + 'px';
+  sbase.style.left = Math.min(z.width * .42, 120) + 'px'; sbase.style.top = (z.height - Math.max(80, btnBottom + 70)) + 'px';
   sknob.style.transform = ''; sbase.classList.remove('live');
 }
 function stickUpdate(cx, cy) {
@@ -551,7 +551,7 @@ function aimTarget(req) {
 const app = $('app'), stageEl = $('stage'), pad = $('pad'), probe = $('probe');
 let isTouch = matchMedia('(pointer:coarse)').matches || 'ontouchstart' in window;
 const ins = { t: 0, r: 0, b: 0, l: 0 };
-let hookFill = -1, hudL = 8, hudT = 8;
+let hookFill = -1, hudL = 8, hudT = 8, btnBottom = 26;
 function layout() {
   const cs = getComputedStyle(probe);
   ins.t = parseFloat(cs.paddingTop) || 0; ins.r = parseFloat(cs.paddingRight) || 0; ins.b = parseFloat(cs.paddingBottom) || 0; ins.l = parseFloat(cs.paddingLeft) || 0;
@@ -562,13 +562,16 @@ function layout() {
     mode = 'desk'; setW(W0);
     const aw = vw - 32, ah = vh - 24; w = Math.min(aw, ah * W0 / H); h = w * H / W0; x = (vw - w) / 2; y = (vh - h) / 2;
   } else if (vw > vh) {
-    mode = 'land'; setW(Math.round(clamp(H * vw / vh, W0, WMAX)));
+    mode = 'land';
+    const sl = Math.max(screen.width, screen.height), ss = Math.min(screen.width, screen.height) || 1;
+    setW(Math.round(clamp(H * sl / ss, W0, WMAX)));
     h = Math.min(vh, vw * H / W); w = h * W / H; x = (vw - w) / 2; y = (vh - h) / 2;
   } else {
     mode = 'port';
-    const deck = Math.max(250, vh * .4), ah = vh - ins.t - deck;
-    setW(Math.round(clamp(H * vw / ah, 236, W0)));
-    w = vw; h = w * H / W; x = 0; y = ins.t;
+    setW(256);
+    w = vw; h = w * H / W;
+    if (vh - ins.t - h < 230) { h = Math.max(120, vh - ins.t - 230); w = h * W / H; }
+    x = (vw - w) / 2; y = ins.t;
   }
   app.dataset.mode = mode;
   Object.assign(stageEl.style, { width: w + 'px', height: h + 'px', left: x + 'px', top: y + 'px' });
@@ -578,13 +581,19 @@ function layout() {
   else Object.assign(pad.style, { top: '0', left: '0', right: '0', bottom: '0' });
   const btns = $('btns'); btns.style.right = Math.max(ins.r, mode === 'land' ? 8 : 4) + 'px';
   btns.style.bottom = Math.max(ins.b, mode === 'port' ? 26 : 6) + 'px';
-  if (mode === 'port') { const ph = vh - y - h; btns.style.bottom = Math.max(ins.b + 8, (ph - 230) / 2) + 'px'; }
+  if (mode === 'port') btns.style.bottom = (ins.b + 28) + 'px';
+  btnBottom = parseFloat(btns.style.bottom) || 0;
   zone.style.left = ins.l + 'px';
   syncPad(); restStick();
   $('cta').textContent = isTouch ? 'Tap to start' : 'Press any key to start';
 }
 addEventListener('resize', layout); addEventListener('orientationchange', () => setTimeout(layout, 120));
-if (window.visualViewport) visualViewport.addEventListener('resize', layout);
+/* stop the browser from zooming the page: double-tap, pinch and iOS gesture zoom */
+const noZoom = e => { if (e.cancelable) e.preventDefault(); };
+['gesturestart', 'gesturechange', 'gestureend', 'dblclick'].forEach(t => document.addEventListener(t, noZoom, { passive: false }));
+document.addEventListener('touchmove', e => { if (e.touches.length > 1 || !e.target.closest('.screen')) noZoom(e); }, { passive: false });
+const noZoomTap = e => { if (!e.target.closest('button')) noZoom(e); };
+for (const el of [stageEl, pad]) { el.addEventListener('touchstart', noZoomTap, { passive: false }); el.addEventListener('touchend', noZoomTap, { passive: false }); }
 addEventListener('pointerdown', e => { if (e.pointerType === 'touch' && !isTouch) { isTouch = true; layout(); } }, true);
 addEventListener('pointermove', e => { if (e.pointerType === 'mouse' && isTouch && !matchMedia('(pointer:coarse)').matches) { isTouch = false; layout(); } });
 function syncPad() { pad.hidden = !(isTouch && (state === 'play' || state === 'upgrade')); restStick(); }
