@@ -963,7 +963,7 @@ function door(x, label, to, cond, no, opt) { return { x, y: FLOOR, label, on: ()
 function npc(x, label, fn, y = FLOOR, on) { return { x, y, label, on: on || (() => true), use: fn }; }
 function refill(n) { P.mp = Math.min(G.maxMp, P.mp + n); }
 const TORCH = [60, 540, 700, 900, 1120];
-const BERRIES = [[150, 190], [205, 160], [330, 138], [400, 190], [495, 156], [592, 128], [680, 190], [785, 150], [910, 122], [1010, 190]];
+const BERRIES = [[150, 190], [205, 162], [292, 138], [400, 190], [495, 162], [572, 138], [680, 190], [768, 162], [850, 138], [1010, 190]];
 const INTRO = ['In a magical enchanted forest, where sunlight dances through ancient leaves, there lived a young mage.', 'His days were peaceful. He brewed potions, tended his herbs and read by the fire.', 'But one fateful morning, a stray ember leapt from his cauldron...', '...and by noon, his little cottage was ash.', 'Homeless. Hungry. Alone.', 'With nothing but his staff and a half-empty satchel, he stepped into the woods.', 'Every step from here on is a step toward a new home.'];
 const CABIN_PAL = { wall: '#8a6a48', wallD: '#6a4a30', roof: '#5a3a5a', roofL: '#7a5a7a', door: '#5a3a22', glass: '#ffd27a' };
 const STORIES = {
@@ -982,7 +982,7 @@ const FRIENDS = {
 const SC = {
   forest: {
     ww: 1200, song: 'forest', spawn: 70, dark: 0,
-    plats: () => [{ x: 180, y: 160, w: 50 }, { x: 300, y: 138, w: 60 }, { x: 470, y: 156, w: 50 }, { x: 560, y: 128, w: 64 }, { x: 760, y: 150, w: 56 }, { x: 880, y: 122, w: 60 }],
+    plats: () => [{ x: 180, y: 162, w: 50 }, { x: 262, y: 138, w: 60 }, { x: 470, y: 162, w: 50 }, { x: 540, y: 138, w: 64 }, { x: 740, y: 162, w: 56 }, { x: 820, y: 138, w: 60 }],
     build() {
       const x = outdoor('forest', 10); drawPlats(x, 'log');
       x.fillStyle = '#2a2420'; x.fillRect(8, 150, 58, 40); x.fillStyle = '#1a1614'; x.fillRect(8, 150, 4, 40); x.fillRect(40, 140, 6, 50); x.fillRect(60, 162, 6, 28);
@@ -1004,7 +1004,7 @@ const SC = {
   },
   cabin: {
     ww: 480, song: 'cabin', spawn: 40, dark: .32,
-    plats: () => [{ x: 14, y: 150, w: 60 }, { x: 14, y: 116, w: 60 }],
+    plats: () => [{ x: 80, y: 166, w: 18 }, { x: 14, y: 150, w: 60 }, { x: 14, y: 122, w: 60 }],
     build() {
       const x = interior({ wall: '#3a2416', wallD: '#2a180e', floor: '#2e1c12', floorL: '#5a3a22', planks: true }, 41); drawPlats(x, 'shelf');
       x.fillStyle = '#3a3230'; x.fillRect(100, 80, 80, FLOOR - 80); x.fillStyle = '#4c4440'; for (let y = 82; y < FLOOR; y += 7) for (let px = 102 + (y % 14 ? 0 : 5); px < 178; px += 11) x.fillRect(px, y, 9, 5);
@@ -1014,7 +1014,7 @@ const SC = {
       x.fillStyle = '#1a0f0a'; x.fillRect(300, 70, 54, 56); x.fillStyle = '#0a1a30'; x.fillRect(304, 74, 46, 48); x.fillStyle = '#5a3a22'; x.fillRect(326, 74, 2, 48); x.fillRect(304, 97, 46, 2);
       x.fillStyle = '#1a0f0a'; x.fillRect(432, 110, 40, 80); x.fillStyle = '#4a2e1c'; x.fillRect(435, 114, 34, 76); x.fillStyle = '#c9a03a'; x.fillRect(462, 152, 2, 3);
       for (let k = 0; k < 6; k++) { x.fillStyle = '#3a2416'; x.fillRect(200 + k * 30, 0, 1, 16 + (k % 3) * 4); x.fillStyle = ['#3a6a3a', '#5a7a2a', '#6a4a7a'][k % 3]; x.fillRect(198 + k * 30, 14 + (k % 3) * 4, 5, 6); }
-      for (const [sx, sy] of [[18, 116], [18, 150]]) for (let k = 0; k < 6; k++) { if ((sy === 150 && k > 2 && k < 5) || (sy === 116 && (k === 0 || k === 4))) continue; x.fillStyle = ['#6a5a8a', '#8a7a3a', '#3a5a6a', '#5a3a2a', '#7a7a7a', '#4a6a3a'][k]; x.fillRect(sx + k * 9, sy - 8, 6, 8); }
+      for (const [sx, sy] of [[18, 122], [18, 150]]) for (let k = 0; k < 6; k++) { if ((sy === 150 && k > 2 && k < 5) || (sy === 122 && (k === 0 || k === 4))) continue; x.fillStyle = ['#6a5a8a', '#8a7a3a', '#3a5a6a', '#5a3a2a', '#7a7a7a', '#4a6a3a'][k]; x.fillRect(sx + k * 9, sy - 8, 6, 8); }
     },
     enter(first) { if (first) { banner('Cabin of the Elder Wisp', 2.6, 'Chapter II'); soon(() => { if (state === 'play') toast('Someone glimmers by the window.'); }, 2600); } },
     pickups: () => [],
@@ -1026,7 +1026,7 @@ const SC = {
           if (!G.elder) talk([['Elder Wisp', 'Ah... a traveler. Come closer. Forgive the flicker, I am fading.'], ['Elder Wisp', 'Only the Elixir of Dawn can steady me now.'], ['Elder Wisp', 'Three potions rest on my west shelves: RED, GREEN and BLUE. Pour them into the cauldron, and quickly.']], '', () => { G.elder = true; toast('The potions are on the west shelves.'); });
           else if (!G.poured) talk([['Elder Wisp', 'The RED, the GREEN, the BLUE. Into the cauldron with them.']]);
         }, FLOOR, () => G.elder !== true || !G.poured),
-        pot('red', 40, 150, 'RED'), pot('green', 24, 116, 'GREEN'), pot('blue', 60, 116, 'BLUE'),
+        pot('red', 40, 150, 'RED'), pot('green', 24, 122, 'GREEN'), pot('blue', 60, 122, 'BLUE'),
         { x: 226, y: FLOOR, label: 'Pour the potions', on: () => G.potions.length >= 3 && !G.poured, use: brew },
         door(452, 'Step out into the woods', 'dark', () => G.elderDone, 'The Elder still needs you.')
       ];
@@ -1035,7 +1035,7 @@ const SC = {
   },
   dark: {
     ww: 1400, song: 'dark', spawn: 40, dark: () => G.spring ? .06 : .42,
-    plats: () => [{ x: 380, y: 152, w: 70 }, { x: 720, y: 162, w: 30 }, { x: 796, y: 150, w: 46 }, { x: 1020, y: 168, w: 40 }, { x: 1090, y: 158, w: 40 }],
+    plats: () => [{ x: 340, y: 170, w: 30 }, { x: 380, y: 152, w: 70 }, { x: 730, y: 164, w: 40 }, { x: 796, y: 150, w: 46 }, { x: 1020, y: 168, w: 40 }, { x: 1090, y: 158, w: 40 }],
     build() {
       const x = outdoor(G.spring ? 'spring' : 'dark', 20); drawPlats(x, 'stone');
       house(x, 70, 70, 50, { wall: '#3a3048', wallD: '#2a2238', roof: '#22381e', roofL: '#3a5a32', door: '#2a1a12', glass: '#9ac46a' });
@@ -1071,7 +1071,7 @@ const SC = {
   },
   deep: {
     ww: 1200, song: 'deep', spawn: 300, dark: .5, cave: true,
-    plats: () => [{ x: 340, y: 160, w: 50 }, { x: 440, y: 140, w: 50 }, { x: 550, y: 152, w: 60 }, { x: 860, y: 160, w: 50 }, { x: 940, y: 130, w: 50 }, { x: 1040, y: 100, w: 140 }],
+    plats: () => [{ x: 340, y: 160, w: 50 }, { x: 420, y: 140, w: 50 }, { x: 550, y: 160, w: 60 }, { x: 860, y: 160, w: 50 }, { x: 940, y: 130, w: 50 }, { x: 1000, y: 102, w: 180 }],
     build() {
       LAY.far = LAY.mid = LAY.cb = LAY.mist = null; LAY.theme = null;
       const [c, x] = mk(WW, H); LAY.fg = c; const r = rng(61);
@@ -1084,7 +1084,7 @@ const SC = {
       x.fillStyle = '#1a1826'; x.fillRect(0, FLOOR, WW, H - FLOOR); x.fillStyle = '#3a3850'; x.fillRect(0, FLOOR, WW, 1); for (let px = 0; px < WW; px += 7) { x.fillStyle = '#121020'; x.fillRect(px, FLOOR + 3 + (px % 5), 4, 2); }
       drawPlats(x, 'stone');
       house(x, 150, 80, 54, { wall: '#2a2238', wallD: '#1e182a', roof: '#3a2258', roofL: '#5a3a80', door: '#1a1020', glass: '#c08aff' }, { chimney: true });
-      x.fillStyle = '#2a2838'; x.fillRect(1100, 86, 30, 14); x.fillStyle = '#4a4860'; x.fillRect(1098, 84, 34, 3);
+      x.fillStyle = '#2a2838'; x.fillRect(1100, 88, 30, 14); x.fillStyle = "#4a4860"; x.fillRect(1098, 86, 34, 3);
     },
     enter(first) {
       [390, 480, 600].forEach((sx, i) => enemies.push(mkSpider(sx, 40 + i * 10)));
@@ -1102,7 +1102,7 @@ const SC = {
         else if (!G.staff) talk([['The Warlock', 'The key! Open the chest, it is all yours.']]);
         else talk([['The Warlock', 'The portal behind my hut leads up into the light. Off with you.']]);
       }),
-      { x: 1118, y: 100, label: 'Take the Iron Key', on: () => G.golem && !G.key, use: () => { G.key = true; sfx.unlock(); burst(1118, 92, 16, ['#c9a03a', '#ffe08a'], 60, 60, true, .6); toast('The Iron Key. Back to the Warlock.'); } },
+      { x: 1118, y: 102, label: 'Take the Iron Key', on: () => G.golem && !G.key, use: () => { G.key = true; sfx.unlock(); burst(1118, 92, 16, ['#c9a03a', '#ffe08a'], 60, 60, true, .6); toast('The Iron Key. Back to the Warlock.'); } },
       { x: 200, y: FLOOR, label: "Open the Warlock's chest", on: () => G.key && !G.staff, use: () => { G.staff = true; sfx.chest(); flash = .8; rings.push({ x: P.x, y: P.y - 16, r: 3, max: 40, life: .5, m: .5, col: '#ffb347' }); talk([['The Warlock', 'The Staff of Deepfire. Twice the bite of that twig you carry.'], ['The Warlock', 'The portal behind my hut will carry you up into the light. Thank you, little mage.']], '', () => { toast('Staff of Deepfire: your bolts hit twice as hard.', 4); saveCheckpoint('deep'); }); } },
       { x: 110, y: FLOOR, label: 'Step into the portal', on: () => G.staff, use: () => { sfx.whoosh(); flash = 1; fade(() => { goScene('vale'); saveCheckpoint('vale'); }); } }
     ],
@@ -1110,7 +1110,7 @@ const SC = {
   },
   vale: {
     ww: 1000, song: 'vale', spawn: 40, dark: 0,
-    plats: () => [{ x: 300, y: 160, w: 50 }, { x: 620, y: 150, w: 60 }],
+    plats: () => [{ x: 300, y: 160, w: 50 }, { x: 620, y: 160, w: 60 }],
     build() {
       const x = outdoor('vale', 30); drawPlats(x, 'pastel');
       for (const [mx, s] of [[120, 1], [400, .7], [560, 1.2], [880, .9]]) { x.fillStyle = '#efe6d2'; x.fillRect(mx - 2 * s, FLOOR - 14 * s, 4 * s, 14 * s); x.fillStyle = ['#ff8ad8', '#8ad8ff', '#ffd060', '#c0a0ff'][Math.floor(mx) % 4]; x.beginPath(); x.ellipse(mx, FLOOR - 14 * s, 10 * s, 6 * s, 0, Math.PI, 0); x.fill(); x.fillStyle = '#ffffff'; x.fillRect(mx - 4 * s, FLOOR - 17 * s, 2, 2); x.fillRect(mx + 3 * s, FLOOR - 16 * s, 2, 2); }
@@ -1127,7 +1127,7 @@ const SC = {
   },
   glen: {
     ww: 1300, song: 'glen', spawn: 40, dark: 0,
-    plats: () => [{ x: 250, y: 160, w: 50 }, { x: 520, y: 150, w: 50 }, { x: 880, y: 156, w: 56 }, { x: 1000, y: 132, w: 50 }],
+    plats: () => [{ x: 250, y: 160, w: 50 }, { x: 520, y: 160, w: 50 }, { x: 880, y: 160, w: 56 }, { x: 950, y: 134, w: 50 }],
     build() {
       const x = outdoor('glen', 40); drawPlats(x, 'log');
       x.fillStyle = '#8a8478'; x.fillRect(100, 60, 60, 130); x.fillStyle = '#6a645a'; for (let y = 64; y < FLOOR; y += 8) for (let px = 100 + (y % 16 ? 0 : 6); px < 160; px += 12) x.fillRect(px, y, 10, 1);
@@ -1139,7 +1139,7 @@ const SC = {
       x.fillStyle = '#5a5248'; x.fillRect(1250, 120, 10, 70); x.fillRect(1290, 120, 10, 70); x.fillStyle = '#3a2416'; for (let k = 1262; k < 1290; k += 5) x.fillRect(k, 128, 2, 62);
     },
     enter(first) { enemies.push(mkSnake(300, 430), mkSnake(820, 950), mkSnake(1060, 1200), mkMush(570), mkMush(1130)); if (first) banner('The Enchanted Glen', 2.6, 'Chapter VI'); },
-    pickups: () => [[210, 190], [270, 160], [400, 190], [545, 150], [900, 156], [1025, 132]].map(([x, y], i) => ({ id: 'gc' + i, x, y, kind: 'coin' })).concat([{ id: 'gm', x: 780, y: 190, kind: 'mana' }]),
+    pickups: () => [[210, 190], [270, 160], [400, 190], [545, 160], [900, 160], [975, 134]].map(([x, y], i) => ({ id: 'gc' + i, x, y, kind: 'coin' })).concat([{ id: 'gm', x: 780, y: 190, kind: 'mana' }]),
     npcs: () => [{ x: 130, y: 118, set: NPC.princess, face: 1 }, { x: 430, set: NPC.gnome, face: 1 }, { x: 692, set: NPC.merchant, face: -1 }],
     items: () => [
       npc(132, 'Call up to the tower', () => {
@@ -1161,7 +1161,7 @@ const SC = {
   },
   wilds: {
     ww: 1500, song: 'wilds', spawn: 40, dark: .12,
-    plats: () => [{ x: 240, y: 156, w: 50 }, { x: 820, y: 150, w: 50 }, { x: 1040, y: 140, w: 60 }],
+    plats: () => [{ x: 240, y: 160, w: 50 }, { x: 820, y: 160, w: 50 }, { x: 1040, y: 160, w: 60 }],
     build() {
       const x = outdoor('wilds', 50); drawPlats(x, 'log');
       leafTree(x, 330, FLOOR, 110, { trunk: '#3a2018', trunkL: '#5a3020', dk: '#2a3a1a', md: '#3a5a22', lt: '#5a7a30' }, rng(9), 1); x.strokeStyle = '#3a2018'; x.lineWidth = 3; x.beginPath(); x.moveTo(330, 120); x.lineTo(356, 112); x.stroke();
@@ -1181,7 +1181,7 @@ const SC = {
       if (!G.thorns && P.x > 690) { P.x = 690; P.vx = Math.min(P.vx, 0); }
       for (const h of haz) h.t += dt;
     },
-    pickups: () => [{ id: 'wm', x: 260, y: 156, kind: 'mana' }, { id: 'wm2', x: 1060, y: 140, kind: 'mana' }],
+    pickups: () => [{ id: "wm", x: 260, y: 160, kind: 'mana' }, { id: 'wm2', x: 1060, y: 160, kind: 'mana' }],
     npcs: () => { const L = [{ x: 120, y: 160 + Math.sin(time * 2.3) * 4, fairy: '#a8ffb0' }]; if (G.biscuit) { } return L; },
     items: () => [
       npc(120, 'Talk to Thistledown', () => talk([['Fairy Thistledown', !G.honey ? 'Lost hound? Then you must get past the bears. And bears only care about one thing: HONEY.' : !G.bears ? 'Now offer the honey at the den. Gently!' : !G.ribbon ? 'The thorn roses opened for you. Look among them for anything blue.' : !G.rwitch ? 'The rune circle by the old oak... something nasty sleeps there. Be brave.' : !G.biscuit ? 'Blow that whistle!' : 'Go on, the Royal Keep is east. Give Lira my love.'], ...(!G.honey ? [['Fairy Thistledown', 'The hive hangs in the big tree. Mind the bees, they sting.']] : [])], '', null), 160),
@@ -1197,7 +1197,7 @@ const SC = {
   },
   castle: {
     ww: 1500, song: 'castle', spawn: 40, dark: () => (P.x > 1180 && P.x < 1390 && !G.lantern) ? .93 : .3,
-    plats: () => [{ x: 150, y: 160, w: 30 }, { x: 460, y: 156, w: 60 }, { x: 950, y: 156, w: 40 }],
+    plats: () => [{ x: 150, y: 160, w: 30 }, { x: 460, y: 160, w: 60 }, { x: 950, y: 160, w: 40 }],
     build() {
       const x = interior({ wall: '#3a3a4c', wallD: '#30303f', wallL: '#4c4c64', floor: '#34303c', floorL: '#6a6480' }, 71);
       for (const tx of TORCH) { x.fillStyle = '#3a2416'; x.fillRect(tx - 1, 108, 3, 9); x.fillStyle = '#5a5a6a'; x.fillRect(tx - 3, 116, 7, 2); } drawPlats(x, 'castle');
@@ -1231,7 +1231,7 @@ const SC = {
   },
   haunt: {
     ww: 1100, song: 'haunt', spawn: 40, dark: () => G.blessed ? 0 : .5,
-    plats: () => [{ x: 300, y: 156, w: 50 }, { x: 560, y: 150, w: 50 }],
+    plats: () => [{ x: 300, y: 160, w: 50 }, { x: 560, y: 160, w: 50 }],
     build() {
       const x = outdoor(G.blessed ? 'dawn' : 'willow', 80); drawPlats(x, 'log');
       x.fillStyle = G.blessed ? '#5a8ab8' : '#0e1a30'; x.fillRect(0, FLOOR, 120, 6); x.fillStyle = G.blessed ? '#a8d0f0' : '#2a3a5a'; for (let k = 4; k < 118; k += 9) x.fillRect(k, FLOOR + 2, 4, 1);
@@ -1245,7 +1245,7 @@ const SC = {
     update(dt) {
       for (const h of haz) if (h.type === 'drop' && G.ghosts < 6) { h.t -= dt; if (h.t <= 0) { h.t = 1.6 + R() * 1.4; enemies.push({ type: 'fall', x: clamp(P.x + (R() - .5) * 60, 10, WW - 10), y: -10, vy: 0, warn: .7, t: 0 }); } }
     },
-    pickups: () => [{ id: 'hm1', x: 325, y: 156, kind: 'mana' }, { id: 'hm2', x: 585, y: 150, kind: 'mana' }, { id: 'hm3', x: 760, y: 190, kind: 'mana' }],
+    pickups: () => [{ id: 'hm1', x: 325, y: 160, kind: 'mana' }, { id: 'hm2', x: 585, y: 160, kind: 'mana' }, { id: 'hm3', x: 760, y: 190, kind: 'mana' }],
     npcs: () => { const L = [{ x: 180, frames: RAB, ox: 8, oy: 15, face: 1, rate: 1.5 }, { x: 420, y: 160 + Math.sin(time * 2) * 4, fairy: '#ffd27a' }, { x: 640, set: NPC.gnome2, face: 1 }, { x: 820, frames: TOAD, ox: 9, oy: 14, face: -1, rate: .8 }, { x: 905, set: NPC.priest, face: -1 }]; return L; },
     items: () => {
       const fr = (id, x, y) => npc(x, `Talk to ${FRIENDS[id][0].replace('A ', 'the ')}`, () => talk(FRIENDS[id][1].map(l => [FRIENDS[id][0], l]), '', () => { if (!G.friends.includes(id)) { G.friends.push(id); sfx.quest(); toast(`Locals met: ${G.friends.length}/4`); } }), y, () => !G.blessed);
@@ -1709,7 +1709,7 @@ const DYN = {
     if (G.chest) { ctx.fillStyle = '#5a3a22'; ctx.fillRect(856, 184, 12, 6); ctx.fillStyle = '#3a2416'; ctx.fillRect(856, 180, 12, 3); }
   },
   cabin() {
-    for (const [c, x, y, ic] of [['red', 40, 150, ICON.potR], ['green', 24, 116, ICON.potG], ['blue', 60, 116, ICON.potB]]) if (!G.potions.includes(c)) ctx.drawImage(ic, x - 1, y - 5);
+    for (const [c, x, y, ic] of [['red', 40, 150, ICON.potR], ['green', 24, 122, ICON.potG], ['blue', 60, 122, ICON.potB]]) if (!G.potions.includes(c)) ctx.drawImage(ic, x - 1, y - 5);
   },
   dark() {
     if (!G.scrolls.includes('whisper')) ctx.drawImage(ICON.scroll, 413, 147 + Math.round(Math.sin(time * 3)));
@@ -1720,7 +1720,7 @@ const DYN = {
   },
   deep() {
     ctx.fillStyle = G.staff ? '#3a2416' : '#4a2e1c'; ctx.fillRect(193, 182, 16, 8); if (!G.staff) { ctx.fillStyle = '#c9a03a'; ctx.fillRect(200, 185, 2, 2); } else { ctx.fillStyle = '#2a1a10'; ctx.fillRect(193, 178, 16, 3); }
-    if (!G.key) ctx.drawImage(ICON.key, 1116, 79 + Math.round(Math.sin(time * 3)));
+    if (!G.key) ctx.drawImage(ICON.key, 1116, 81 + Math.round(Math.sin(time * 3)));
     if (!G.golem) { ctx.globalAlpha = .5 + Math.sin(time * 5) * .2; pring(ctx, 1118, 86, 12, '#7dffe6'); ctx.globalAlpha = 1; }
   },
   glen() {
