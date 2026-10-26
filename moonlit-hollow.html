@@ -915,7 +915,7 @@ function buildTower(n) {
   // stairs at the right end
   x.fillStyle = red ? '#2a1a20' : '#22263a'; for (let k = 0; k < 6; k++) x.fillRect(WW - 60 + k * 8, FLOOR - 6 - k * 6, 60 - k * 8, 6);
   x.fillStyle = '#05060c'; x.beginPath(); x.moveTo(WW - 26, FLOOR - 36); x.lineTo(WW - 26, FLOOR - 64); x.arc(WW - 14, FLOOR - 64, 12, Math.PI, 0); x.lineTo(WW - 2, FLOOR - 36); x.fill();
-  if (n === 2) { x.fillStyle = '#5a3a22'; x.fillRect(120, 168, 40, 4); x.fillRect(124, 172, 3, 18); x.fillRect(153, 172, 3, 18); x.fillStyle = '#3a2416'; x.fillRect(300, 120, 50, 3); x.fillRect(300, 150, 50, 3); x.fillStyle = '#4a2e1c'; x.fillRect(420, 176, 22, 14); x.fillStyle = '#c9a03a'; x.fillRect(429, 180, 4, 3); x.fillStyle = 'rgba(200,40,60,.85)'; x.font = '7px monospace'; x.fillText('HE IS BELOW', 196, 100); x.fillText('DO NOT FOLLOW', 192, 110); }
+  if (n === 2) { x.fillStyle = '#5a3a22'; x.fillRect(120, 168, 40, 4); x.fillRect(124, 172, 3, 18); x.fillRect(153, 172, 3, 18); x.fillStyle = '#3a2416'; x.fillRect(300, 136, 50, 3); x.fillRect(300, 162, 50, 3); x.fillStyle = '#4a2e1c'; x.fillRect(420, 176, 22, 14); x.fillStyle = '#c9a03a'; x.fillRect(429, 180, 4, 3); x.fillStyle = 'rgba(200,40,60,.85)'; x.font = '7px monospace'; x.fillText('HE IS BELOW', 196, 100); x.fillText('DO NOT FOLLOW', 192, 110); }
 }
 
 function buildFlight(blood) {
@@ -1055,12 +1055,12 @@ const SC = {
   blood: { kind: 'fly', blood: true, len: 50, song: 'boss' },
   tower1: {
     kind: 'side', ww: 520, dark: .55, song: 'tower', spawn: 30, tower: 1,
-    plats: () => [{ x: 64, y: 150, w: 60 }, { x: 170, y: 122, w: 62 }, { x: 300, y: 150, w: 60 }, { x: 396, y: 120, w: 52 }],
+    plats: () => [{ x: 60, y: 162, w: 56 }, { x: 140, y: 136, w: 56 }, { x: 220, y: 110, w: 62 }, { x: 320, y: 136, w: 56 }, { x: 392, y: 162, w: 52 }],
     build() { buildTower(1); },
     enter() {
       banner('The Tower', 2.2, 'Floor I');
       [118, 236, 336].forEach((x, i) => enemies.push(mkSpider(x, 54 + i * 8)));
-      talk('Cold stone. Webs. Somewhere above, a heartbeat that is not yours.');
+      talk('Cold stone. Webs. Somewhere above, a heartbeat that is not yours.', '', () => toast(isTouch ? 'Push the stick up while you cast to aim high. The beams lead up to him.' : 'Hold W or Up while casting to aim high, or click right on your target.', 5));
     },
     update() {
       if (!G.vyrin && !enemies.some(e => e.type === 'vyrin') && (P.x > 330 || !enemies.some(e => e.type === 'spider'))) spawnVyrin();
@@ -1070,7 +1070,7 @@ const SC = {
   },
   tower2: {
     kind: 'side', ww: 520, dark: .55, song: 'tower', spawn: 30, tower: 2,
-    plats: () => [{ x: 196, y: 124, w: 72 }, { x: 300, y: 150, w: 50 }, { x: 300, y: 120, w: 50 }],
+    plats: () => [{ x: 150, y: 162, w: 40 }, { x: 196, y: 136, w: 72 }, { x: 300, y: 162, w: 50 }, { x: 300, y: 136, w: 50 }],
     build() { buildTower(2); },
     enter() {
       banner('The Investigation', 2.2, 'Floor II');
@@ -1082,9 +1082,9 @@ const SC = {
       const clue = (id, x, y, label, lines) => ({ x, y, label, on: () => !G.clues.includes(id), use: () => talk(lines, '', () => { G.clues.push(id); sfx.pick(); if (G.clues.length >= 3) { G.silver = true; talk(['All clues found. The way down is open.', 'You tip your wand with the silver. The beast stirs below.']); } }) });
       return [
         clue('diary', 140, 168, 'Read the torn diary page', ['A torn diary page:', '"Night 47. The change accelerates. Silver binds him. Use the key on the lower door."']),
-        clue('vial', 325, 120, 'Examine the vial', 'A vial of silver-infused blood, still warm. Cold iron fills the air.'),
+        clue('vial', 325, 136, 'Examine the vial', 'A vial of silver-infused blood, still warm. Cold iron fills the air.'),
         clue('key', 431, 190, 'Open the chest', 'A heavy silver key, engraved: FOR WHOEVER COMES AFTER.'),
-        { x: 214, y: 124, label: 'Read the writing', on: () => true, use: () => talk('"HE IS BELOW. DO NOT FOLLOW." The letters are scratched deep, as if by claws.') },
+        { x: 214, y: 136, label: 'Read the writing', on: () => true, use: () => talk('"HE IS BELOW. DO NOT FOLLOW." The letters are scratched deep, as if by claws.') },
         { x: WW - 22, y: 190, label: 'Take the stairs down', on: () => G.clues.length >= 3, use: () => { sfx.door(); fade(() => { goScene('tower3'); saveCheckpoint('tower3'); }); } }
       ];
     },
@@ -1092,7 +1092,7 @@ const SC = {
   },
   tower3: {
     kind: 'side', ww: 520, dark: .58, song: 'tower', spawn: 30, tower: 3,
-    plats: () => [{ x: 110, y: 146, w: 60 }, { x: 330, y: 146, w: 60 }],
+    plats: () => [{ x: 110, y: 162, w: 60 }, { x: 330, y: 162, w: 60 }],
     build() { buildTower(3); },
     enter() {
       banner("The Wolf's Den", 2.2, 'Floor III');
@@ -1323,11 +1323,16 @@ function nearestItem() {
   }
   return best;
 }
+let aimAt = null;
 function cast() {
-  if (!G.wand || P.castCd > 0) return;
+  if (!G.wand || P.castCd > 0) { aimAt = null; return; }
   P.castCd = .24; P.castT = .2; sfx.cast();
-  shots.push({ x: P.x + P.face * 12, y: P.y - 17, vx: P.face * 270, vy: 0, life: .85, silver: G.silver });
-  burst(P.x + P.face * 12, P.y - 17, 4, ['#a8ffe6', '#ffffff'], 40, 0, true, .2);
+  let ax = P.face, ay = 0;
+  if (aimAt) { const dx = aimAt.x - P.x, dy = aimAt.y - (P.y - 17), L = Math.hypot(dx, dy) || 1; ax = dx / L; ay = dy / L; if (Math.abs(dx) > 2) P.face = dx > 0 ? 1 : -1; aimAt = null; }
+  else if (upHeld()) { ax = P.face * .62; ay = -.79; }
+  const ox = P.x + P.face * 10, oy = P.y - 17 + (ay < -.3 ? -5 : 0);
+  shots.push({ x: ox, y: oy, vx: ax * 270, vy: ay * 270, life: .85, silver: G.silver });
+  burst(ox, oy, 4, ['#a8ffe6', '#ffffff'], 40, 0, true, .2);
 }
 function updateSidePlayer(dt) {
   P.inv = Math.max(0, P.inv - dt); P.castCd = Math.max(0, P.castCd - dt); P.castT = Math.max(0, P.castT - dt);
@@ -1727,7 +1732,7 @@ addEventListener('keydown', e => {
 addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
 addEventListener('blur', () => { for (const k in keys) keys[k] = false; });
 cv.addEventListener('contextmenu', e => e.preventDefault());
-cv.addEventListener('pointerdown', e => { initAudio(); if (state === 'talk') { advance(); return; } if (state === 'play' && e.pointerType === 'mouse') castReq = true; });
+cv.addEventListener('pointerdown', e => { initAudio(); if (state === 'talk') { advance(); return; } if (state === 'play' && e.pointerType === 'mouse') { castReq = true; const r = cv.getBoundingClientRect(); aimAt = { x: (e.clientX - r.left) / r.width * W + camX, y: (e.clientY - r.top) / r.height * H }; } });
 $('begin').addEventListener('click', () => beginFromTitle(false));
 $('cont').addEventListener('click', () => beginFromTitle(true));
 function goFull() { try { const el = document.documentElement; if (!document.fullscreenElement && el.requestFullscreen) el.requestFullscreen({ navigationUI: 'hide' }).catch(() => {}); } catch (e) {} }
