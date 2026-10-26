@@ -402,6 +402,15 @@
       gap: 14px;
       align-items: center;
     }
+    .hero-buttons .enter-btn { min-height: 40px; padding: 10px 18px; font-size: 11px; letter-spacing: 0.12em; }
+    .trust-badges { display: flex; flex-wrap: wrap; gap: 8px; list-style: none; margin: 0; padding: 0; }
+    .trust-badges li {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 6px 12px; border-radius: 999px;
+      border: 1px solid rgba(201,169,110,0.32); background: rgba(201,169,110,0.06);
+      font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(232,228,220,0.78);
+    }
+    .trust-badges li::before { content: ''; width: 4px; height: 4px; border-radius: 50%; background: var(--gold); }
     @keyframes scrollPulse {
       0%, 100% { opacity: 0.2; }
       50%       { opacity: 0.7; }
@@ -858,7 +867,7 @@
       .hero-desc { font-size: 14px; margin-bottom: 24px; }
       .hero-actions { gap: 22px; }
       .hero-buttons { width: 100%; }
-      .hero-buttons .enter-btn { flex: 1 1 100%; min-height: 52px; }
+      .hero-buttons .enter-btn { flex: 1 1 0; min-height: 42px; padding: 10px 12px; }
       .hud-frame { margin-left: -24px; margin-right: -24px; }
       .hud-frame-inner { padding: 15px 24px; }
       .gateway { padding: 36px 24px 58px; scroll-margin-top: 60px; }
@@ -942,6 +951,12 @@
               <a class="enter-btn" href="#gateway"><span>Play a game</span></a>
               <button class="enter-btn enter-btn--ghost" id="surpriseBtn" type="button"><span>Surprise me</span></button>
             </div>
+            <ul class="trust-badges" aria-label="Why play here">
+              <li>5 minutes</li>
+              <li>Play instantly</li>
+              <li>No download</li>
+              <li>Free</li>
+            </ul>
           </div>
         </div>
       </div>
