@@ -859,10 +859,11 @@
     }
     @media (max-width: 768px) {
       .page { padding: 0 24px; }
-      .hero { min-height: auto; padding: 30px 24px 44px; margin-left: -24px; margin-right: -24px; align-items: flex-start; }
+      .hero { min-height: calc(100vh - 76px); min-height: calc(100svh - 76px); padding: 56px 24px 72px; margin-left: -24px; margin-right: -24px; align-items: center; }
+      .hero-headline { font-size: clamp(24px, 7.2vw, 34px); line-height: 1.35; margin-bottom: 26px; }
       .hero-brand { display: none; } /* the sticky header already carries the logo on small screens */
-      .hero-desc { font-size: 14px; margin-bottom: 24px; }
-      .hero-actions { gap: 22px; }
+      .hero-desc { font-size: 15px; margin-bottom: 36px; }
+      .hero-actions { gap: 28px; }
       .hero-buttons { width: 100%; }
       .hero-buttons .enter-btn { flex: 1 1 0; min-height: 42px; padding: 10px 12px; }
       .hud-frame { margin-left: -24px; margin-right: -24px; }
