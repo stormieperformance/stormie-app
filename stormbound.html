@@ -2,9 +2,12 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#07061a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Stormbound</title>
-<meta name="claude:viewport-fit-sides" content="cover">
 <meta name="description" content="Stormbound: a storm-lit pixel action game. Hook the lightning, zip through enemies and chain kills in the air. Free in your browser, built for a five-minute break.">
 <meta property="og:title" content="Stormbound | Stormie Games">
 <meta property="og:image" content="https://stormie.app/stormbound-preview.jpg">
@@ -12,9 +15,11 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600;700&family=Silkscreen&display=swap" rel="stylesheet">
 <style>
-/* Layout: one 16:9 pixel stage centred on storm-dark ground; DOM overlays scale with the stage through container units */
+/* Layout: mobile first. JS sizes the pixel stage per orientation:
+   portrait = stage on top, control deck below; landscape = full-height stage, controls over the edges; desktop = centred 16:9 */
 :root{
   --night:#07061a;
+  --deck:#0c0a24;
   --dusk:#2b1f52;
   --ink:#ecebff;
   --muted:#a29dd6;
@@ -24,100 +29,144 @@
   --label:"Silkscreen","Courier New",monospace;
   color-scheme:dark;
 }
-html{height:100%;box-sizing:border-box}
-*,*::before,*::after{box-sizing:inherit}
-body{
-  height:100%;margin:0;background:var(--night);color:var(--ink);
-  display:flex;align-items:center;justify-content:center;
-  padding-left:max(16px,env(safe-area-inset-left,0px));
-  padding-right:max(16px,env(safe-area-inset-right,0px));
-  padding-block:12px;overflow:hidden;font-family:var(--display);
-  -webkit-user-select:none;user-select:none;
-}
-.stage{
-  position:relative;
-  width:min(100%, calc((100dvh - 24px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px)) * 16 / 9));
-  max-width:100%;aspect-ratio:16/9;container-type:inline-size;
-  background:var(--night);overflow:hidden;touch-action:none;
-  box-shadow:0 0 0 1px var(--dusk),0 40px 90px -30px #000;
-}
-canvas{display:block;width:100%;height:100%;image-rendering:crisp-edges;image-rendering:pixelated;cursor:none}
+*,*::before,*::after{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;margin:0;background:var(--night);color:var(--ink);overflow:hidden;overscroll-behavior:none}
+body{font-family:var(--display);-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;touch-action:none}
+.app{position:fixed;inset:0;container-type:size;overflow:hidden}
+.probe{position:fixed;top:0;left:0;visibility:hidden;pointer-events:none;
+  padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)}
+.stage{position:absolute;left:0;top:0;width:384px;height:216px;container-type:inline-size;background:var(--night);overflow:hidden;touch-action:none}
+.app[data-mode=desk] .stage{box-shadow:0 0 0 1px var(--dusk),0 40px 90px -30px #000}
+canvas{display:block;width:100%;height:100%;image-rendering:crisp-edges;image-rendering:pixelated;touch-action:none}
+.app[data-mode=desk] canvas{cursor:none}
+
+/* HUD */
 .hud[hidden]{display:none}
-.hud{position:absolute;top:2.2cqw;right:2.4cqw;display:flex;gap:2.4cqw;align-items:center;
-  font-family:var(--label);font-size:1.45cqw;letter-spacing:.08em;color:var(--muted);pointer-events:none}
-.hud b{color:var(--ink);font-weight:400}
-.hud button{pointer-events:auto;font:inherit;color:var(--muted);background:none;border:1px solid #3a3270;padding:.4cqw .9cqw;cursor:pointer;letter-spacing:.08em}
+.hud{position:absolute;top:max(8px,2.2cqw);right:max(8px,2.4cqw);display:flex;gap:max(10px,2.4cqw);align-items:center;
+  font-family:var(--label);font-size:clamp(10px,1.45cqw,18px);letter-spacing:.08em;color:var(--muted);pointer-events:none}
+.hud b{color:var(--ink);font-weight:400;font-variant-numeric:tabular-nums}
+.hud button{pointer-events:auto;font:inherit;color:var(--muted);background:rgba(7,6,26,.4);border:1px solid #3a3270;padding:.5em .8em;cursor:pointer;letter-spacing:.08em;min-height:30px}
 .hud button:hover,.hud button:focus-visible{color:var(--cyan);border-color:var(--cyan);outline:none}
-.banner{position:absolute;left:0;right:0;top:20%;text-align:center;pointer-events:none;
-  font-family:var(--display);font-weight:700;font-size:6cqw;letter-spacing:.06em;color:#f4f8ff;
-  text-shadow:.3cqw 0 0 rgba(255,122,69,.7),-.3cqw 0 0 rgba(143,247,255,.8),0 0 2.5cqw rgba(143,247,255,.5);
+.app[data-mode=port] .hud .wv{display:none}
+.banner{position:absolute;left:0;right:0;top:22%;text-align:center;pointer-events:none;
+  font-family:var(--display);font-weight:700;font-size:clamp(22px,6cqw,72px);letter-spacing:.06em;color:#f4f8ff;
+  text-shadow:2px 0 0 rgba(255,122,69,.7),-2px 0 0 rgba(143,247,255,.8),0 0 18px rgba(143,247,255,.5);
   opacity:0;transform:scale(1.15);transition:opacity .25s,transform .35s cubic-bezier(.2,1.4,.4,1)}
 .banner.show{opacity:1;transform:scale(1)}
-.combo{position:absolute;left:0;right:0;top:34%;text-align:center;pointer-events:none;
-  font-family:var(--label);font-size:2.4cqw;letter-spacing:.14em;color:var(--cyan);opacity:0;
-  text-shadow:0 0 1.4cqw rgba(143,247,255,.8)}
+.combo{position:absolute;left:0;right:0;top:40%;text-align:center;pointer-events:none;
+  font-family:var(--label);font-size:clamp(13px,2.4cqw,28px);letter-spacing:.14em;color:var(--cyan);opacity:0;
+  text-shadow:0 0 10px rgba(143,247,255,.8)}
 .combo.pop{animation:pop .9s ease-out forwards}
-@keyframes pop{0%{opacity:1;transform:scale(1.6)}15%{transform:scale(1)}70%{opacity:1}100%{opacity:0;transform:translateY(-1.5cqw)}}
-.screen{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.8cqw;text-align:center;
-  background:radial-gradient(ellipse 70% 60% at 50% 50%,rgba(7,6,26,.25),rgba(7,6,26,.82))}
+@keyframes pop{0%{opacity:1;transform:scale(1.6)}15%{transform:scale(1)}70%{opacity:1}100%{opacity:0;transform:translateY(-10px)}}
+
+/* Control deck */
+.pad{position:absolute;inset:0;pointer-events:none}
+.pad[hidden]{display:none}
+.app[data-mode=port] .pad{background:
+  linear-gradient(180deg,rgba(143,247,255,.18),rgba(143,247,255,0) 2px),
+  radial-gradient(ellipse 80% 70% at 50% 0%,#191440,var(--deck) 70%)}
+.stickzone{position:absolute;left:0;bottom:0;width:50%;top:0;pointer-events:auto;touch-action:none}
+.app[data-mode=land] .stickzone{width:42%;top:30%}
+.sbase{position:absolute;width:128px;height:128px;margin:-64px 0 0 -64px;border-radius:50%;
+  border:2px solid rgba(143,247,255,.28);background:radial-gradient(circle,rgba(143,247,255,.08),rgba(20,16,50,.35) 70%);
+  opacity:.55;transition:opacity .15s}
+.sbase.live{opacity:1;transition:none}
+.sbase::before{content:"";position:absolute;inset:22px;border-radius:50%;border:1px dashed rgba(143,247,255,.18)}
+.sknob{position:absolute;left:50%;top:50%;width:58px;height:58px;margin:-29px 0 0 -29px;border-radius:50%;
+  background:radial-gradient(circle at 40% 35%,#dffcff,#5fd0ff 45%,#2a4fa0 100%);box-shadow:0 0 18px rgba(143,247,255,.55)}
+.btns{position:absolute;right:0;bottom:0;width:240px;height:230px;pointer-events:none}
+.pb{position:absolute;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  font-family:var(--label);font-size:10px;letter-spacing:.1em;color:var(--ink);pointer-events:auto;touch-action:none;
+  background:rgba(18,14,46,.62);border:2px solid rgba(143,247,255,.35);transition:transform .06s,background .06s}
+.pb svg{width:42%;height:42%;display:block}
+.pb.on{transform:scale(.92);background:rgba(143,247,255,.28)}
+.pb-jump{width:92px;height:92px;right:20px;bottom:24px}
+.pb-hook{width:80px;height:80px;right:40px;bottom:132px;border-color:transparent;
+  background:conic-gradient(var(--cyan) calc(var(--cd,1)*360deg),rgba(143,247,255,.12) 0) border-box;}
+.pb-hook::before{content:"";position:absolute;inset:3px;border-radius:50%;background:rgba(18,14,46,.85)}
+.pb-hook.on::before{background:rgba(60,140,180,.85)}
+.pb-hook>*{position:relative}
+.pb-hook.ready{box-shadow:0 0 22px rgba(143,247,255,.45)}
+.pb-slash{width:74px;height:74px;right:130px;bottom:30px;border-color:rgba(255,122,69,.45)}
+.app[data-mode=land] .pb{background-color:rgba(18,14,46,.42)}
+
+/* Screens */
+.screen{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:clamp(10px,2.2cqh,22px);text-align:center;
+  padding:max(20px,env(safe-area-inset-top,0px)) max(20px,env(safe-area-inset-right,0px)) max(20px,env(safe-area-inset-bottom,0px)) max(20px,env(safe-area-inset-left,0px));
+  background:radial-gradient(ellipse 80% 60% at 50% 45%,rgba(7,6,26,.35),rgba(7,6,26,.9));pointer-events:auto;overflow-y:auto}
 .screen[hidden]{display:none!important}
-.title{margin:0;font-family:var(--display);font-weight:700;font-size:12.5cqw;line-height:.85;letter-spacing:.03em;color:#f6f9ff;
-  text-shadow:.45cqw 0 0 rgba(255,122,69,.75),-.45cqw 0 0 rgba(143,247,255,.9),0 0 4cqw rgba(143,247,255,.55);
-  animation:flick 6s infinite}
+.title{margin:0;font-family:var(--display);font-weight:700;font-size:min(13cqw,18cqh,150px);line-height:.85;letter-spacing:.03em;color:#f6f9ff;
+  text-shadow:.04em 0 0 rgba(255,122,69,.75),-.04em 0 0 rgba(143,247,255,.9),0 0 .35em rgba(143,247,255,.55);animation:flick 6s infinite}
 @keyframes flick{0%,86%,92%,100%{opacity:1}88%{opacity:.45}90%{opacity:1}91%{opacity:.6}}
-.tag{margin:0;font-size:2cqw;color:var(--muted);letter-spacing:.04em;text-wrap:balance}
-.keys{display:grid;grid-template-columns:repeat(4,auto);gap:.8cqw 2.6cqw;font-family:var(--label);font-size:1.25cqw;letter-spacing:.08em;color:var(--muted);margin-top:1cqw}
-.keys span b{display:block;color:var(--ink);font-weight:400;margin-bottom:.3cqw}
-.cta{font-family:var(--label);font-size:1.6cqw;letter-spacing:.16em;color:var(--cyan);animation:blink 1.2s steps(2) infinite;margin-top:1.4cqw}
+.tag{margin:0;font-size:clamp(14px,2cqw,24px);color:var(--muted);letter-spacing:.04em;text-wrap:balance;max-width:32ch}
+.keys{display:grid;grid-template-columns:repeat(4,auto);gap:8px 28px;font-family:var(--label);font-size:clamp(10px,1.2cqw,15px);letter-spacing:.08em;color:var(--muted);margin-top:6px}
+.keys span b{display:block;color:var(--ink);font-weight:400;margin-bottom:3px}
+.tkeys{display:none;grid-template-columns:auto 1fr;gap:10px 14px;text-align:left;font-size:clamp(13px,1.7cqw,17px);color:#c8c4ee;max-width:340px;align-items:center}
+.tkeys i{font-style:normal;font-family:var(--label);font-size:10px;letter-spacing:.12em;color:var(--night);background:var(--cyan);padding:4px 7px;text-align:center}
+.tkeys i.e{background:var(--ember)}
+.app.touchdev .keys{display:none}
+.app.touchdev .tkeys{display:grid}
+.cta{font-family:var(--label);font-size:clamp(12px,1.6cqw,18px);letter-spacing:.16em;color:var(--cyan);animation:blink 1.2s steps(2) infinite;margin-top:8px}
 @keyframes blink{50%{opacity:.25}}
-.eyebrow{font-family:var(--label);font-size:1.4cqw;letter-spacing:.2em;color:var(--ember)}
-.h2{margin:0;font-family:var(--display);font-weight:700;font-size:5.4cqw;color:#f6f9ff;text-shadow:0 0 2.4cqw rgba(143,247,255,.45)}
-.cards{display:grid;grid-template-columns:repeat(3,22cqw);gap:2cqw;margin-top:1cqw}
+.eyebrow{font-family:var(--label);font-size:clamp(11px,1.4cqw,16px);letter-spacing:.2em;color:var(--ember)}
+.h2{margin:0;font-family:var(--display);font-weight:700;font-size:clamp(28px,5.4cqw,64px);line-height:1;color:#f6f9ff;text-shadow:0 0 18px rgba(143,247,255,.45);text-wrap:balance}
+.cards{display:grid;grid-template-columns:repeat(3,minmax(0,250px));gap:16px;margin-top:6px;width:100%;justify-content:center}
+.app[data-mode=port] .cards{grid-template-columns:minmax(0,420px)}
 .card{position:relative;text-align:left;font:inherit;color:var(--ink);cursor:pointer;
-  background:linear-gradient(180deg,rgba(30,24,70,.95),rgba(12,10,32,.95));border:none;padding:2cqw 1.8cqw 1.8cqw;
-  clip-path:polygon(1.4cqw 0,100% 0,100% calc(100% - 1.4cqw),calc(100% - 1.4cqw) 100%,0 100%,0 1.4cqw);
-  box-shadow:inset 0 0 0 2px #3d3480;transition:transform .15s,box-shadow .15s;display:flex;flex-direction:column;gap:.9cqw}
-.card:hover,.card:focus-visible{transform:translateY(-.6cqw);box-shadow:inset 0 0 0 2px var(--cyan),inset 0 0 3cqw rgba(143,247,255,.18);outline:none}
-.card .k{position:absolute;top:1cqw;right:1.4cqw;font-family:var(--label);font-size:1.2cqw;color:var(--muted)}
-.card .cat{font-family:var(--label);font-size:1.1cqw;letter-spacing:.16em;color:var(--ember)}
-.card .nm{font-weight:700;font-size:2.4cqw;line-height:1}
-.card .ds{font-size:1.45cqw;line-height:1.35;color:#c8c4ee}
-.card .lv{font-family:var(--label);font-size:1.05cqw;color:var(--cyan);letter-spacing:.1em}
-.stats{display:flex;gap:4cqw;font-family:var(--label);font-size:1.3cqw;letter-spacing:.12em;color:var(--muted)}
-.stats b{display:block;font-family:var(--display);font-size:3.6cqw;color:var(--ink);font-weight:700;letter-spacing:0;font-variant-numeric:tabular-nums}
-.btn{font-family:var(--label);font-size:1.6cqw;letter-spacing:.14em;color:var(--night);background:var(--cyan);border:none;padding:1cqw 2.4cqw;cursor:pointer;margin-top:1cqw;
-  clip-path:polygon(.8cqw 0,100% 0,100% calc(100% - .8cqw),calc(100% - .8cqw) 100%,0 100%,0 .8cqw)}
+  background:linear-gradient(180deg,rgba(30,24,70,.96),rgba(12,10,32,.96));border:none;padding:18px 18px 16px;
+  clip-path:polygon(12px 0,100% 0,100% calc(100% - 12px),calc(100% - 12px) 100%,0 100%,0 12px);
+  box-shadow:inset 0 0 0 2px #3d3480;transition:transform .15s,box-shadow .15s;display:flex;flex-direction:column;gap:7px;touch-action:manipulation}
+.app[data-mode=port] .card{padding:14px 16px}
+.card:hover,.card:focus-visible{transform:translateY(-4px);box-shadow:inset 0 0 0 2px var(--cyan),inset 0 0 24px rgba(143,247,255,.18);outline:none}
+.card:active{box-shadow:inset 0 0 0 2px var(--cyan),inset 0 0 24px rgba(143,247,255,.3)}
+.card .k{position:absolute;top:10px;right:14px;font-family:var(--label);font-size:11px;color:var(--muted)}
+.app.touchdev .card .k{display:none}
+.card .cat{font-family:var(--label);font-size:10px;letter-spacing:.16em;color:var(--ember)}
+.card .nm{font-weight:700;font-size:clamp(20px,2.4cqw,28px);line-height:1}
+.card .ds{font-size:clamp(14px,1.45cqw,17px);line-height:1.35;color:#c8c4ee}
+.card .lv{font-family:var(--label);font-size:10px;color:var(--cyan);letter-spacing:.1em}
+.stats{display:flex;gap:clamp(18px,4cqw,48px);font-family:var(--label);font-size:clamp(10px,1.3cqw,14px);letter-spacing:.12em;color:var(--muted)}
+.stats b{display:block;font-family:var(--display);font-size:clamp(28px,3.6cqw,44px);color:var(--ink);font-weight:700;letter-spacing:0;font-variant-numeric:tabular-nums}
+.btn{font-family:var(--label);font-size:clamp(13px,1.6cqw,18px);letter-spacing:.14em;color:var(--night);background:var(--cyan);border:none;padding:16px 28px;cursor:pointer;margin-top:8px;touch-action:manipulation;
+  clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px)}
 .btn:hover,.btn:focus-visible{background:#fff;outline:none}
-.touch{display:none}
-@media (pointer:coarse){
-  .touch{display:block;position:absolute;inset:auto 0 0 0;height:0}
-  .tb{position:absolute;bottom:2.4cqw;width:9cqw;height:9cqw;border-radius:50%;border:2px solid rgba(143,247,255,.4);background:rgba(20,16,50,.45);
-    color:var(--ink);font-family:var(--label);font-size:1.5cqw;letter-spacing:.08em;display:flex;align-items:center;justify-content:center;touch-action:none}
-  .tb.on{background:rgba(143,247,255,.3)}
-  .tb[data-a=left]{left:2.4cqw}.tb[data-a=right]{left:13cqw}
-  .tb[data-a=jump]{right:2.4cqw}.tb[data-a=slash]{right:13cqw}
-  .keys{display:none}
-}
+.home{font-family:var(--label);font-size:11px;letter-spacing:.14em;color:var(--muted);text-decoration:none;padding:10px}
+.home:hover,.home:focus-visible{color:var(--cyan);outline:none}
+.rot{display:none;font-family:var(--label);font-size:10px;letter-spacing:.14em;color:var(--muted)}
+.app[data-mode=port].touchdev .rot{display:block}
 @media (prefers-reduced-motion:reduce){.title,.cta{animation:none}.banner{transition:opacity .2s}}
 </style>
 </head>
 <body>
-
-<div class="stage" id="stage">
-  <canvas id="game" width="384" height="216" aria-label="Stormbound game screen"></canvas>
-  <div class="hud" id="hud" hidden>
-    <span>Room <b id="hRoom">1</b></span>
-    <span>Wave <b id="hWave">1/2</b></span>
-    <span>Score <b id="hScore">0</b></span>
-    <button id="mute" type="button">Sound on</button>
+<div class="app" id="app" data-mode="desk">
+  <div class="probe" id="probe"></div>
+  <div class="stage" id="stage">
+    <canvas id="game" width="384" height="216" aria-label="Stormbound game screen"></canvas>
+    <div class="hud" id="hud" hidden>
+      <span>Room <b id="hRoom">1</b></span>
+      <span class="wv">Wave <b id="hWave">1/2</b></span>
+      <span>Score <b id="hScore">0</b></span>
+      <button id="mute" type="button">Sound on</button>
+    </div>
+    <div class="banner" id="banner"></div>
+    <div class="combo" id="combo"></div>
   </div>
-  <div class="banner" id="banner"></div>
-  <div class="combo" id="combo"></div>
-  <div class="touch" id="touch">
-    <div class="tb" data-a="left">&#9664;</div>
-    <div class="tb" data-a="right">&#9654;</div>
-    <div class="tb" data-a="slash">Slash</div>
-    <div class="tb" data-a="jump">Jump</div>
+
+  <div class="pad" id="pad" hidden>
+    <div class="stickzone" id="stickzone" aria-label="Move stick">
+      <div class="sbase" id="sbase"><div class="sknob" id="sknob"></div></div>
+    </div>
+    <div class="btns" id="btns">
+      <div class="pb pb-hook ready" data-a="hook" id="bHook" role="button" aria-label="Lightning hook">
+        <svg viewBox="0 0 24 24" fill="#8ff7ff"><path d="M14 1 4 14h6l-2 9 11-14h-6z"/></svg><span>HOOK</span>
+      </div>
+      <div class="pb pb-slash" data-a="slash" role="button" aria-label="Slash">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#ffb38a" stroke-width="2.6" stroke-linecap="round"><path d="M5 19C9 9 14 6 20 4"/><path d="M8 21c4-6 8-9 13-10" opacity=".55"/></svg><span>SLASH</span>
+      </div>
+      <div class="pb pb-jump" data-a="jump" role="button" aria-label="Jump">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#ecebff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 14l7-7 7 7"/><path d="M5 20l7-7 7 7" opacity=".5"/></svg><span>JUMP</span>
+      </div>
+    </div>
   </div>
 
   <div class="screen" id="sTitle">
@@ -129,7 +178,13 @@ canvas{display:block;width:100%;height:100%;image-rendering:crisp-edges;image-re
       <span><b>Click / Shift</b>Lightning hook</span>
       <span><b>Right-click / J</b>Slash</span>
     </div>
+    <div class="tkeys">
+      <i>Stick</i><span>Left thumb anywhere to move. Pull down to drop.</span>
+      <i>Hook</i><span>Zip into the nearest target. Push the stick to aim it.</span>
+      <i class="e">Slash</i><span>Cut close up and bat fireballs back.</span>
+    </div>
     <div class="cta" id="cta">Press any key to start</div>
+    <div class="rot">Turn sideways for the widest view</div>
   </div>
 
   <div class="screen" id="sUp" hidden>
@@ -142,18 +197,20 @@ canvas{display:block;width:100%;height:100%;image-rendering:crisp-edges;image-re
     <div class="eyebrow">Run ended</div>
     <h2 class="h2">The storm wins this one</h2>
     <div class="stats">
-      <span><b id="dRooms">0</b>Rooms cleared</span>
+      <span><b id="dRooms">0</b>Rooms</span>
       <span><b id="dScore">0</b>Score</span>
       <span><b id="dBest">0</b>Best</span>
     </div>
-    <button class="btn" id="again" type="button">Run again (R)</button>
+    <button class="btn" id="again" type="button">Run again</button>
+    <a class="home" href="/">More Stormie Games</a>
   </div>
 </div>
 
 <script>
 (() => {
 'use strict';
-const W = 384, H = 216, WW = 640, FLOOR = 190;
+const W0 = 384, WMAX = 480, H = 216, WW = 640, FLOOR = 190;
+let W = 384;
 const cv = document.getElementById('game');
 const ctx = cv.getContext('2d');
 ctx.imageSmoothingEnabled = false;
@@ -239,8 +296,8 @@ const PLAT = [{ x: 78, y: 146, w: 72 }, { x: 214, y: 116, w: 62 }, { x: 352, y: 
 const ANCH = [{ x: 150, y: 58 }, { x: 300, y: 46 }, { x: 420, y: 70 }, { x: 560, y: 52 }, { x: 40, y: 64 }].map(a => ({ ...a, kind: 'anchor', cd: 0, by: a.y, ph: R() * 6 }));
 
 /* ---------- prerendered layers ---------- */
-const [sky, skx] = mk(W, H);
-{ const g = skx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#0c0a2a'); g.addColorStop(.42, '#241a50'); g.addColorStop(.68, '#4b2f7c'); g.addColorStop(.84, '#8c4282'); g.addColorStop(1, '#4a2252'); skx.fillStyle = g; skx.fillRect(0, 0, W, H); }
+const [sky, skx] = mk(WMAX, H);
+{ const g = skx.createLinearGradient(0, 0, 0, H); const W = WMAX; g.addColorStop(0, '#0c0a2a'); g.addColorStop(.42, '#241a50'); g.addColorStop(.68, '#4b2f7c'); g.addColorStop(.84, '#8c4282'); g.addColorStop(1, '#4a2252'); skx.fillStyle = g; skx.fillRect(0, 0, W, H); }
 
 function buildClouds(seed, base, rim, y0, y1, n, ceil) {
   const [c, x] = mk(768, 120); const r = rng(seed); const bl = [];
@@ -255,7 +312,7 @@ function buildClouds(seed, base, rim, y0, y1, n, ceil) {
 const cloudBack = buildClouds(11, '#1d1642', '#55479a', 8, 70, 46, false);
 const cloudFront = buildClouds(23, '#0e0b26', '#3d3077', 4, 30, 34, true);
 
-const FARW = Math.ceil(W + (WW - W) * .2), MIDW = Math.ceil(W + (WW - W) * .5);
+const FARW = Math.ceil(WMAX + (WW - WMAX) * .2), MIDW = Math.ceil(WMAX + (WW - WMAX) * .5);
 const SPIRE = { x: Math.round(FARW * .62), y: 46 };
 const [far, fx] = mk(FARW, H);
 {
@@ -332,9 +389,11 @@ const [fg, gx] = mk(WW, H);
     gx.fillStyle = '#7ff0ff'; gx.fillRect(p.x + 6 + Math.floor(r() * (p.w - 12)), p.y + 4, 1, 1);
   }
 }
-const [vig, vx] = mk(W, H);
-{ const g = vx.createRadialGradient(W / 2, H / 2, H * .35, W / 2, H / 2, W * .62); g.addColorStop(0, 'rgba(3,2,12,0)'); g.addColorStop(1, 'rgba(3,2,12,.78)'); vx.fillStyle = g; vx.fillRect(0, 0, W, H); }
-const [lc, lx] = mk(W, H);
+const [vig, vx] = mk(WMAX, H);
+function buildVig() { vig.width = W; vx.clearRect(0, 0, W, H); const g = vx.createRadialGradient(W / 2, H / 2, H * .35, W / 2, H / 2, Math.max(W, 300) * .62); g.addColorStop(0, 'rgba(3,2,12,0)'); g.addColorStop(1, 'rgba(3,2,12,.78)'); vx.fillStyle = g; vx.fillRect(0, 0, W, H); }
+buildVig();
+const [lc, lx] = mk(WMAX, H);
+function setW(w) { if (w === W) return; W = w; cv.width = W; ctx.imageSmoothingEnabled = false; lc.width = W; buildVig(); camX = clamp(camX, 0, WW - W); }
 function buildMist(seed, col, n, h) { const [c, x] = mk(768, h); const r = rng(seed); x.fillStyle = col; for (let i = 0; i < n; i++) { const bx = r() * 768, by = h * .3 + r() * h * .5, br = 8 + r() * 22; for (const dx of [-768, 0, 768]) { x.beginPath(); x.ellipse(bx + dx, by, br * 2.2, br * .6, 0, 0, 6.2832); x.fill(); } } return c; }
 const mist = buildMist(41, 'rgba(150,110,230,.07)', 50, 60);
 const mist2 = buildMist(43, 'rgba(120,180,255,.06)', 40, 50);
@@ -411,7 +470,7 @@ let hookReq = null, slashReq = false;
 const isKey = (o, list) => list.some(k => o[k]);
 const left = () => isKey(keys, ['a', 'arrowleft']) || touch.left;
 const right = () => isKey(keys, ['d', 'arrowright']) || touch.right;
-const down = () => isKey(keys, ['s', 'arrowdown']);
+const down = () => isKey(keys, ['s', 'arrowdown']) || touch.down;
 const jumpHeld = () => isKey(keys, ['w', ' ', 'arrowup']) || touch.jump;
 const jumpP = () => isKey(pressed, ['w', ' ', 'arrowup']) || touchP.jump;
 const slashP = () => isKey(pressed, ['j', 'k', 'x']) || touchP.slash || slashReq;
@@ -439,14 +498,98 @@ cv.addEventListener('pointerdown', e => {
   if (e.pointerType === 'mouse') { mouse.x = p.x; mouse.y = p.y; if (e.button === 2) slashReq = true; else hookReq = { x: p.x + camX, y: p.y }; }
   else hookReq = { x: p.x + camX, y: p.y };
 });
-$('sTitle').addEventListener('pointerdown', () => { initAudio(); if (state === 'title') startRun(); });
+$('sTitle').addEventListener('pointerdown', () => { initAudio(); if (state === 'title') { if (isTouch) goFull(); startRun(); } });
+function goFull() { try { const el = document.documentElement; if (!document.fullscreenElement && el.requestFullscreen) el.requestFullscreen({ navigationUI: 'hide' }).catch(() => {}); } catch (e) {} }
 $('again').addEventListener('click', () => { initAudio(); startRun(); });
-document.querySelectorAll('.tb').forEach(b => {
+/* touch: action buttons */
+function vib(ms) { try { if (isTouch && navigator.vibrate) navigator.vibrate(ms); } catch (e) {} }
+document.querySelectorAll('.pb').forEach(b => {
   const a = b.dataset.a;
-  b.addEventListener('pointerdown', e => { e.preventDefault(); initAudio(); try { b.setPointerCapture(e.pointerId); } catch (_) {} touch[a] = true; touchP[a] = true; b.classList.add('on'); });
+  b.addEventListener('pointerdown', e => {
+    e.preventDefault(); e.stopPropagation(); initAudio(); try { b.setPointerCapture(e.pointerId); } catch (_) {}
+    b.classList.add('on'); vib(8);
+    if (a === 'hook') { if (state === 'play') hookReq = stickAim(); }
+    else { touch[a] = true; touchP[a] = true; }
+  });
   const up = () => { touch[a] = false; b.classList.remove('on'); };
-  b.addEventListener('pointerup', up); b.addEventListener('pointercancel', up);
+  b.addEventListener('pointerup', up); b.addEventListener('pointercancel', up); b.addEventListener('lostpointercapture', up);
+  b.addEventListener('contextmenu', e => e.preventDefault());
 });
+/* touch: floating thumbstick */
+const stick = { id: null, ox: 0, oy: 0, dx: 0, dy: 0 };
+const zone = $('stickzone'), sbase = $('sbase'), sknob = $('sknob'), SR = 52;
+function restStick() {
+  const z = zone.getBoundingClientRect();
+  sbase.style.left = Math.min(z.width * .42, 120) + 'px'; sbase.style.top = (z.height - Math.max(96, ins.b + 86)) + 'px';
+  sknob.style.transform = ''; sbase.classList.remove('live');
+}
+function stickUpdate(cx, cy) {
+  let dx = cx - stick.ox, dy = cy - stick.oy; const L = Math.hypot(dx, dy);
+  if (L > SR * 1.25) { const k = (L - SR * 1.25) / L; stick.ox += dx * k; stick.oy += dy * k; dx = cx - stick.ox; dy = cy - stick.oy; placeBase(); }
+  const m = Math.min(1, Math.hypot(dx, dy) / SR), a = Math.atan2(dy, dx);
+  stick.dx = Math.cos(a) * m; stick.dy = Math.sin(a) * m;
+  sknob.style.transform = `translate(${stick.dx * SR}px,${stick.dy * SR}px)`;
+  touch.left = stick.dx < -.32; touch.right = stick.dx > .32;
+  touch.down = stick.dy > .62 && Math.abs(stick.dx) < .62;
+}
+function placeBase() { const z = zone.getBoundingClientRect(); sbase.style.left = (stick.ox - z.left) + 'px'; sbase.style.top = (stick.oy - z.top) + 'px'; }
+zone.addEventListener('pointerdown', e => {
+  e.preventDefault(); initAudio(); if (stick.id !== null) return;
+  stick.id = e.pointerId; try { zone.setPointerCapture(e.pointerId); } catch (_) {}
+  stick.ox = e.clientX; stick.oy = e.clientY; placeBase(); sbase.classList.add('live'); stickUpdate(e.clientX, e.clientY);
+});
+zone.addEventListener('pointermove', e => { if (e.pointerId === stick.id) { e.preventDefault(); stickUpdate(e.clientX, e.clientY); } });
+const stickEnd = e => { if (e.pointerId !== stick.id) return; stick.id = null; stick.dx = stick.dy = 0; touch.left = touch.right = touch.down = false; restStick(); };
+zone.addEventListener('pointerup', stickEnd); zone.addEventListener('pointercancel', stickEnd); zone.addEventListener('lostpointercapture', stickEnd);
+function stickAim() { return Math.hypot(stick.dx, stick.dy) > .4 ? { auto: true, dir: [stick.dx, stick.dy] } : { auto: true }; }
+function aimTarget(req) {
+  if (req.dir) { const t = findTarget(P.x + req.dir[0] * 100, P.y - 8 + req.dir[1] * 100); if (t) return t; }
+  return autoTarget();
+}
+
+/* ---------- layout ---------- */
+const app = $('app'), stageEl = $('stage'), pad = $('pad'), probe = $('probe');
+let isTouch = matchMedia('(pointer:coarse)').matches || 'ontouchstart' in window;
+const ins = { t: 0, r: 0, b: 0, l: 0 };
+let hookFill = -1, hudL = 8, hudT = 8;
+function layout() {
+  const cs = getComputedStyle(probe);
+  ins.t = parseFloat(cs.paddingTop) || 0; ins.r = parseFloat(cs.paddingRight) || 0; ins.b = parseFloat(cs.paddingBottom) || 0; ins.l = parseFloat(cs.paddingLeft) || 0;
+  const vw = app.clientWidth, vh = app.clientHeight;
+  app.classList.toggle('touchdev', isTouch);
+  let mode, w, h, x, y;
+  if (!isTouch) {
+    mode = 'desk'; setW(W0);
+    const aw = vw - 32, ah = vh - 24; w = Math.min(aw, ah * W0 / H); h = w * H / W0; x = (vw - w) / 2; y = (vh - h) / 2;
+  } else if (vw > vh) {
+    mode = 'land'; setW(Math.round(clamp(H * vw / vh, W0, WMAX)));
+    h = Math.min(vh, vw * H / W); w = h * W / H; x = (vw - w) / 2; y = (vh - h) / 2;
+  } else {
+    mode = 'port';
+    const deck = Math.max(250, vh * .4), ah = vh - ins.t - deck;
+    setW(Math.round(clamp(H * vw / ah, 236, W0)));
+    w = vw; h = w * H / W; x = 0; y = ins.t;
+  }
+  app.dataset.mode = mode;
+  Object.assign(stageEl.style, { width: w + 'px', height: h + 'px', left: x + 'px', top: y + 'px' });
+  const sc = W / w; hudL = Math.round(8 + Math.max(0, ins.l - x) * sc); hudT = Math.round(8 + Math.max(0, ins.t - y) * sc);
+  const hd = $('hud'); hd.style.right = Math.max(8, ins.r - (vw - x - w) + 8) + 'px'; hd.style.top = Math.max(8, ins.t - y + 8) + 'px';
+  if (mode === 'port') Object.assign(pad.style, { top: (y + h) + 'px', left: '0', right: '0', bottom: '0' });
+  else Object.assign(pad.style, { top: '0', left: '0', right: '0', bottom: '0' });
+  const btns = $('btns'); btns.style.right = Math.max(ins.r, mode === 'land' ? 8 : 4) + 'px';
+  btns.style.bottom = Math.max(ins.b, mode === 'port' ? 26 : 6) + 'px';
+  if (mode === 'port') { const ph = vh - y - h; btns.style.bottom = Math.max(ins.b + 8, (ph - 230) / 2) + 'px'; }
+  zone.style.left = ins.l + 'px';
+  syncPad(); restStick();
+  $('cta').textContent = isTouch ? 'Tap to start' : 'Press any key to start';
+}
+addEventListener('resize', layout); addEventListener('orientationchange', () => setTimeout(layout, 120));
+if (window.visualViewport) visualViewport.addEventListener('resize', layout);
+addEventListener('pointerdown', e => { if (e.pointerType === 'touch' && !isTouch) { isTouch = true; layout(); } }, true);
+addEventListener('pointermove', e => { if (e.pointerType === 'mouse' && isTouch && !matchMedia('(pointer:coarse)').matches) { isTouch = false; layout(); } });
+function syncPad() { pad.hidden = !(isTouch && (state === 'play' || state === 'upgrade')); restStick(); }
+let paused = false;
+document.addEventListener('visibilitychange', () => { paused = document.hidden; last = performance.now(); try { if (AC) document.hidden ? AC.suspend() : AC.resume(); } catch (e) {} });
 function toggleMute() {
   muted = !muted; if (MG) MG.gain.value = muted ? 0 : .55;
   $('mute').textContent = muted ? 'Sound off' : 'Sound on';
@@ -454,7 +597,6 @@ function toggleMute() {
 }
 $('mute').addEventListener('click', e => { initAudio(); toggleMute(); e.currentTarget.blur(); });
 $('mute').textContent = muted ? 'Sound off' : 'Sound on';
-if (matchMedia('(pointer:coarse)').matches) $('cta').textContent = 'Tap to start';
 
 /* ---------- UI helpers ---------- */
 let bannerTO = 0;
@@ -473,7 +615,7 @@ function startRun() {
   for (const k in UP) UP[k] = 0;
   Object.assign(P, { x: WW / 2, y: FLOOR, vx: 0, vy: 0, face: 1, hp: 5, maxHp: 5, inv: 0, state: 'free', zt: null, hookCd: 0, air: 0, chain: 0 });
   enemies = []; orbs = []; after = []; rings = [];
-  $('sTitle').hidden = true; $('sDead').hidden = true; $('sUp').hidden = true; $('hud').hidden = false;
+  $('sTitle').hidden = true; $('sDead').hidden = true; $('sUp').hidden = true; $('hud').hidden = false; syncPad();
   startRoom();
 }
 function startRoom() {
@@ -520,7 +662,7 @@ function die() {
   state = 'dead'; deathT = 0; P.state = 'free';
   if (score > best) { best = score; try { localStorage.setItem('stormbound-best', best); } catch (e) {} }
   $('dRooms').textContent = room - 1; $('dScore').textContent = score; $('dBest').textContent = best;
-  setTimeout(() => { if (state === 'dead') { $('sDead').hidden = false; $('hud').hidden = true; } }, 900);
+  setTimeout(() => { if (state === 'dead') { $('sDead').hidden = false; $('hud').hidden = true; syncPad(); } }, 900);
 }
 
 /* ---------- effects ---------- */
@@ -572,9 +714,9 @@ function autoTarget() {
 }
 function tryHook(req) {
   if (P.hookCd > 0 || P.state === 'zip') return;
-  const T = req.auto ? autoTarget() : findTarget(req.x, req.y);
+  const T = req.auto ? aimTarget(req) : findTarget(req.x, req.y);
   if (!T) {
-    const ax = req.auto ? P.x + P.face * 60 : req.x, ay = req.auto ? P.y - 40 : req.y;
+    const ax = req.auto ? P.x + (req.dir ? req.dir[0] * 60 : P.face * 60) : req.x, ay = req.auto ? P.y - 8 + (req.dir ? req.dir[1] * 60 : -32) : req.y;
     const dx = ax - P.x, dy = ay - (P.y - 8), L = Math.hypot(dx, dy) || 1, r = Math.min(L, 70);
     bolts.push({ pts: () => jag(P.x, P.y - 8, P.x + dx / L * r, P.y - 8 + dy / L * r, 6, 5), life: .12, col: '#4b8fb0' });
     P.hookCd = .2; noise(.08, 'highpass', 3000, 1, .06); return;
@@ -615,7 +757,7 @@ function damage(e, d, dir, big) {
   e.hp -= d; e.flash = .12; e.stun = .32;
   if (e.type === 'husk') { e.vx = (dir >= 0 ? 1 : -1) * 160; e.vy = -140; } else { e.vx = dir * 140; e.vy = -50; }
   burst(e.x, cy(e), big ? 14 : 8, ['#ffffff', '#8ff7ff', '#ffb347'], big ? 140 : 90, 120, true, .35);
-  sfx.hit();
+  sfx.hit(); vib(big ? 22 : 10);
   if (e.hp <= 0) kill(e);
 }
 function kill(e) {
@@ -629,7 +771,7 @@ function kill(e) {
 function hurt(fromX) {
   if (P.inv > 0 || P.state === 'zip' || state !== 'play') return;
   P.hp--; P.inv = 1.15; P.vx = (P.x < fromX ? -1 : 1) * 150; P.vy = -170; P.ground = false;
-  shake = Math.max(shake, 7); hitstop(.11); hurtV = 1; sfx.hurt();
+  shake = Math.max(shake, 7); hitstop(.11); hurtV = 1; sfx.hurt(); vib([40, 30, 60]);
   burst(P.x, P.y - 7, 16, ['#ff4f6d', '#ffffff'], 120, 200, true, .5);
   if (P.hp <= 0) die();
 }
@@ -921,7 +1063,7 @@ function draw() {
 
   // aim brackets
   let tgt = null;
-  if (state === 'play' && P.state !== 'zip') tgt = mouse.in ? findTarget(mouse.x + camX, mouse.y) : autoTarget();
+  if (state === 'play' && P.state !== 'zip') tgt = (mouse.in && !isTouch) ? findTarget(mouse.x + camX, mouse.y) : aimTarget(stickAim());
   if (tgt) {
     const tx = Math.round(tgt.x), ty = Math.round(tgt.kind === 'anchor' ? tgt.y : cy(tgt)), s = 8 + Math.round(Math.sin(time * 10)), col = P.hookCd > 0 ? '#3d5a80' : '#8ff7ff';
     ctx.fillStyle = col;
@@ -956,10 +1098,10 @@ function draw() {
   if (flash > .5) { ctx.fillStyle = `rgba(255,255,255,${(flash - .5) * .25})`; ctx.fillRect(0, 0, W, H); }
 
   if (state === 'play' || state === 'upgrade') {
-    for (let i = 0; i < P.maxHp; i++) ctx.drawImage(i < P.hp ? HEART : HEART0, 8 + i * 9, 8);
+    for (let i = 0; i < P.maxHp; i++) ctx.drawImage(i < P.hp ? HEART : HEART0, hudL + i * 9, hudT);
     const k = P.hookCd > 0 ? 1 - P.hookCd / P.hookMax : 1;
-    ctx.fillStyle = '#231c4a'; ctx.fillRect(8, 17, 34, 2);
-    ctx.fillStyle = k >= 1 ? '#8ff7ff' : '#3f8fd0'; ctx.fillRect(8, 17, Math.round(34 * k), 2);
+    ctx.fillStyle = '#231c4a'; ctx.fillRect(hudL, hudT + 9, 34, 2);
+    ctx.fillStyle = k >= 1 ? '#8ff7ff' : '#3f8fd0'; ctx.fillRect(hudL, hudT + 9, Math.round(34 * k), 2);
     if (mouse.in && state === 'play') {
       const mx2 = Math.round(mouse.x), my2 = Math.round(mouse.y);
       ctx.fillStyle = '#ffffff'; ctx.fillRect(mx2 - 4, my2, 3, 1); ctx.fillRect(mx2 + 2, my2, 3, 1); ctx.fillRect(mx2, my2 - 4, 1, 3); ctx.fillRect(mx2, my2 + 2, 1, 3);
@@ -971,13 +1113,16 @@ function draw() {
 let last = performance.now();
 function loop(now) {
   const dt = Math.min((now - last) / 1000, 1 / 30); last = now; frame++; time += dt;
+  if (paused) { requestAnimationFrame(loop); return; }
   if (hs > 0) hs -= dt; else step(state === 'dead' ? dt * .35 : dt);
   ambient(dt);
+  if (isTouch) { const k = P.hookCd > 0 ? 1 - P.hookCd / P.hookMax : 1, q = Math.round(k * 40) / 40; if (q !== hookFill) { hookFill = q; const hb = $('bHook'); hb.style.setProperty('--cd', q); hb.classList.toggle('ready', q >= 1); } }
   if (state === 'play') hud();
   draw();
   pressed = {}; touchP = {}; slashReq = false;
   requestAnimationFrame(loop);
 }
+layout();
 strike(.9);
 requestAnimationFrame(t => { last = t; loop(t); });
 })();
