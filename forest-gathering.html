@@ -205,6 +205,13 @@ canvas{display:block;width:100%;height:100%;image-rendering:crisp-edges;image-re
 .dock .dlg{pointer-events:auto}
 .dock .dlg p{font-size:16px}
 .dock .toast,.dock .tip{font-size:12px}
+.orient-t{display:none;align-items:center;justify-content:center;gap:10px;font-family:var(--label);font-size:11px;letter-spacing:.1em;color:var(--muted);text-align:left}
+.app.touchdev .orient-t{display:flex}
+.orient-t svg,.orient svg{width:22px;height:22px;flex:none;color:var(--cyan);animation:rotp 2.6s ease-in-out infinite}
+@keyframes rotp{0%,25%{transform:rotate(0)}45%,75%{transform:rotate(-90deg)}95%,100%{transform:rotate(0)}}
+.orient{position:absolute;transform:translate(-50%,-50%) scale(.96);display:flex;align-items:center;gap:10px;width:max-content;max-width:86vw;font-family:var(--label);font-size:12px;letter-spacing:.06em;line-height:1.4;color:var(--ink);
+  background:rgba(7,8,20,.88);box-shadow:inset 0 0 0 1px var(--cyan),0 10px 30px rgba(0,0,0,.5);padding:.75em 1.1em;pointer-events:none;opacity:0;transition:opacity .35s,transform .35s}
+.orient.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
 </style>
 </head>
 <body>
@@ -240,8 +247,7 @@ canvas{display:block;width:100%;height:100%;image-rendering:crisp-edges;image-re
   </div>
 
   <div class="dock" id="dock" hidden></div>
-
-  <div class="dock" id="dock" hidden></div>
+  <div class="orient" id="orient"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg><span id="orientTxt"></span></div>
 
   <div class="screen" id="sTitle">
     <h1 class="title witch"><small>Stormie Games presents</small>Forest<br>Gathering</h1>
@@ -258,6 +264,7 @@ canvas{display:block;width:100%;height:100%;image-rendering:crisp-edges;image-re
       <i>Use</i><span>Talk, pick up and open things. With nothing nearby it casts your staff.</span>
       <i class="e">Jump</i><span>Hop onto logs, ledges and crypts.</span>
     </div>
+    <div class="orient-t"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg><span>Play upright or sideways. Just turn your phone.</span></div>
     <div class="tbtns">
       <button class="btn" id="begin" type="button">Begin the journey</button>
       <button class="btn ghost" id="cont" type="button" hidden>Continue</button>
@@ -2011,6 +2018,7 @@ function layout() {
   if (mode === 'port') Object.assign(pad.style, { top: (y + h) + 'px', left: '0', right: '0', bottom: '0' }); else Object.assign(pad.style, { top: '0', left: '0', right: '0', bottom: '0' });
   const btns = $('btns'); btns.style.right = Math.max(ins.r, mode === 'land' ? 8 : 4) + 'px'; btns.style.bottom = (mode === 'port' ? ins.b + 28 : Math.max(ins.b, 6)) + 'px';
   btnBottom = parseFloat(btns.style.bottom) || 0; zone.style.left = ins.l + 'px';
+  const oc = $('orient'); oc.style.left = (x + w / 2) + 'px'; oc.style.top = (y + h * .5) + 'px';
   const dock = $('dock'), home = mode === 'port' ? dock : stageEl;
   for (const id of MSG) { const el = $(id); if (el && el.parentNode !== home) home.appendChild(el); }
   dock.hidden = mode !== 'port'; if (mode === 'port') dock.style.top = (y + h + 10) + 'px';
@@ -2034,11 +2042,20 @@ $('mute').textContent = muted ? 'Sound off' : 'Sound on';
 
 /* ---------- loop ---------- */
 let last = performance.now();
+let ohT = 0, ohDone = false;
+function orientTick(dt) {
+  if (ohDone || !isTouch || state !== 'play') return;
+  ohT += dt; if (ohT < 4) return; ohDone = true;
+  try { if (localStorage.getItem('stormie-orient')) return; localStorage.setItem('stormie-orient', '1'); } catch (e) {}
+  $('orientTxt').textContent = app.dataset.mode === 'port' ? 'Tip: turn your phone sideways for a bigger view.' : 'Tip: turn your phone upright to put the controls below the game.';
+  $('orient').classList.add('show'); setTimeout(() => $('orient').classList.remove('show'), 5000);
+}
 function loop(now) {
   const dt = Math.min((now - last) / 1000, 1 / 30); last = now; frame++; time += dt;
   if (paused) { requestAnimationFrame(loop); return; }
   if (hs > 0) hs -= dt; else step(dt);
   ambient(dt);
+  orientTick(dt);
   if (scene && state !== 'title') updHud();
   if (isTouch) { const lab = state === 'talk' ? 'NEXT' : (near ? (near.hold && near.hold() ? 'HOLD' : 'USE') : 'CAST'); if (lab !== actLabel) { actLabel = lab; $('actLabel').textContent = lab; } }
   draw();
