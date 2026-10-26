@@ -526,6 +526,8 @@ const B_ = {
   creep: c => { const r = chord(c)[0] - 12; return `${r} . ${r + 7} . ${r} . ${r + 1} . ${r} . ${r + 7} . ${r} . ${r - 2} .`; },
   sink: c => { const r = chord(c)[0] - 12; return `${r} - - - - - - - ${r - 1} - - - - - - -`; },
   gallop: c => { const r = chord(c)[0] - 12, f = chord(c)[2] - 12; return `${r} . ${r} ${r} ${f} . ${r} ${r} ${r} . ${r} ${r} ${f} . ${r + 12} ${r}`; },
+  ost: c => { const r = chord(c)[0] - 12; return `${r} . ${r + 7} . ${r + 12} . ${r + 7} . ${r} . ${r + 7} . ${r + 12} . ${r + 10} .`; },
+  lilt: c => { const t = chord(c), r = t[0] - 12; return `${r} . . ${t[2] - 12} . ${t[1] - 12} ${r} . . ${t[2] - 12} . .`; },
   pump: c => { const r = chord(c)[0] - 12; return rep(16, i => i % 2 ? r + 12 : r); },
   pedal: c => { const r = chord(c)[0] - 12; return `${r} - - - - - - - ${chord(c)[2] - 12} - - - - - - -`; }
 };
@@ -533,7 +535,7 @@ const DRUM = {
   heroic: 'k . h . s . h . k . h k s . r .', march: 'k . . . s . . . k . k . s . r r', fill: 'r r r r s . r r s . s s r r r r',
   waltz: 'k . . . h . . . h . . .', waltzS: 'k . . . s . . . s . . .', jig: 'k . h s . h k . h s . h',
   creep: 't . . . . . h . t . . . . . h .', dungeon: 't . . . . . . . . . t . . . . .', gallop: 'k . k k s . k k k . k k s . r r',
-  boss: 'k h s h k k s h k h s h k k r r', none: null
+  boss: 'k h s h k k s h k h s h k k r r', cave: 'k . . h t . h . k . . h t . h h', skip: 'k . h . . h k . h . . h', none: null
 };
 function mkSong(bpm, bars, loop) {
   bars.forEach(b => { b.n = b.lead.split(/\s+/).length; b.L = parse(b.lead); b.H = b.harm ? parse(b.harm) : null; b.B = parse(b.bass || rep(b.n, () => '.')); b.D = b.drum ? b.drum.split(/\s+/) : []; });
@@ -571,16 +573,20 @@ score('dark', 104, [
   ['Em', 'E5 - - - - - - - F#5 - G5 - - - B4 -'], ['Em', 'C5 - - - B4 - - - - - - - . . . .'], ['C', 'E5 - - - G5 - - - F#5 - E5 - D5 - C5 -'], ['B7', 'B4 - - - - - - - D#5 - - - F#5 - - -'],
   ['Em', 'G5 - - - - - F#5 G5 A5 - - - B5 - - -'], ['Em', 'C6 - - - B5 - - - - - G5 - E5 - - -'], ['Am', 'A5 - - - C6 - - - B5 - A5 - G5 - F#5 -'], ['B7', 'D#5 - - - - - - - F5 - - - F#5 - . .']
 ], { harm: 'box', bass: 'creep', drum: 'creep', duty: .5, lv: .07, vibD: .028, vibR: 4.5, echo: true });
-/* IV · The Underdeep: dungeon drone */
-score('deep', 84, [
-  ['Dm', 'D5 - - - - - - - - - - - A5 - - -'], ['Dm', 'Bb5 - - - - - A5 - - - - - - - - -'], ['Bb', 'F5 - - - - - - - G5 - - - F5 - E5 -'], ['A', 'E5 - - - - - - - C#5 - - - - - - -'],
-  ['Dm', 'D5 - - - F5 - - - A5 - - - D6 - - -'], ['Dm', 'C#6 - - - - - - - A5 - - - - - - -'], ['Gm', 'Bb5 - - - - - G5 - - - Bb5 - D6 - - -'], ['A7', 'C#6 - - - - - - - - - - - . . . .']
-], { harm: 'harpDown', bass: 'sink', drum: 'dungeon', duty: .25, lv: .07, vibD: .03, vibR: 4, echo: true });
-/* V · Whimsy Vale: fairy waltz, all harp */
-score('vale', 80, [
-  ['Eb', 'G5 - - - - - Bb5 - - - A5 -'], ['Ab', 'C6 - - - - - - - Eb6 - D6 -'], ['Eb', 'Bb5 - - - G5 - - - Eb5 - F5 -'], ['Ab', 'G5 - - - - - - - . . . .'],
-  ['Cm', 'G5 - - - C6 - - - Eb6 - D6 -'], ['Ab', 'C6 - - - Ab5 - - - Eb5 - C6 -'], ['Bb', 'D6 - - - F6 - - - Bb5 - C6 -'], ['Bb', 'D6 - - - - - - - . . . .']
-], { harm: 'harp', bass: 'waltz', drum: 'none', duty: .125, lv: .1, vibD: .012, echo: true });
+/* IV · The Underdeep: torchlit cavern trek, steady and mysterious */
+score('deep', 112, [
+  ['Dm', 'D5 - - - A5 - - - F5 - - - E5 - D5 -'], ['Dm', 'E5 - - - F5 - - - A4 - - - - - - -'], ['Bb', 'D5 - - - F5 - - - Bb5 - - - A5 - G5 -'], ['C', 'G5 - - - E5 - - - C5 - - - E5 - - -'],
+  ['Dm', 'F5 - - - A5 - - - D6 - - - C6 - A5 -'], ['Dm', 'Bb5 - - - A5 - - - F5 - - - D5 - - -'], ['Gm', 'G5 - - - Bb5 - - - D6 - - - C6 - Bb5 -'], ['A', 'A5 - - - - - - - C#5 - E5 - A5 - - -'],
+  ['Bb', 'F5 - - - D5 - - - Bb4 - - - D5 - F5 -'], ['C', 'G5 - - - E5 - - - C5 - - - E5 - G5 -'], ['Dm', 'A5 - - - F5 - - - D5 - - - F5 - A5 -'], ['Dm', 'D6 - - - - - - - C6 - - - A5 - - -'],
+  ['Gm', 'Bb5 - - - G5 - - - D5 - - - G5 - Bb5 -'], ['A', 'C#6 - - - A5 - - - E5 - - - A5 - C#6 -'], ['Dm', 'D6 - - - A5 - - - F5 - - - E5 - - -'], ['Dm', 'D5 - - - - - - - . . . . . . . .']
+], { harm: 'broken', bass: 'ost', drum: 'cave', duty: .25, lv: .08, vibD: .016, echo: true });
+/* V · Whimsy Vale: a sunny, lilting fairy dance */
+score('vale', 100, [
+  ['F', 'A5 - - C6 - A5 G5 - F5 A5 - -'], ['C', 'G5 - - E5 - G5 C6 - - - . .'], ['Dm', 'F5 - - A5 - D6 C6 - A5 F5 - -'], ['Bb', 'D5 - - F5 - Bb5 A5 - G5 F5 - -'],
+  ['F', 'C6 - - A5 - C6 F6 - E6 C6 - -'], ['C', 'G5 - - C6 - E6 D6 - C6 G5 - -'], ['Bb', 'F5 - - Bb5 - D6 C6 - Bb5 A5 - G5'], ['C', 'G5 - - - - - C5 - - . . .'],
+  ['Dm', 'D6 - - A5 - F5 D5 - F5 A5 - -'], ['Bb', 'Bb5 - - F5 - D5 Bb4 - D5 F5 - -'], ['F', 'A5 - - C6 - F6 E6 - D6 C6 - -'], ['C', 'G5 - - - - E5 C5 - E5 G5 - -'],
+  ['Dm', 'F5 - - D5 - F5 A5 - D6 C6 - A5'], ['Bb', 'Bb5 - - D6 - F6 D6 - Bb5 F5 - D5'], ['C', 'E5 - - G5 - C6 E6 - D6 C6 - Bb5'], ['F', 'A5 - - - - - F5 - - . . .']
+], { harm: 'box', bass: 'lilt', drum: 'skip', duty: .25, under: true, lv: .085, vibD: .012 });
 /* VI · The Enchanted Glen: jaunty village jig */
 score('glen', 120, [
   ['G', 'B4 - C5 D5 - G5 B5 - A5 G5 - D5'], ['C', 'E5 - G5 C6 - B5 A5 - G5 E5 - C5'], ['G', 'D5 - G5 B5 - D6 G6 - F#6 E6 - D6'], ['D', 'C6 - B5 A5 - F#5 D5 - - - . .'],

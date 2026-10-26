@@ -822,7 +822,7 @@ function initAudio() {
   SFX = AC.createGain(); SFX.gain.value = .6; SFX.connect(MG);
   PW[.125] = pulseWave(.125); PW[.25] = pulseWave(.25); PW[.5] = pulseWave(.5);
   NZ.long = lfsrNoise(false); NZ.short = lfsrNoise(true);
-  if (pendingMusic) { const pm = pendingMusic; pendingMusic = false; if (pm === true) musStart(); else musPlay(pm); }
+  if (pendingMusic) { pendingMusic = false; musStart(); }
 }
 const mtof = m => 440 * Math.pow(2, (m - 69) / 12);
 function nm(s) { const m = /^([A-G])([#b]?)(\d)$/.exec(s); const b = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 }[m[1]] + (m[2] === '#' ? 1 : m[2] === 'b' ? -1 : 0); return 12 * (+m[3] + 1) + b; }
@@ -833,13 +833,12 @@ function voice(bus, wave, f1, t, dur, vol, o = {}) {
   if (o.f2) {
     if (o.steps) { for (let i = 0; i <= o.steps; i++) osc.frequency.setValueAtTime(f1 * Math.pow(o.f2 / f1, i / o.steps), t + dur * i / (o.steps + 1)); }
     else { osc.frequency.setValueAtTime(f1, t); osc.frequency.exponentialRampToValueAtTime(o.f2, t + dur); }
-  } else if (o.from) { osc.frequency.setValueAtTime(o.from, t); osc.frequency.exponentialRampToValueAtTime(f1, t + .045); }
-  else osc.frequency.setValueAtTime(f1, t);
+  } else osc.frequency.setValueAtTime(f1, t);
   const g = AC.createGain(), dec = o.decay ?? .7;
   g.gain.setValueAtTime(vol, t);
   if (o.env === 'pluck') g.gain.exponentialRampToValueAtTime(vol * .05 + .0001, t + dur);
   else { g.gain.setValueAtTime(vol, t); g.gain.linearRampToValueAtTime(vol * dec, t + Math.min(.12, dur * .5)); g.gain.setValueAtTime(vol * dec, t + dur - .012); g.gain.linearRampToValueAtTime(0, t + dur); }
-  if (o.vib && dur > .3) { const l = AC.createOscillator(), lg = AC.createGain(); l.frequency.value = o.vibR || 5.5; lg.gain.setValueAtTime(0, t); lg.gain.setValueAtTime(f1 * (o.vibD || .012), t + (o.vibDelay ?? .18)); l.connect(lg); lg.connect(osc.frequency); l.start(t); l.stop(t + dur + .02); }
+  if (o.vib && dur > .3) { const l = AC.createOscillator(), lg = AC.createGain(); l.frequency.value = 5.5; lg.gain.setValueAtTime(0, t); lg.gain.setValueAtTime(f1 * .012, t + .18); l.connect(lg); lg.connect(osc.frequency); l.start(t); l.stop(t + dur + .02); }
   osc.connect(g); g.connect(bus); osc.start(t); osc.stop(t + dur + .03);
 }
 function nz(bus, kind, r1, r2, t, dur, vol) {
@@ -878,88 +877,79 @@ const sfx = {
   clang() { if (!AC) return; const t = AC.currentTime; voice(SFX, .5, 1800, t, .12, .07, { env: 'pluck' }); voice(SFX, .25, 2700, t, .1, .05, { env: 'pluck' }); nz(SFX, 'short', 1, null, t, .04, .06); }
 };
 
-/* ---------- music: original Mega Man-style rock score (storm theme, frozen theme, boss) ---------- */
-const PCL = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
-const QL = { '': [0, 4, 7], m: [0, 3, 7], '7': [0, 4, 7, 10], dim: [0, 3, 6] };
-function chordM(c) { const m = /^([A-G])([#b]?)(.*)$/.exec(c); const r = 48 + PCL[m[1]] + (m[2] === '#' ? 1 : m[2] === 'b' ? -1 : 0); return QL[m[3]].map(i => r + i); }
-const rpt = (n, f) => Array.from({ length: n }, (_, i) => f(i)).join(' ');
-const SB_BASS = {
-  rock: c => { const r = chordM(c)[0] - 12; return `${r} . ${r + 12} . ${r} . ${r + 12} ${r} . ${r} ${r + 12} . ${r} . ${r + 12} ${r + 10}`; },
-  pump: c => { const r = chordM(c)[0] - 12; return rpt(16, i => i % 2 ? r + 12 : r); },
-  ice: c => { const t = chordM(c), r = t[0] - 12; return `${r} - - . ${r + 12} . ${t[2] - 12} . ${r} - - . ${r + 12} . ${t[1]} .`; }
+/* ---------- music: original track "Stormbound", D minor, 152 bpm ---------- */
+const BPM = 152;
+const ARP = { Dm: ['D4', 'F4', 'A4', 'D5'], Bb: ['Bb3', 'D4', 'F4', 'Bb4'], C: ['C4', 'E4', 'G4', 'C5'], A: ['A3', 'C#4', 'E4', 'A4'], Gm: ['G3', 'Bb3', 'D4', 'G4'], F: ['F3', 'A3', 'C4', 'F4'] };
+const ROOT = { Dm: 'D', Bb: 'Bb', C: 'C', A: 'A', Gm: 'G', F: 'F' };
+const arpBar = c => Array.from({ length: 16 }, (_, i) => ARP[c][i % 4]).join(' ');
+const bassBar = (c, alt) => { const r = ROOT[c]; return alt ? `${r}2 - ${r}3 ${r}2 . ${r}2 ${r}3 . ${r}2 - ${r}3 ${r}2 . ${r}2 ${r}3 .` : `${r}2 . ${r}3 . ${r}2 . ${r}3 . ${r}2 . ${r}3 . ${r}2 . ${r}3 .`; };
+const DR = {
+  a: 'k . h . s . h . k . k h s . h h',
+  b: 'k . h k s . h . k . h k s . s s',
+  c: 'k h h h s h h h k h k h s h h h',
+  f: 's s s s s . s s s s . s s s s s',
+  i: 'k . . . k . . . k . . . k . h h'
 };
-const SB_DR = {
-  rock: 'k . h . s . h k k . h . s . h h', drive: 'k h s h k k s h k h s h k k s h', fill: 'k . T1 T1 s . T2 T2 s . T3 T3 s s s s',
-  ice: 'k . h . s . h h k . h . s . h .', intro: 'k . . . k . . . k . . . k . s s', crash: 'c . h . s . h k k . h . s . h h'
-};
-const SB_SONGS = {};
-function sbScore(name, bpm, rows, o) {
-  const bars = rows.map(([c, lead, dk, harm]) => {
-    const b = { n: 16, ch: chordM(c), L: sbParse(lead), B: sbParse(SB_BASS[o.bass](c)), D: SB_DR[dk || o.drum].split(/\s+/), harm: harm || o.harm, duty: o.duty, lv: o.lv || .085, echo: o.echo };
-    return b;
-  });
-  const intro = (o.intro || []).map(([c, dk]) => ({ n: 16, ch: chordM(c), L: [], B: sbParse(SB_BASS[o.bass](c)), D: SB_DR[dk].split(/\s+/), harm: 'shim', duty: o.duty, lv: o.lv }));
-  SB_SONGS[name] = { bpm, bars: intro.concat(bars), loop: intro.length };
-}
-function sbParse(str) {
+const LEAD_A = [
+  'D5 - - - A4 - D5 - F5 - - - E5 - D5 -',
+  'C5 - - - Bb4 - - - A4 - Bb4 - C5 - - -',
+  'E5 - - - G5 - - - E5 - C5 - D5 - E5 -',
+  'C#5 - - - - - - - A4 - C#5 - E5 - - -',
+  'D5 - - - A4 - D5 - F5 - - - G5 - A5 -',
+  'Bb5 - - - A5 - G5 - F5 - - - D5 - - -',
+  'E5 - - - G5 - - - C6 - - - Bb5 - A5 -',
+  'A5 - - - - - - - G5 - F5 - E5 - C#5 -'
+];
+const LEAD_C = [
+  'G5 - D5 - Bb4 - D5 - G5 - A5 - Bb5 - A5 -',
+  'F5 - - - D5 - - - A4 - - - D5 - F5 -',
+  'F5 - D5 - Bb4 - D5 - F5 - G5 - F5 - D5 -',
+  'E5 - - - C#5 - - - E5 - - - A5 - - -',
+  'Bb5 - A5 - G5 - D5 - G5 - - - A5 - Bb5 -',
+  'A5 - - - F5 - D5 - F5 - A5 - D6 - - -',
+  'D6 - C6 - Bb5 - A5 - G5 - F5 - E5 - D5 -',
+  'C#5 - E5 - A5 - - - - - - - . . . .'
+];
+const CH_A = ['Dm', 'Bb', 'C', 'A', 'Dm', 'Bb', 'C', 'A'], CH_C = ['Gm', 'Dm', 'Bb', 'A', 'Gm', 'Dm', 'Bb', 'A'];
+const REST = '. . . . . . . . . . . . . . . .';
+const BARS = [];
+BARS.push({ lead: REST, harm: REST, bass: bassBar('Dm'), drum: DR.i });
+BARS.push({ lead: REST, harm: arpBar('Dm'), bass: bassBar('Dm'), drum: DR.f });
+const LOOP = BARS.length;
+CH_A.forEach((c, i) => BARS.push({ lead: LEAD_A[i], harm: arpBar(c), bass: bassBar(c), drum: i === 7 ? DR.b : DR.a, duty: .25 }));
+CH_A.forEach((c, i) => BARS.push({ lead: LEAD_A[i], harm: 'echo', bass: bassBar(c, true), drum: i === 7 ? DR.f : DR.b, duty: .5 }));
+CH_C.forEach((c, i) => BARS.push({ lead: LEAD_C[i], harm: arpBar(c), bass: bassBar(c, true), drum: i === 7 ? DR.f : DR.c, duty: .25 }));
+function parse(str) {
   const tk = str.split(/\s+/), ev = [];
-  for (let i = 0; i < tk.length; i++) { const t = tk[i]; if (t === '.' || t === '-') continue; let l = 1; while (tk[i + l] === '-') l++; ev.push({ s: i, m: /^\d+$/.test(t) ? +t : nm(t), l }); }
+  for (let i = 0; i < tk.length; i++) { const t = tk[i]; if (t === '.' || t === '-') continue; let l = 1; while (tk[i + l] === '-') l++; ev.push({ s: i, n: t, l }); }
   return ev;
 }
-sbScore('storm', 160, [
-  ['Em', 'E5 - - - B4 - E5 - G5 - - - F#5 - E5 -'], ['C', 'G5 - - - - - E5 - C5 - E5 - G5 - C6 -'], ['D', 'A5 - - - F#5 - - - D5 - - - F#5 - A5 -'], ['B7', 'B5 - - - - - - - A5 - G5 - F#5 - D#5 -', 'fill'],
-  ['Em', 'E5 - - - E6 - - - D6 - B5 - G5 - B5 -', 'crash'], ['C', 'C6 - - - - - B5 - C6 - E6 - - - C6 -'], ['D', 'D6 - - - A5 - - - F#5 - A5 - D6 - E6 -'], ['B7', 'F#6 - - - - - - - D#6 - - - B5 - - -', 'fill'],
-  ['G', 'D6 - - - B5 - - - G5 - - - B5 - D6 -', 'crash', 'arp'], ['D', 'F#6 - - - E6 - - - D6 - - - A5 - - -', 0, 'arp'], ['Am', 'C6 - - - B5 - A5 - E5 - - - A5 - C6 -', 0, 'arp'], ['C', 'E6 - - - - - D6 - C6 - - - G5 - - -', 0, 'arp'],
-  ['G', 'B5 - D6 - G6 - - - F#6 - - - D6 - B5 -', 'drive', 'arp'], ['D', 'A5 - D6 - F#6 - - - E6 - - - D6 - A5 -', 'drive', 'arp'], ['C', 'G5 - C6 - E6 - - - D6 - C6 - B5 - G5 -', 'drive', 'arp'], ['B7', 'F#5 - - - A5 - - - B5 - D#6 - F#6 - . .', 'fill', 'arp']
-], { bass: 'rock', drum: 'rock', harm: 'shim', duty: .25, intro: [['Em', 'intro'], ['Em', 'fill']] });
-sbScore('frost', 148, [
-  ['Bm', 'F#5 - - - B5 - - - D6 - C#6 - B5 - - -'], ['G', 'D6 - - - - - B5 - G5 - - - B5 - D6 -'], ['A', 'E6 - - - C#6 - - - A5 - - - C#6 - E6 -'], ['F#', 'F#6 - - - - - - - E6 - - - C#6 - A#5 -', 'fill'],
-  ['Bm', 'B5 - D6 - F#6 - - - E6 - D6 - C#6 - B5 -', 'crash'], ['G', 'B5 - - - G5 - - - D5 - G5 - B5 - D6 -'], ['Em', 'E6 - - - G6 - - - F#6 - E6 - D6 - C#6 -'], ['F#', 'C#6 - - - - - - - A#5 - - - . . . .', 'fill']
-], { bass: 'ice', drum: 'ice', harm: 'bells', duty: .125, lv: .08, echo: true, intro: [['Bm', 'intro']] });
-sbScore('boss', 178, [
-  ['Gm', 'G5 - D5 - G5 - Bb5 - A5 - G5 - F#5 - G5 -'], ['Gm', 'D6 - - - C6 - - - Bb5 - - - A5 - - -'], ['Eb', 'G5 - Bb5 - Eb6 - - - D6 - C6 - Bb5 - G5 -'], ['D', 'F#5 - A5 - D6 - - - C6 - A5 - F#5 - D5 -', 'fill'],
-  ['Gm', 'G6 - - - F#6 - - - F6 - - - E6 - - -', 'crash'], ['Gm', 'Eb6 - - - D6 - - - C#6 - - - D6 - - -'], ['Cm', 'C6 - Eb6 - G6 - - - F6 - Eb6 - D6 - C6 -'], ['D', 'D6 - - - A5 - - - F#5 - - - D5 - . .', 'fill']
-], { bass: 'pump', drum: 'drive', harm: 'shim', duty: .5, lv: .08, intro: [['Gm', 'fill']] });
-const mus = { on: false, name: '', song: null, bar: 0, next: 0, timer: 0 };
+BARS.forEach(b => { b.L = parse(b.lead); b.H = b.harm === 'echo' ? null : parse(b.harm); b.B = parse(b.bass); b.D = b.drum.split(/\s+/); });
+const mus = { on: false, bar: 0, next: 0, timer: 0 };
 let pendingMusic = false;
-function musPlay(name) {
-  if (!AC) { pendingMusic = name; return; }
-  if (mus.on && mus.name === name) return;
-  mus.song = SB_SONGS[name]; mus.name = name; mus.on = true; mus.bar = 0; mus.next = AC.currentTime + .06;
+function musStart() {
+  if (!AC) { pendingMusic = true; return; }
+  mus.on = true; mus.bar = 0; mus.next = AC.currentTime + .06;
   if (!mus.timer) mus.timer = setInterval(musTick, 30);
 }
-function musStart() { musPlay(typeof L !== 'undefined' && L && L.act === 2 ? 'frost' : 'storm'); }
-function musStop() { mus.on = false; mus.name = ''; pendingMusic = false; }
+function musStop() { mus.on = false; pendingMusic = false; }
 function musDuck(v) { if (MUS) MUS.gain.setTargetAtTime(v, AC.currentTime, .08); }
 function musTick() {
   if (!mus.on || !AC || AC.state !== 'running') return;
-  const S0 = mus.song, sd = 60 / S0.bpm / 4;
+  const sd = 60 / BPM / 4, bl = sd * 16;
   if (mus.next < AC.currentTime - .2) mus.next = AC.currentTime + .02;
-  while (mus.next < AC.currentTime + .25) { const b = S0.bars[mus.bar]; playBar(b, mus.next, sd); mus.next += sd * b.n; mus.bar++; if (mus.bar >= S0.bars.length) mus.bar = S0.loop; }
+  while (mus.next < AC.currentTime + .25) { playBar(BARS[mus.bar], mus.next, sd); mus.next += bl; mus.bar++; if (mus.bar >= BARS.length) mus.bar = LOOP; }
 }
 function playBar(b, t0, sd) {
-  let prev = 0;
-  for (const e of b.L) {
-    const f = mtof(e.m), t = t0 + e.s * sd, d = e.l * sd * .9;
-    const o = { decay: .8, vib: e.l >= 4, vibD: .016, vibR: 6.5, vibDelay: .12 };
-    if (e.l >= 4 && !prev) o.from = f * .89;
-    else if (prev && Math.abs(prev - f) / f < .3 && e.l >= 3) o.from = prev;
-    voice(MUS, b.duty || .25, f, t, d, b.lv || .085, o);
-    if (b.echo) voice(MUS, .125, f, t + 3 * sd, d * .8, (b.lv || .085) * .3, { decay: .7 });
-    prev = e.l >= 2 ? f : 0;
-  }
-  const ch = b.ch;
-  if (b.harm === 'shim') for (let i = 0; i < b.n; i++) { if (i % 8 === 7) continue; for (let k = 0; k < 3; k++) voice(MUS, .125, mtof(ch[k] + 12), t0 + i * sd + k * sd / 3, sd / 3 * .95, .02, { decay: 1 }); }
-  else if (b.harm === 'arp') for (let i = 0; i < b.n; i++) voice(MUS, .25, mtof(ch[i % 3] + 24 + (i % 6 > 2 ? 12 : 0) - 12), t0 + i * sd, sd * .8, .028, { env: 'pluck' });
-  else if (b.harm === 'bells') for (let i = 0; i < b.n; i += 2) voice(MUS, 'tri', mtof(ch[(i / 2) % 3] + 36), t0 + i * sd, sd * 3, .07, { env: 'pluck' });
-  for (const e of b.B) voice(MUS, 'tri', mtof(e.m), t0 + e.s * sd, Math.min(e.l, 3) * sd * .85, .27, { decay: 1 });
+  for (const e of b.L) voice(MUS, b.duty || .25, mtof(nm(e.n)), t0 + e.s * sd, e.l * sd * .92, .085, { decay: .75, vib: true });
+  if (b.H) for (const e of b.H) voice(MUS, .125, mtof(nm(e.n)), t0 + e.s * sd, sd * .85, .034, { env: 'pluck' });
+  else for (const e of b.L) voice(MUS, .125, mtof(nm(e.n)), t0 + (e.s + 3) * sd, e.l * sd * .9, .03, { decay: .7 });
+  for (const e of b.B) voice(MUS, 'tri', mtof(nm(e.n)), t0 + e.s * sd, Math.min(e.l, 2) * sd * .85, .26, { decay: 1 });
   b.D.forEach((d, i) => {
     const t = t0 + i * sd;
-    if (d === 'k') { voice(MUS, 'tri', 190, t, .08, .34, { f2: 48, env: 'pluck' }); nz(MUS, 'long', .14, null, t, .025, .06); }
-    else if (d === 's') { nz(MUS, 'long', .55, .32, t, .12, .15); voice(MUS, 'tri', 230, t, .05, .12, { f2: 140, env: 'pluck' }); }
-    else if (d === 'h') nz(MUS, 'short', 1.1, null, t, .025, .035);
-    else if (d === 'c') { nz(MUS, 'short', .9, .5, t, .5, .07); voice(MUS, 'tri', 190, t, .08, .34, { f2: 48, env: 'pluck' }); }
-    else if (d[0] === 'T') voice(MUS, 'tri', [0, 260, 200, 150][+d[1]], t, .1, .32, { f2: [0, 160, 120, 90][+d[1]], env: 'pluck' });
+    if (d === 'k') { voice(MUS, 'tri', 180, t, .09, .32, { f2: 50, env: 'pluck' }); nz(MUS, 'long', .12, null, t, .03, .06); }
+    else if (d === 's') nz(MUS, 'long', .45, .3, t, .13, .14);
+    else if (d === 'h') nz(MUS, 'short', 1, null, t, .03, .035);
   });
 }
 
@@ -1181,7 +1171,7 @@ function startRun() {
 }
 function startRoom() {
   loadLevel();
-  musStart();
+  if (!mus.on) musStart();
   wave = 0; waves = L.boss ? 1 : L.waves.length; nextWaveT = L.boss ? 2.4 : 1.4; waveActive = false; clearT = 0; winT = 0;
   if (room > 1) P.hp = Math.min(P.maxHp, P.hp + 1);
   Object.assign(P, { x: L.spawn, y: FLOOR, vx: 0, vy: 0, face: L.spawn < WW / 2 ? 1 : -1, state: 'free', zt: null, safeX: L.spawn, safeY: FLOOR, chain: 0 });
@@ -1239,7 +1229,7 @@ function spawnBoss() {
   enemies.push({ type: 'boss', kind, mark: 0, x: WW / 2, y: -40, vx: 0, vy: 0, face: -1, spawn: 0, flash: 0, stun: 0, hp, maxHp: hp, st: 'enter', st_t: 1.8, t: 0, exposed: 0, hx: WW / 2, dying: 0, summons: 0, last: '' });
   $('bossbar').hidden = false; updBossBar();
   if (kind === 'colossus') banner('Rime Colossus', 2.2, 'Heart of the glacier'); else banner('Storm Warden', 2.2, 'Guardian of the spire');
-  musPlay('boss'); musDuck(.7); shake = 6; if (TH.lightning) strike(1); else flash = .8;
+  musDuck(.7); shake = 6; if (TH.lightning) strike(1); else flash = .8;
 }
 function openUpgrades() {
   musDuck(.25);
