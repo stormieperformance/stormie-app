@@ -190,6 +190,12 @@ canvas{display:block;width:100%;height:100%;image-rendering:crisp-edges;image-re
 .tbtns{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-top:6px}
 .ending p{margin:0;font-size:clamp(13px,1.7cqw,17px);color:#d8d0ee;line-height:1.6}
 @media (prefers-reduced-motion:reduce){.title,.cta{animation:none}.banner{transition:opacity .2s}}
+.dock{position:absolute;left:12px;right:12px;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.dock[hidden]{display:none}
+.dock .dlg,.dock .toast,.dock .tip{position:relative;left:auto;right:auto;bottom:auto;top:auto;transform:none;width:auto;max-width:none}
+.dock .dlg{pointer-events:auto}
+.dock .dlg p{font-size:16px}
+.dock .toast,.dock .tip{font-size:12px}
 </style>
 </head>
 <body>
@@ -223,6 +229,8 @@ canvas{display:block;width:100%;height:100%;image-rendering:crisp-edges;image-re
       </div>
     </div>
   </div>
+
+  <div class="dock" id="dock" hidden></div>
 
   <div class="screen" id="sTitle">
     <h1 class="title witch"><small>Stormie Games presents</small>The Witch of<br>Moonlit Hollow</h1>
@@ -1796,6 +1804,9 @@ function layout() {
   if (mode === 'port') Object.assign(pad.style, { top: (y + h) + 'px', left: '0', right: '0', bottom: '0' }); else Object.assign(pad.style, { top: '0', left: '0', right: '0', bottom: '0' });
   const btns = $('btns'); btns.style.right = Math.max(ins.r, mode === 'land' ? 8 : 4) + 'px'; btns.style.bottom = (mode === 'port' ? ins.b + 28 : Math.max(ins.b, 6)) + 'px';
   btnBottom = parseFloat(btns.style.bottom) || 0; zone.style.left = ins.l + 'px';
+  const dock = $('dock'), home = mode === 'port' ? dock : stageEl;
+  for (const id of ['dlg', 'toast']) { const el = $(id); if (el && el.parentNode !== home) home.appendChild(el); }
+  dock.hidden = mode !== 'port'; if (mode === 'port') dock.style.top = (y + h + 10) + 'px';
   syncPad(); restStick();
 }
 addEventListener('resize', layout); addEventListener('orientationchange', () => setTimeout(layout, 120));

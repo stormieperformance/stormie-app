@@ -156,6 +156,12 @@ canvas{display:block;width:100%;height:100%;image-rendering:crisp-edges;image-re
 .btn.ghost{background:transparent;color:var(--cyan);box-shadow:inset 0 0 0 2px var(--cyan)}
 .btn.ghost:hover,.btn.ghost:focus-visible{background:rgba(143,247,255,.12)}
 @media (prefers-reduced-motion:reduce){.title,.cta{animation:none}.banner{transition:opacity .2s}}
+.dock{position:absolute;left:12px;right:12px;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.dock[hidden]{display:none}
+.dock .dlg,.dock .toast,.dock .tip{position:relative;left:auto;right:auto;bottom:auto;top:auto;transform:none;width:auto;max-width:none}
+.dock .dlg{pointer-events:auto}
+.dock .dlg p{font-size:16px}
+.dock .toast,.dock .tip{font-size:12px}
 </style>
 </head>
 <body>
@@ -194,6 +200,8 @@ canvas{display:block;width:100%;height:100%;image-rendering:crisp-edges;image-re
       </div>
     </div>
   </div>
+
+  <div class="dock" id="dock" hidden></div>
 
   <div class="screen" id="sTitle">
     <h1 class="title">STORMBOUND</h1>
@@ -1084,6 +1092,9 @@ function layout() {
   if (mode === 'port') btns.style.bottom = (ins.b + 28) + 'px';
   btnBottom = parseFloat(btns.style.bottom) || 0;
   zone.style.left = ins.l + 'px';
+  const dock = $('dock'), home = mode === 'port' ? dock : stageEl;
+  for (const id of ['tip']) { const el = $(id); if (el && el.parentNode !== home) home.appendChild(el); }
+  dock.hidden = mode !== 'port'; if (mode === 'port') dock.style.top = (y + h + 10) + 'px';
   syncPad(); restStick();
   $('cta').textContent = isTouch ? 'Tap to start' : 'Press any key to start';
 }
