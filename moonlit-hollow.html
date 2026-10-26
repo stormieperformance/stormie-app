@@ -478,12 +478,8 @@ const sfx = {
 
 /* ---------- music: an original Halloween score ---------- */
 const ARP = { Dm: ['D4', 'F4', 'A4', 'D5'], Gm: ['G3', 'Bb3', 'D4', 'G4'], Bb: ['Bb3', 'D4', 'F4', 'Bb4'], A7: ['A3', 'C#4', 'E4', 'G4'], Edim: ['E3', 'G3', 'Bb3', 'E4'],
-  Em: ['E3', 'G3', 'B3', 'E4'], Am: ['A3', 'C4', 'E4', 'A4'], B7: ['B2', 'D#3', 'F#3', 'A3'], F: ['F3', 'A3', 'C4', 'F4'], C: ['C4', 'E4', 'G4', 'C5'], G: ['G3', 'B3', 'D4', 'G4'],
-  Ab: ['Ab3', 'C4', 'Eb4', 'Ab4'], E7: ['E3', 'G#3', 'B3', 'D4'], G7: ['G3', 'B3', 'D4', 'F4'], Fm: ['F3', 'Ab3', 'C4', 'F4'] };
-const ROOT = { Dm: 'D', Gm: 'G', Bb: 'Bb', A7: 'A', Edim: 'E', Em: 'E', Am: 'A', B7: 'B', F: 'F', C: 'C', G: 'G', Ab: 'Ab', E7: 'E', G7: 'G', Fm: 'F' };
-const FIFTH = { C: 'G', Ab: 'Eb', F: 'C', G: 'D', E7: 'B', Am: 'E', G7: 'D', Fm: 'C', Dm: 'A' };
-const oomPah = c => { const r = ROOT[c], f = FIFTH[c]; return `${r}2 . . . ${r}3 . . . ${f}2 . . . ${r}3 . . .`; };
-const chime = c => Array.from({ length: 16 }, (_, i) => i % 4 === 2 ? ARP[c][[2, 3, 1, 3][(i - 2) / 4]].replace(/\d/, d => +d + 1) : '.').join(' ');
+  Em: ['E3', 'G3', 'B3', 'E4'], Am: ['A3', 'C4', 'E4', 'A4'], B7: ['B2', 'D#3', 'F#3', 'A3'], F: ['F3', 'A3', 'C4', 'F4'], C: ['C4', 'E4', 'G4', 'C5'], G: ['G3', 'B3', 'D4', 'G4'] };
+const ROOT = { Dm: 'D', Gm: 'G', Bb: 'Bb', A7: 'A', Edim: 'E', Em: 'E', Am: 'A', B7: 'B', F: 'F', C: 'C', G: 'G' };
 const REST = '. . . . . . . . . . . . . . . .';
 const arp16 = c => Array.from({ length: 16 }, (_, i) => ARP[c][i % 4]).join(' ');
 const arp8 = c => Array.from({ length: 16 }, (_, i) => i % 2 ? '.' : ARP[c][[0, 1, 2, 3, 2, 1, 0, 1][i / 2]]).join(' ');
@@ -494,8 +490,6 @@ const DR = {
   heart: 'k . k . . . . . k . k . . . . .',
   heart2: 'k . k . . . h . k . k . . . h .',
   gallop: 'k . h k s . h k k . h k s . h h',
-  bounce: 'k . . h s . . h k . k h s . . h',
-  bounce2: 'k . h h s . . h k . k h s . h h',
   c: 'k h h h s h h h k h k h s h h h',
   f: 's s s s s . s s s s . s s s s s',
   toll: 'k . . . . . . . . . . . . . . .',
@@ -527,25 +521,14 @@ const SONGS = {};
   CH.forEach((c, i) => body.push({ lead: LA[i], harm: 'echo', bass: BS[i], drum: DR.heart2, duty: .25, vibD: .03, vibR: 6.2 }));
   SONGS.hollow = mkSong(96, [{ harm: boxArp('Dm'), bass: BS[0], drum: DR.toll }, { harm: boxArp('A7'), bass: BS[3], drum: DR.heart }], body);
 }
-{ /* Trick or Treat: a bouncy, swinging candy-bag tune for the broom ride over the hollow */
-  const CC = ['C', 'Ab', 'F', 'G', 'C', 'E7', 'Am', 'G7'], CB = ['F', 'Fm', 'C', 'G7'];
-  const LC = ['E5 - - G5 C6 - - G5 E5 - - G5 C6 - - .', 'Eb5 - - Ab5 C6 - - Ab5 Eb5 - - C5 Eb5 - - .', 'F5 - - A5 C6 - - A5 G5 - - F5 E5 - - D5', 'D5 - - B4 G4 - - B4 D5 - - F5 G5 - - .',
-    'C6 - - B5 C6 - - G5 E5 - - G5 C6 - - E6', 'D6 - - B5 G#5 - - B5 E5 - - G#5 B5 - - .', 'C6 - - A5 E5 - - A5 C6 - - E6 D6 - - C6', 'B5 - - G5 F5 - - D5 B4 - - D5 G5 - - .'];
-  const LB = ['A5 - - C6 F6 - - C6 A5 - - F5 A5 - - .', 'Ab5 - - C6 F6 - - C6 Ab5 - - F5 Ab5 - - .', 'G5 - - E5 C5 - - E5 G5 - - C6 E6 - - .', 'F5 - - D5 B4 - - D5 F5 - - G5 B5 - - D6'];
+{ /* Broomstick Gallop: a frantic harmonic-minor chase */
+  const CF = ['Dm', 'Gm', 'A7', 'Dm', 'Bb', 'Edim', 'A7', 'Dm'];
+  const LF = ['D5 - F5 - A5 - G5 F5 E5 - D5 - C#5 - D5 -', 'Bb5 - A5 G5 F5 - G5 - D5 - - - Bb4 - D5 -', 'C#5 - E5 - G5 - Bb5 - A5 - G5 - E5 - C#5 -', 'D5 - - - A4 - D5 - F5 - E5 - D5 - - -',
+    'F5 - Bb5 - D6 - C6 Bb5 A5 - G5 - F5 - - -', 'G5 - Bb5 - E6 - D6 C#6 Bb5 - G5 - E5 - - -', 'A5 G5 F5 E5 D5 C#5 Bb4 A4 G4 - A4 - C#5 - E5 -', 'D5 - - - - - - - D6 - - - . . . .'];
   const body = [];
-  CC.forEach((c, i) => body.push({ lead: LC[i], harm: chime(c), bass: oomPah(c), drum: DR.bounce, duty: .25, pluck: true }));
-  CB.forEach((c, i) => body.push({ lead: LB[i], harm: arp8(c), bass: oomPah(c), drum: DR.bounce, duty: .125, pluck: true }));
-  CC.forEach((c, i) => body.push({ lead: LC[i], harm: chime(c), bass: oomPah(c), drum: i === 7 ? DR.f : DR.bounce2, duty: .5, pluck: true }));
-  SONGS.flight = mkSong(138, [{ harm: chime('C'), bass: oomPah('C'), drum: DR.bounce }, { harm: chime('G7'), bass: oomPah('G7'), drum: DR.f }], body);
-}
-{ /* Pumpkin Patrol: the same cheeky spirit, now in A minor and a little faster, for the blood moon */
-  const CM = ['Am', 'F', 'Dm', 'E7', 'Am', 'F', 'Dm', 'E7'];
-  const LM = ['A5 - - C6 E6 - - C6 A5 - - E5 A5 - - .', 'A5 - - C6 F6 - - C6 A5 - - F5 A5 - - .', 'F5 - - A5 D6 - - A5 F5 - - D5 F5 - - .', 'E5 - - G#5 B5 - - D6 B5 - - G#5 E5 - - .',
-    'C6 - - B5 A5 - - E5 A5 - - C6 E6 - - D6', 'C6 - - A5 F5 - - A5 C6 - - F6 E6 - - C6', 'D6 - - C6 A5 - - F5 D5 - - F5 A5 - - G#5', 'A5 - - - E5 - - - A4 - - - . . . .'];
-  const body = [];
-  CM.forEach((c, i) => body.push({ lead: LM[i], harm: chime(c), bass: oomPah(c), drum: DR.bounce2, duty: .25, pluck: true }));
-  CM.forEach((c, i) => body.push({ lead: LM[i], harm: arp16(c), bass: oomPah(c), drum: i === 7 ? DR.f : DR.bounce2, duty: .5, pluck: true }));
-  SONGS.patrol = mkSong(150, [{ harm: chime('Am'), bass: oomPah('Am'), drum: DR.f }], body);
+  CF.forEach((c, i) => body.push({ lead: LF[i], harm: arp16(c), bass: bassRun(c), drum: i === 7 ? DR.f : DR.gallop, duty: .25 }));
+  CF.forEach((c, i) => body.push({ lead: LF[i], harm: 'echo', bass: bassRun(c), drum: i === 7 ? DR.f : DR.c, duty: .5, vibD: .018 }));
+  SONGS.flight = mkSong(160, [{ harm: arp16('Dm'), bass: bassRun('Dm'), drum: DR.f }], body);
 }
 { /* The Tower: a theremin wobbling over a bass that sinks one semitone at a time */
   const CT = ['Em', 'Em', 'Am', 'B7', 'Em', 'F', 'B7', 'Em'];
@@ -1069,7 +1052,7 @@ const SC = {
     lights() { const L = G.candles.map(i => [CANDLES[i][0], CANDLES[i][1] - 10, 52, .85]); L.push([40, 186, 40, ready() ? .8 : .35]); SPIRITS.forEach((s, i) => { if (spiritSeen(i) && !G.spirits.includes(s.name)) L.push([s.x, s.y, 40, .7]); }); return L; }
   },
   flight: { kind: 'fly', blood: false, len: 44, song: 'flight' },
-  blood: { kind: 'fly', blood: true, len: 50, song: 'patrol' },
+  blood: { kind: 'fly', blood: true, len: 50, song: 'boss' },
   tower1: {
     kind: 'side', ww: 520, dark: .55, song: 'tower', spawn: 30, tower: 1,
     plats: () => [{ x: 64, y: 150, w: 60 }, { x: 170, y: 122, w: 62 }, { x: 300, y: 150, w: 60 }, { x: 396, y: 120, w: 52 }],
