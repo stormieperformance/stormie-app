@@ -402,62 +402,6 @@
       gap: 14px;
       align-items: center;
     }
-    .quick-play { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
-    .quick-label { font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(232,228,220,0.5); margin-right: 4px; }
-    .quick-play a {
-      display: inline-flex; align-items: center; min-height: 44px; padding: 0 16px;
-      font-size: 12px; font-weight: 500; letter-spacing: 0.08em; color: var(--text); text-decoration: none;
-      border: 1px solid rgba(232,228,220,0.22); background: rgba(12,12,11,0.35);
-      transition: border-color 0.25s ease, color 0.25s ease, background 0.25s ease;
-    }
-    .quick-play a:active { border-color: var(--gold); background: rgba(201,169,110,0.14); }
-    @media (hover: hover) { .quick-play a:hover { border-color: var(--gold); color: #fff8ec; } }
-    .trust-badges {
-      display: flex;
-      align-items: center;
-      gap: 10px 18px;
-      flex-wrap: wrap;
-      justify-content: flex-start;
-    }
-    .trust-badges span {
-      font-size: 10px;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: var(--muted);
-    }
-    .trust-badges span::before {
-      content: '';
-      display: inline-block;
-      width: 3px;
-      height: 3px;
-      border-radius: 50%;
-      background: var(--gold);
-      margin-right: 8px;
-      vertical-align: middle;
-    }
-    .scroll-hint {
-      position: absolute;
-      bottom: 2.5rem;
-      right: 48px;
-      z-index: 2;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      opacity: 0;
-      animation: fadeContent 0.8s ease 3s forwards;
-    }
-    .scroll-hint span {
-      font-size: 9px;
-      letter-spacing: 0.22em;
-      text-transform: uppercase;
-      color: var(--muted2);
-    }
-    .scroll-line {
-      width: 40px;
-      height: 1px;
-      background: linear-gradient(to right, transparent, var(--gold));
-      animation: scrollPulse 2.5s ease-in-out 3.2s infinite;
-    }
     @keyframes scrollPulse {
       0%, 100% { opacity: 0.2; }
       50%       { opacity: 0.7; }
@@ -625,7 +569,7 @@
         linear-gradient(180deg, #0c0c0b 0%, rgba(12,12,11,0.52) 18%, rgba(12,12,11,0.52) 80%, #0c0c0b 100%),
         url('./games-bg.webp') center 55% / cover no-repeat;
     }
-    .gateway { max-width: 1080px; margin: 0 auto; padding: 0 48px 72px; scroll-margin-top: 72px; }
+    .gateway { max-width: 1080px; margin: 0 auto; padding: 56px 48px 72px; scroll-margin-top: 72px; }
     .gateway-label {
       display: inline-block;
       font-family: var(--sans);
@@ -906,11 +850,6 @@
       .soon { max-width: 520px; margin-left: auto; margin-right: auto; }
     }
     @media (max-width: 480px) {
-      .quick-label { flex: 1 1 100%; margin: 0 0 2px; }
-      .quick-play { gap: 8px; }
-      .quick-play a { flex: 1 1 auto; justify-content: center; padding: 0 12px; }
-      .trust-badges { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 14px; width: 100%; }
-      .trust-badges span { font-size: 10px; letter-spacing: 0.1em; }
     }
     @media (max-width: 768px) {
       .page { padding: 0 24px; }
@@ -920,10 +859,9 @@
       .hero-actions { gap: 22px; }
       .hero-buttons { width: 100%; }
       .hero-buttons .enter-btn { flex: 1 1 100%; min-height: 52px; }
-      .scroll-hint { display: none; }
       .hud-frame { margin-left: -24px; margin-right: -24px; }
       .hud-frame-inner { padding: 15px 24px; }
-      .gateway { padding: 8px 24px 58px; scroll-margin-top: 60px; }
+      .gateway { padding: 36px 24px 58px; scroll-margin-top: 60px; }
       .gateway-wrap { margin-left: -24px; margin-right: -24px; }
       .gc-screen { border-width: 10px; }
       footer { padding: 36px 24px 30px; }
@@ -947,7 +885,6 @@
       body { opacity: 1; transform: none; transition: none; }
       .hero-video { opacity: 1 !important; transition: none !important; }
       .hero-label { clip-path: none !important; }
-      .quick-play a, .enter-btn { transition: none !important; }
     }
   </style>
 </head>
@@ -1005,35 +942,13 @@
               <a class="enter-btn" href="#gateway"><span>Play a game</span></a>
               <button class="enter-btn enter-btn--ghost" id="surpriseBtn" type="button"><span>Surprise me</span></button>
             </div>
-            <nav class="quick-play" aria-label="Jump straight into a game">
-              <span class="quick-label">Jump straight in</span>
-              <a href="stormbound.html">Stormbound</a>
-              <a href="https://game.stormie.app">Storm//Duel</a>
-              <a href="tiny-kiwi.html">Tiny Kiwi</a>
-              <a href="jelly-riot.html">Jelly Riot</a>
-            </nav>
-            <div class="trust-badges">
-              <span>5 minutes</span>
-              <span>Play instantly</span>
-              <span>No download</span>
-              <span>Free</span>
-            </div>
           </div>
         </div>
-      </div>
-
-      <div class="scroll-hint">
-        <span>Scroll</span>
-        <div class="scroll-line"></div>
       </div>
     </section>
 
     <div class="gateway-wrap">
     <section class="gateway" id="gateway">
-      <p class="gateway-label">Games</p>
-      <h2 class="gateway-title">PICK ONE. PRESS PLAY.</h2>
-      <p class="gateway-note">Built for a five-minute break. Playtimes are approximate.</p>
-
       <ul class="games-grid" id="gamesGrid">
       <li class="game-card" data-playable>
         <a class="gc-screen" href="stormbound.html" data-name="Stormbound" aria-hidden="true" tabindex="-1">
@@ -1043,7 +958,7 @@
         <div class="gc-body">
           <p class="gc-genre">Action · Roguelite</p>
           <h3 class="gc-name">Stormbound</h3>
-          <p class="gc-desc">Five storm-wrecked rooms, one Warden. Hook the lightning and chain kills in the air.</p>
+          <p class="gc-desc">Two worlds, two titans. Hook the lightning, mark your prey and Overload it.</p>
           <ul class="gc-meta">
             <li class="gc-time">3 to 5 min</li>
             <li>Mobile + desktop</li>
