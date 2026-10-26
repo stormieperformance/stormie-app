@@ -1,347 +1,218 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>Jelly Riot - Stormie Games</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#0b0820">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Jelly Riot | Stormie Games</title>
+<meta name="description" content="Jelly Riot: a pixel party brawl. Four jellies, one arena, simultaneous jumps. Grab lasers, nukes and handbags and be the last jelly wobbling. Free in your browser.">
+<meta property="og:title" content="Jelly Riot | Stormie Games">
+<meta property="og:image" content="https://stormie.app/jelly-riot-preview.jpg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600;700&family=Silkscreen&display=swap" rel="stylesheet">
 <style>
-  :root{
-    --gold:#e8b23d;
-    --gold-dim:#8a6a24;
-    --bg:#0b0d12;
-    --panel:#12161f;
-    --panel-2:#171c27;
-    --text:#e9e6da;
-    --text-dim:#8b93a3;
-    --p1:#3ad6d9;
-    --p2:#ff4e88;
-    --p3:#ff9d3d;
-    --p4:#8dff6b;
-    --danger:#ff4d4d;
-    --heal:#5ee08a;
-  }
-  *{box-sizing:border-box;}
-  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;overflow-x:hidden;overscroll-behavior:none;}
-  html{-webkit-text-size-adjust:100%;text-size-adjust:100%;overflow-x:hidden;}
-  body{
-    min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;align-items:center;
-    padding:24px 14px calc(50px + env(safe-area-inset-bottom,0px));
-    padding-top:calc(24px + env(safe-area-inset-top,0px));
-    padding-left:calc(14px + env(safe-area-inset-left,0px));
-    padding-right:calc(14px + env(safe-area-inset-right,0px));
-    position:relative;
-    background:
-      radial-gradient(ellipse 900px 600px at 20% -10%, #1c3a2e 0%, transparent 60%),
-      radial-gradient(ellipse 900px 600px at 85% 10%, #3a1c3e 0%, transparent 55%),
-      var(--bg);
-    overflow-x:hidden;
-    overflow-y:visible; /* content taller than the viewport must scroll, never clip */
-  }
-  .blob-bg{position:fixed;border-radius:50%;filter:blur(60px);opacity:.35;z-index:0;pointer-events:none;animation:drift 14s ease-in-out infinite;}
-  .blob-bg.b1{width:340px;height:340px;background:#3ad6d9;top:-80px;left:-100px;animation-delay:0s;}
-  .blob-bg.b2{width:280px;height:280px;background:#f2d33c;bottom:-60px;right:-60px;animation-delay:3s;}
-  .blob-bg.b3{width:220px;height:220px;background:#a259ff;top:40%;right:8%;animation-delay:6s;}
-  @keyframes drift{
-    0%,100%{transform:translate(0,0) scale(1);}
-    50%{transform:translate(20px,-24px) scale(1.08);}
-  }
-  .stage, h1, .subtitle, footer, .marquee{position:relative;z-index:1;}
+:root{
+  --night:#0b0820;--deck:#120d2e;--dusk:#2e2266;--ink:#f3efff;--muted:#a79ed8;
+  --gold:#e8b23d;--gold-dim:#8a6a24;--cyan:#7ae8ff;--pink:#ff6fa8;--danger:#ff4d4d;--heal:#5ee08a;
+  --display:"Pixelify Sans","Courier New",monospace;--label:"Silkscreen","Courier New",monospace;
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;margin:0;background:var(--night);color:var(--ink);overflow:hidden;overscroll-behavior:none}
+body{font-family:var(--display);-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+button{font:inherit;color:inherit;touch-action:manipulation}
+.app{position:fixed;inset:0;display:grid;gap:8px;
+  padding:max(8px,env(safe-area-inset-top)) max(10px,env(safe-area-inset-right)) max(8px,env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-left));
+  background:radial-gradient(ellipse 120% 60% at 50% 0%,#24185a 0%,transparent 60%),radial-gradient(ellipse 80% 50% at 50% 100%,#3a1240 0%,transparent 70%),var(--night)}
+.app::before{content:"";position:absolute;inset:0;pointer-events:none;opacity:.35;
+  background-image:linear-gradient(rgba(255,255,255,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.04) 1px,transparent 1px);background-size:16px 16px}
+.app[data-mode=port]{grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto minmax(0,1fr) auto auto}
+.app[data-mode=wide]{grid-template-columns:minmax(0,1fr) minmax(250px,320px);grid-template-rows:auto minmax(0,1fr) auto auto;column-gap:16px}
+.app[data-mode=wide] .top{grid-column:1/-1}
+.app[data-mode=wide] .board-wrap{grid-row:2/5;grid-column:1}
+.app[data-mode=wide] .hud{grid-column:2;grid-row:2;align-self:start;align-content:start;grid-template-columns:1fr;overflow:hidden;min-height:0}
+.app[data-mode=wide] .status{grid-column:2;grid-row:3}
+.app[data-mode=wide] .log-section{grid-column:2;grid-row:4}
+.app[data-mode=wide] .log-section .log{max-height:30vh}
+.top{position:relative;display:flex;align-items:center;gap:8px;min-height:36px}
+.logo{font-family:var(--display);font-weight:700;font-size:22px;letter-spacing:.04em;color:#fff;text-decoration:none;
+  text-shadow:2px 0 0 var(--pink),-2px 0 0 var(--cyan);margin-right:auto;white-space:nowrap}
+.tb{font-family:var(--label);font-size:10px;letter-spacing:.08em;color:var(--muted);background:rgba(18,13,46,.7);border:1px solid #3a2e7a;padding:8px 9px;min-height:34px;cursor:pointer}
+.tb:hover,.tb:focus-visible{color:var(--cyan);border-color:var(--cyan);outline:none}
+.tb:disabled{opacity:.35;cursor:default}
+.tb.off{color:#5a5290;text-decoration:line-through}
+.app[data-mode=port] .logo{font-size:19px}
+.app[data-mode=port] .tb{font-size:9px;padding:7px 7px;letter-spacing:.04em}
+.app[data-mode=port] .top{gap:5px}
+.hud{position:relative;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.jc{position:relative;display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto auto;column-gap:6px;row-gap:3px;align-items:center;padding:5px 6px;
+  background:linear-gradient(180deg,rgba(30,22,72,.92),rgba(14,10,36,.92));box-shadow:inset 0 0 0 1px #33287a;
+  clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px);transition:opacity .4s}
+.jc.me{box-shadow:inset 0 0 0 2px var(--gold),inset 0 0 18px rgba(232,178,61,.18)}
+.jc.dead{opacity:.35;filter:grayscale(.8)}
+.jp{grid-row:1/3;width:36px;height:33px;image-rendering:pixelated}
+.jt{display:flex;justify-content:space-between;gap:4px;min-width:0;font-family:var(--label);font-size:10px;letter-spacing:.04em}
+.jt b{font-weight:400;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.jt span{color:var(--c);font-variant-numeric:tabular-nums}
+.hp{display:grid;grid-template-columns:repeat(10,1fr);gap:1px;height:6px}
+.hp i{background:#231a4a}
+.hp i.on{background:var(--c);box-shadow:inset 0 -2px 0 rgba(0,0,0,.25)}
+.bd{grid-column:1/-1;display:flex;gap:2px;min-height:14px}
+.bd img{width:14px;height:14px;image-rendering:pixelated}
+.app[data-mode=port] .hud{grid-template-columns:repeat(2,minmax(0,1fr))}
+.bd:empty{display:none}
+@media (max-height:520px){.app[data-mode=wide] .hud{grid-template-columns:repeat(2,minmax(0,1fr))}.app[data-mode=wide] .jp{width:24px;height:22px}.app[data-mode=wide] .top{min-height:30px}.app[data-mode=wide] .logo{font-size:18px}}
+@media (max-height:700px){.app[data-mode=port] .hud{grid-template-columns:repeat(4,minmax(0,1fr))}.app[data-mode=port] .jt span{display:none}.app[data-mode=port] .jp{width:24px;height:22px}.app[data-mode=port] .jt{font-size:9px}}
+.board-wrap{position:relative;min-height:0;display:flex;align-items:center;justify-content:center}
+#board{display:block;width:120px;height:120px;image-rendering:pixelated;image-rendering:crisp-edges;touch-action:none;cursor:pointer;
+  box-shadow:0 0 0 3px #05040f,0 0 0 5px #3a2e7a,0 18px 40px -12px #000,0 0 60px -10px rgba(122,232,255,.25)}
+.status{position:relative;display:flex;flex-direction:column;gap:6px}
+.banner{min-height:2.6em;display:flex;align-items:center;justify-content:center;text-align:center;font-family:var(--label);font-size:12px;letter-spacing:.05em;line-height:1.35;color:var(--gold);text-wrap:balance}
+.timer-track{height:6px;background:#1e1640;box-shadow:inset 0 0 0 1px #33287a}
+.timer-fill{height:100%;width:100%;background:var(--gold)}
+.timer-fill.timer-pulse{animation:tp .5s steps(2) infinite}
+@keyframes tp{50%{opacity:.4}}
+.log-section{position:relative}
+.log-toggle{display:flex;align-items:center;justify-content:space-between;width:100%;font-family:var(--label);font-size:10px;letter-spacing:.1em;color:var(--muted);
+  background:rgba(18,13,46,.7);border:1px solid #3a2e7a;padding:8px 10px;min-height:34px;cursor:pointer}
+.log{font-family:var(--label);font-size:10px;line-height:1.55;color:var(--muted);overflow-y:auto;max-height:24vh;padding:6px 4px 2px;letter-spacing:.02em}
+.log-section.collapsed .log{display:none}
+.log div{border-left:2px solid #33287a;padding-left:7px;margin-bottom:4px}
+.log div.hit{border-color:var(--danger);color:#ffb3b3}
+.log div.heal{border-color:var(--heal);color:#b8ffd0}
+.log div.win{border-color:var(--gold);color:var(--gold)}
+.log div.elim{border-color:var(--danger);color:#fff;background:rgba(255,77,77,.14)}
+.app[data-mode=port] .log-section:not(.collapsed) .log{position:absolute;left:0;right:0;bottom:100%;max-height:40vh;background:rgba(10,7,28,.96);box-shadow:inset 0 0 0 1px #3a2e7a;padding:10px;z-index:5}
 
-  .marquee{
-    width:100%;max-width:1040px;
-    background:linear-gradient(90deg, transparent, var(--gold-dim), transparent);
-    height:2px;margin-bottom:18px;opacity:.7;
-  }
+/* screens */
+.overlay,.screen{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center;z-index:50;overflow-y:auto;
+  padding:max(18px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(18px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left));
+  background:radial-gradient(ellipse 80% 60% at 50% 45%,rgba(11,8,32,.55),rgba(11,8,32,.94))}
+.overlay.show{display:flex}
+.card{width:min(100%,460px);margin:auto 0;display:flex;flex-direction:column;align-items:center;gap:12px;padding:20px 18px;
+  background:linear-gradient(180deg,rgba(30,22,72,.97),rgba(12,9,32,.97));box-shadow:inset 0 0 0 2px #3d3480;
+  clip-path:polygon(12px 0,100% 0,100% calc(100% - 12px),calc(100% - 12px) 100%,0 100%,0 12px)}
+.title{margin:0;font-family:var(--display);font-weight:700;font-size:clamp(44px,13vw,76px);line-height:.9;color:#fff;letter-spacing:.02em;
+  text-shadow:.05em 0 0 var(--pink),-.05em 0 0 var(--cyan),0 0 .4em rgba(122,232,255,.4);animation:wob 3s ease-in-out infinite}
+.title small{display:block;font-family:var(--label);font-size:11px;letter-spacing:.2em;color:var(--gold);text-shadow:none;margin-bottom:.6em;animation:none}
+@keyframes wob{0%,100%{transform:scale(1,1)}25%{transform:scale(1.03,.97)}50%{transform:scale(.98,1.02)}75%{transform:scale(1.02,.98)}}
+.tag{margin:0;color:var(--muted);font-size:15px;max-width:30ch;text-wrap:balance}
+.rules{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;text-align:left;font-size:14px;line-height:1.4;color:#d4cff2}
+.rules li{display:grid;grid-template-columns:28px 1fr;gap:10px;align-items:start}
+.rules img{width:28px;height:28px;image-rendering:pixelated}
+.rules b{color:var(--gold);font-weight:600}
+.field{width:100%;display:flex;flex-direction:column;gap:6px;text-align:left}
+.field label{font-family:var(--label);font-size:10px;letter-spacing:.14em;color:var(--muted)}
+.field input{width:100%;font-family:var(--display);font-size:16px;color:var(--ink);background:#0e0a28;border:1px solid #3a2e7a;padding:10px 12px;outline:none;-webkit-user-select:text;user-select:text}
+.field input:focus{border-color:var(--cyan)}
+.diff{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.diff-btn{font-family:var(--label);font-size:11px;letter-spacing:.08em;color:var(--muted);background:#0e0a28;border:1px solid #3a2e7a;padding:10px 4px;cursor:pointer;min-height:40px}
+.diff-btn.is-active{background:var(--gold);color:#1a1206;border-color:var(--gold)}
+.btn{font-family:var(--label);font-size:13px;letter-spacing:.14em;color:#0b0820;background:var(--cyan);border:none;padding:15px 26px;cursor:pointer;min-height:48px;
+  clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px)}
+.btn:hover,.btn:focus-visible{background:#fff;outline:none}
+.btn.ghost{background:transparent;color:var(--cyan);box-shadow:inset 0 0 0 2px var(--cyan)}
+.btns{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+.eyebrow{font-family:var(--label);font-size:11px;letter-spacing:.2em;color:var(--gold)}
+.h2{margin:0;font-family:var(--display);font-weight:700;font-size:clamp(34px,9vw,58px);line-height:1;color:#fff;text-shadow:.04em 0 0 var(--pink),-.04em 0 0 var(--cyan)}
+.endtext{margin:0;color:#d4cff2;font-size:15px;max-width:32ch}
+.home{font-family:var(--label);font-size:10px;letter-spacing:.14em;color:var(--muted);text-decoration:none;padding:8px}
+.home:hover{color:var(--cyan)}
+.orient-t{display:none;align-items:center;justify-content:center;gap:10px;font-family:var(--label);font-size:10px;letter-spacing:.08em;color:var(--muted);text-align:left}
+@media (pointer:coarse){.orient-t{display:flex}}
+.orient-t svg,.orient svg{width:22px;height:22px;flex:none;color:var(--cyan);animation:rotp 2.6s ease-in-out infinite}
+@keyframes rotp{0%,25%{transform:rotate(0)}45%,75%{transform:rotate(-90deg)}95%,100%{transform:rotate(0)}}
+.orient{position:fixed;left:50%;top:45%;transform:translate(-50%,-50%) scale(.96);display:flex;align-items:center;gap:10px;width:max-content;max-width:86vw;font-family:var(--label);font-size:11px;letter-spacing:.05em;line-height:1.4;color:var(--ink);
+  background:rgba(7,5,26,.9);box-shadow:inset 0 0 0 1px var(--cyan),0 10px 30px rgba(0,0,0,.5);padding:.8em 1.1em;pointer-events:none;opacity:0;transition:opacity .35s,transform .35s;z-index:40}
+.orient.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
 
-  h1{
-    font-size:clamp(28px,5vw,44px);
-    letter-spacing:2px;
-    margin:0 0 4px;
-    text-transform:uppercase;
-    background:linear-gradient(180deg,#fff6da,var(--gold));
-    -webkit-background-clip:text;background-clip:text;color:transparent;
-    text-shadow:0 2px 18px rgba(232,178,61,.25);
-    clip-path:polygon(0 0,98% 0,100% 20%,100% 100%,2% 100%,0 80%);
-    padding:4px 10px;
-    display:inline-block;
-    animation:titleWobble 3.2s ease-in-out infinite;
-  }
-  @keyframes titleWobble{
-    0%,100%{transform:scale(1) rotate(0deg);}
-    25%{transform:scale(1.015) rotate(-0.6deg);}
-    75%{transform:scale(0.99) rotate(0.6deg);}
-  }
-  .subtitle{color:var(--text-dim);font-size:13px;letter-spacing:1px;text-transform:uppercase;margin-bottom:22px;}
-
-  .stage{
-    display:flex;gap:20px;flex-wrap:wrap;justify-content:center;width:100%;max-width:1040px;
-  }
-
-  .hud-card{
-    background:var(--panel);
-    border:1px solid #26304099;
-    clip-path:polygon(0 10px,10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%);
-    position:relative;
-  }
-  .hud-card::before{
-    content:"";position:absolute;top:0;left:0;width:16px;height:16px;
-    border-top:2px solid var(--gold);border-left:2px solid var(--gold);
-  }
-  .hud-card::after{
-    content:"";position:absolute;bottom:0;right:0;width:16px;height:16px;
-    border-bottom:2px solid var(--gold);border-right:2px solid var(--gold);
-  }
-
-  .board-wrap{padding:16px;position:relative;max-width:100%;}
-  .board-wrap canvas{
-    border-radius:10px;
-    box-shadow:
-      0 0 0 6px #0c0f16,
-      0 0 0 8px rgba(232,178,61,0.25),
-      inset 0 2px 10px rgba(0,0,0,0.5),
-      0 10px 24px rgba(0,0,0,0.45);
-  }
-  #board{
-    display:block;background:radial-gradient(circle at 50% 30%,#1c2b22,#0d1118 75%);border-radius:8px;
-    width:100%;max-width:486px;height:auto;aspect-ratio:1/1;
-    touch-action:none; /* the board owns its own gestures — no scroll/zoom/pull-to-refresh while dragging on it */
-    -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;
-  }
-
-  .side{
-    width:260px;padding:16px;display:flex;flex-direction:column;gap:14px;
-  }
-  .side h2{
-    font-size:12px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);
-    margin:0 0 8px;border-bottom:1px solid #2a3242;padding-bottom:6px;
-  }
-
-  .jelly-row{display:flex;align-items:center;gap:8px;margin-bottom:10px;opacity:1;transition:opacity .4s;padding:5px 6px;border-radius:4px;}
-  .jelly-row.is-player{background:rgba(232,178,61,0.1);box-shadow:inset 0 0 0 1px rgba(232,178,61,0.4);}
-  .jelly-row.dead{opacity:.3;}
-  .jelly-dot{width:14px;height:14px;border-radius:50%;flex:none;box-shadow:0 0 8px currentColor;}
-  .jelly-info{flex:1;min-width:0;}
-  .jelly-name{font-size:12px;font-weight:600;display:flex;justify-content:space-between;}
-  .hp-track{height:6px;background:#232a38;border-radius:3px;overflow:hidden;margin-top:3px;}
-  .hp-fill{height:100%;background:linear-gradient(90deg,#5ee08a,#3ad6d9);transition:width .35s ease;}
-  .weapon-tag{font-size:9px;color:var(--gold);letter-spacing:1px;text-transform:uppercase;}
-
-  .log{
-    font-size:11px;color:var(--text-dim);line-height:1.6;
-    max-height:110px;overflow-y:auto;padding-right:4px;
-  }
-  .log div{border-left:2px solid #2a3242;padding-left:7px;margin-bottom:4px;}
-  .log div.hit{border-color:var(--danger);color:#ffb3b3;}
-  .log div.heal{border-color:var(--heal);color:#b8ffd0;}
-  .log div.win{border-color:var(--gold);color:var(--gold);}
-  .log div.elim{border-color:var(--danger);color:#fff;background:rgba(255,77,77,0.14);font-weight:700;padding:5px 7px;border-radius:3px;}
-  .log-toggle{display:none;} /* only shown on the mobile layout — see media query below */
-  .log-section.collapsed .log{display:none;}
-
-  .controls{display:flex;gap:8px;flex-wrap:wrap;}
-  button{
-    background:var(--panel-2);color:var(--text);border:1px solid var(--gold-dim);
-    padding:9px 14px;font-size:11px;letter-spacing:1px;text-transform:uppercase;
-    cursor:pointer;border-radius:2px;transition:.15s;
-    min-height:44px; /* real, tappable touch target everywhere, not just on the board */
-    touch-action:manipulation; /* no double-tap-to-zoom delay on buttons */
-  }
-  button:hover{background:#232c3c;border-color:var(--gold);color:var(--gold);}
-  button:disabled{opacity:.35;cursor:default;}
-  button.primary{background:var(--gold);color:#20180a;border-color:var(--gold);font-weight:700;}
-  button.primary:hover{background:#f5c65a;}
-
-  .banner{
-    text-align:center;font-size:13px;letter-spacing:1px;text-transform:uppercase;
-    color:var(--gold);min-height:18px;margin-top:4px;
-  }
-  .timer-track{width:100%;height:4px;background:#1c2330;margin-top:8px;border-radius:2px;overflow:hidden;}
-  .timer-fill{height:100%;background:var(--gold);width:100%;}
-  .timer-fill.timer-pulse{animation:timerPulse 0.5s ease-in-out infinite;}
-  @keyframes timerPulse{ 0%,100%{opacity:1;} 50%{opacity:0.45;} }
-
-  .overlay{
-    position:fixed;inset:0;background:rgba(6,7,10,.88);display:none;align-items:center;justify-content:center;z-index:50;
-  }
-  .overlay.show{display:flex;}
-  .rules-list{text-align:left;font-size:12px;color:var(--text-dim);line-height:1.7;margin:0 0 20px;padding-left:18px;}
-  .diff-btn{flex:1;padding:8px 4px;background:var(--panel-2);border:1px solid var(--gold-dim);color:var(--text-dim);border-radius:2px;font-size:12px;cursor:pointer;letter-spacing:0.5px;}
-  .diff-btn.is-active{background:var(--gold-dim);color:#0f0d0a;border-color:var(--gold);font-weight:700;}
-  .rules-list li{margin-bottom:6px;}
-  .rules-list b{color:var(--gold);}
-  .overlay-card{
-    background:var(--panel);border:1px solid var(--gold-dim);padding:34px 40px;text-align:center;max-width:360px;
-    clip-path:polygon(0 12px,12px 0,100% 0,100% calc(100% - 12px),calc(100% - 12px) 100%,0 100%);
-  }
-  .overlay-card h2{color:var(--gold);letter-spacing:2px;text-transform:uppercase;margin:0 0 10px;}
-  .overlay-card p{color:var(--text-dim);font-size:13px;line-height:1.6;margin-bottom:20px;}
-
-  footer{margin-top:30px;font-size:11px;color:#4a5164;letter-spacing:1px;text-transform:uppercase;}
-
-  .jellyoff-overlay{
-    position:fixed;inset:0;background:rgba(4,5,8,0);display:none;align-items:center;justify-content:center;z-index:60;
-    transition:background .25s;
-  }
-  .jellyoff-overlay.show{display:flex;background:rgba(4,5,8,.82);}
-  .jellyoff-title{
-    position:absolute;top:18%;left:50%;transform:translateX(-50%);
-    font-size:22px;letter-spacing:3px;text-transform:uppercase;color:var(--gold);
-    text-shadow:0 0 18px rgba(232,178,61,.6);
-    opacity:0;animation:jofIn .3s ease forwards;
-  }
-  @keyframes jofIn{ to{opacity:1; transform:translateX(-50%) translateY(-6px);} }
-  .jellyoff-row{display:flex;gap:36px;justify-content:center;flex-wrap:wrap;max-width:640px;}
-  .jof-jelly{display:flex;flex-direction:column;align-items:center;gap:10px;opacity:0;transform:scale(.6);animation:jofPop .35s ease forwards;}
-  @keyframes jofPop{ to{opacity:1;transform:scale(1);} }
-  .jof-dot{width:56px;height:56px;border-radius:50%;box-shadow:0 0 24px currentColor;}
-  .jof-num{font-size:38px;font-weight:800;min-width:60px;text-align:center;font-variant-numeric:tabular-nums;}
-  .jof-name{font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim);}
-  .jof-jelly.winner .jof-num{color:var(--gold);text-shadow:0 0 16px rgba(232,178,61,.7);}
-  .jof-jelly.winner .jof-dot{box-shadow:0 0 34px 6px currentColor;}
-  .jof-jelly.loser{opacity:.55;}
-  .jof-jelly.loser .jof-num{color:var(--danger);}
-  .jof-shrink{animation:jofShrink .5s ease forwards;}
-  @keyframes jofShrink{ to{opacity:0; transform:scale(.5) translateY(20px);} }
-
-  /* ---------------- Mobile layout (portrait, ~360-430px) ---------------- */
-  @media (max-width: 480px){
-    body{padding:10px 8px calc(16px + env(safe-area-inset-bottom,0px));}
-    .marquee{margin-bottom:6px;}
-    h1{font-size:20px;margin:0 0 2px;padding:2px 6px;}
-    .subtitle{font-size:10px;margin-bottom:8px;}
-
-    /* Reflow order: title -> compact HP HUD -> board -> turn banner (inside
-       board-wrap already) -> log/controls. .side becomes a pass-through so
-       its children can be reordered independently of the board. */
-    .stage{display:flex;flex-direction:column;gap:8px;width:100%;}
-    .side{display:contents;}
-    .jellies-hud{order:1;width:100%;padding:8px;}
-    .board-wrap{order:2;padding:8px;width:100%;}
-    .log-section{order:3;width:100%;padding:10px;}
-    .controls{order:4;width:100%;padding:0 2px;}
-
-    .jellies-hud h2{display:none;} /* the compact HUD is self-explanatory */
-    #jellyList{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
-    .jelly-row{flex-direction:column;align-items:stretch;gap:3px;padding:6px;margin-bottom:0;}
-    .jelly-dot{width:10px;height:10px;}
-    .jelly-name{font-size:10px;}
-    .weapon-tag{font-size:8px;}
-
-    .banner{font-size:12px;}
-    footer{margin-top:14px;}
-
-    /* Battle log is collapsed by default and never shrinks the board —
-       it's an overlay-style panel the player pulls up, not part of the flow. */
-    .log-toggle{
-      display:flex;align-items:center;justify-content:space-between;width:100%;
-      background:var(--panel-2);border:1px solid var(--gold-dim);color:var(--gold);
-      font-size:11px;letter-spacing:1px;text-transform:uppercase;
-      padding:9px 12px;border-radius:2px;cursor:pointer;min-height:44px;touch-action:manipulation;
-    }
-    .log-section .log{
-      max-height:0;overflow:hidden;padding:0 2px;margin-top:0;
-      transition:max-height .22s ease, margin-top .22s ease;
-    }
-    .log-section:not(.collapsed) .log{max-height:38vh;margin-top:8px;padding:6px 6px 2px;}
-    .log-section h2{display:none;} /* replaced by the toggle button on mobile */
-
-    /* How to Play must never trap the Start button off-screen. */
-    .overlay{padding:8px;}
-    .overlay-card{
-      width:calc(100% - 16px);
-      max-width:calc(100% - 16px);
-      max-height:calc(100dvh - 16px);
-      overflow-y:auto;
-      -webkit-overflow-scrolling:touch;
-      padding:20px 18px;
-      margin:0;
-    }
-  }
-  /* On the shortest phones (e.g. 360x640) drop the purely decorative lines
-     so title -> HP HUD -> board -> controls all fit without scrolling. */
-  @media (max-width: 480px) and (max-height: 700px){
-    .subtitle, footer{display:none;}
-    .marquee{margin-bottom:4px;}
-  }
-  @media (max-width: 480px) and (orientation: landscape){
-    body{padding:8px calc(8px + env(safe-area-inset-right,0px)) 8px calc(8px + env(safe-area-inset-left,0px));}
-    .stage{flex-direction:row;flex-wrap:nowrap;align-items:flex-start;}
-    h1,.subtitle,.marquee{display:none;} /* reclaim vertical space in landscape */
-    #board{max-width:min(78vh, 92vw);}
-    .side{display:flex;flex-direction:column;width:220px;} /* reset the portrait display:contents */
-  }
+/* Jelly Off */
+.jellyoff-overlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:60;background:rgba(7,5,20,.86)}
+.jellyoff-overlay.show{display:flex}
+.jellyoff-title{position:absolute;top:16%;left:50%;transform:translateX(-50%);font-family:var(--display);font-weight:700;font-size:clamp(34px,9vw,56px);color:#fff;white-space:nowrap;
+  text-shadow:.05em 0 0 var(--pink),-.05em 0 0 var(--cyan);animation:jofIn .3s steps(3) both}
+@keyframes jofIn{from{opacity:0;transform:translateX(-50%) scale(1.4)}to{opacity:1;transform:translateX(-50%) scale(1)}}
+.jellyoff-row{display:flex;gap:26px;justify-content:center;flex-wrap:wrap;max-width:640px;padding:0 12px}
+.jof-jelly{display:flex;flex-direction:column;align-items:center;gap:8px;opacity:0;transform:scale(.6);animation:jofPop .35s steps(4) forwards;color:var(--ink)}
+@keyframes jofPop{to{opacity:1;transform:scale(1)}}
+.jof-dot{width:96px;height:88px;image-rendering:pixelated}
+.jof-num{font-family:var(--display);font-weight:700;font-size:44px;min-width:60px;font-variant-numeric:tabular-nums}
+.jof-name{font-family:var(--label);font-size:10px;letter-spacing:.1em;color:var(--muted)}
+.jof-jelly.winner .jof-num{color:var(--gold);text-shadow:0 0 16px rgba(232,178,61,.7)}
+.jof-jelly.winner .jof-dot{animation:hop .4s steps(3) infinite alternate}
+@keyframes hop{to{transform:translateY(-8px)}}
+.jof-jelly.loser{opacity:.55}
+.jof-jelly.loser .jof-num{color:var(--danger)}
+.jof-shrink{animation:jofShrink .5s steps(4) forwards}
+@keyframes jofShrink{to{opacity:0;transform:scale(.5) translateY(20px)}}
+@media (prefers-reduced-motion:reduce){.title{animation:none}}
 </style>
 </head>
 <body>
-<div class="blob-bg b1"></div>
-<div class="blob-bg b2"></div>
-<div class="blob-bg b3"></div>
-
-<div class="marquee"></div>
-<h1>Jelly Riot</h1>
-<div class="subtitle">Last jelly wobbling wins · a Stormie Games original</div>
-
-<div class="stage">
-  <div class="hud-card board-wrap">
-    <canvas id="board" width="486" height="486"></canvas>
-    <div class="banner" id="banner">Press Start to jump in</div>
+<div class="app" id="app" data-mode="port">
+  <div class="top">
+    <a class="logo" href="/" aria-label="Stormie Games home">Jelly Riot</a>
+    <button class="tb" id="rulesBtn" type="button">Rules</button>
+    <button class="tb" id="muteBtn" type="button">Music</button>
+    <button class="tb" id="sfxBtn" type="button">Sound</button>
+    <button class="tb" id="restartBtn" type="button" disabled>Restart</button>
+    <button id="startBtn" type="button" hidden></button>
+  </div>
+  <div class="hud" id="jellyList"></div>
+  <div class="board-wrap" id="boardWrap"><canvas id="board" width="486" height="486" aria-label="Jelly Riot arena"></canvas></div>
+  <div class="status">
+    <div class="banner" id="banner">Press start to jump in</div>
     <div class="timer-track"><div class="timer-fill" id="timerFill"></div></div>
   </div>
-
-  <div class="hud-card side">
-    <div class="jellies-hud">
-      <h2>Jellies</h2>
-      <div id="jellyList"></div>
-    </div>
-    <div class="log-section collapsed" id="logSection">
-      <h2>Battle Log</h2>
-      <button type="button" class="log-toggle" id="logToggle">
-        <span>Battle Log</span><span id="logToggleIcon">▾</span>
-      </button>
-      <div class="log" id="log"></div>
-    </div>
-    <div class="controls">
-      <button class="primary" id="startBtn">Start Battle</button>
-      <button id="rulesBtn">How to Play</button>
-      <button id="muteBtn">Music: Off</button>
-      <button id="sfxBtn">Sound: On</button>
-      <button id="restartBtn" disabled>Restart</button>
-    </div>
+  <div class="log-section collapsed" id="logSection">
+    <button type="button" class="log-toggle" id="logToggle"><span>Battle log</span><span id="logToggleIcon">+</span></button>
+    <div class="log" id="log"></div>
   </div>
 </div>
 
-<footer>stormie.app: jelly riot</footer>
+<div class="orient" id="orient"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg><span id="orientTxt"></span></div>
 
 <div class="overlay show" id="rulesOverlay">
-  <div class="overlay-card" style="max-width:400px;">
-    <h2>How to Play</h2>
-    <ul class="rules-list">
-      <li><b>Goal:</b> be the last jelly with HP remaining. 3 rivals, 1 arena.</li>
-      <li>All four jellies choose a tile within <b>2 squares</b> and jump <b>simultaneously</b> each turn.</li>
-      <li>Icons shift <b>one row south</b> right before everyone lands, so aim one key below the item you actually want.</li>
-      <li><b>Handbag</b> isn't instant: it grants <b>3 future turns</b> of automatic close-range swings at whoever's adjacent.</li>
-      <li><b>Blast</b> does distance-based damage (hardest up close, weaker further out). <b>Laser</b> hits your whole row and column. <b>Air Strike</b> launches several random missiles. <b>Nuke</b> hits every unshielded rival at once. <b>Random Drop</b> crushes one rival you can see.</li>
-      <li>Land on the <b>same tile</b> as a rival for a <b>Jelly Off</b>: everyone rolls, the winner holds the key, and losers get knocked onto a nearby open tile.</li>
+  <div class="card">
+    <h1 class="title"><small>Stormie Games presents</small>Jelly Riot</h1>
+    <p class="tag">Four jellies. One arena. Everybody jumps at once.</p>
+    <ul class="rules">
+      <li><img alt="" data-icon="superjelly"><span><b>Last jelly wobbling wins.</b> Tap a glowing key within two squares. All four jellies jump at the same time.</span></li>
+      <li><img alt="" data-icon="blast"><span><b>The icons slide down one row</b> just before you land, so aim one key below the item you want.</span></li>
+      <li><img alt="" data-icon="laser"><span><b>Weapons:</b> Blast hurts most up close, Laser hits your row and column, Air Strike rains missiles, Nuke hits every unshielded rival, Random Drop crushes someone.</span></li>
+      <li><img alt="" data-icon="handbag"><span><b>Handbag</b> swings at anyone next to you for three turns. Shields block one hit. Mines hurt you.</span></li>
+      <li><img alt="" data-icon="teleport"><span>Land on the <b>same key</b> as a rival for a <b>Jelly Off</b>. Highest roll keeps the key.</span></li>
     </ul>
-    <label style="display:block;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim);margin-bottom:6px;">Name your jelly</label>
-    <input id="playerNameInput" type="text" maxlength="14" placeholder="Your jelly's name" value="You"
-      style="width:100%;padding:9px 10px;margin-bottom:14px;background:var(--panel-2);border:1px solid var(--gold-dim);color:var(--text);border-radius:2px;font-size:13px;">
-    <label style="display:block;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim);margin-bottom:6px;">Rival difficulty</label>
-    <div id="difficultyPicker" style="display:flex;gap:6px;margin-bottom:18px;">
-      <button type="button" class="diff-btn" data-diff="easy">Easy</button>
-      <button type="button" class="diff-btn is-active" data-diff="normal">Normal</button>
-      <button type="button" class="diff-btn" data-diff="hard">Hard</button>
+    <div class="field"><label for="playerNameInput">Name your jelly</label><input id="playerNameInput" type="text" maxlength="12" placeholder="Your jelly's name" value="You" autocomplete="off"></div>
+    <div class="field"><label>Rival difficulty</label>
+      <div class="diff" id="difficultyPicker">
+        <button type="button" class="diff-btn" data-diff="easy">Easy</button>
+        <button type="button" class="diff-btn is-active" data-diff="normal">Normal</button>
+        <button type="button" class="diff-btn" data-diff="hard">Hard</button>
+      </div>
     </div>
-    <button class="primary" id="rulesStartBtn">Got it, Start Battle</button>
+    <div class="btns">
+      <button class="btn" id="rulesStartBtn" type="button">Start the riot</button>
+      <button class="btn ghost" id="rulesClose" type="button" hidden>Back to battle</button>
+    </div>
+    <div class="orient-t"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg><span>Play upright or sideways. Just turn your phone.</span></div>
+    <a class="home" href="/">More Stormie Games</a>
   </div>
 </div>
 
 <div class="overlay" id="overlay">
-  <div class="overlay-card">
-    <h2 id="overlayTitle">You Win!</h2>
-    <p id="overlayText">Every rival jelly has been wobbled out of the arena.</p>
-    <button class="primary" id="overlayBtn">Play Again</button>
-    <button id="overlayWatchBtn" style="display:none;">Watch the Battle</button>
+  <div class="card">
+    <div class="eyebrow">Battle over</div>
+    <h2 class="h2" id="overlayTitle">You Win!</h2>
+    <p class="endtext" id="overlayText">Every rival jelly has been wobbled out of the arena.</p>
+    <div class="btns">
+      <button class="btn" id="overlayBtn" type="button">Play again</button>
+      <button class="btn ghost" id="overlayWatchBtn" type="button" style="display:none">Watch the battle</button>
+    </div>
+    <a class="home" href="/">More Stormie Games</a>
   </div>
 </div>
 
@@ -351,11 +222,6 @@
 </div>
 
 <script>
-/* =========================================================
-   JELLY BATTLE — Stormie Games remake
-   Grid free-for-all, simultaneous turns, Jelly Off tiebreaks.
-   ========================================================= */
-
 const GRID = 7;
 // Original, subtle key labels for the board's plain tiles — a believable
 // keyboard-style character set, not a copy of any real keyboard's artwork.
@@ -520,472 +386,6 @@ function shiftTilesDown(){
   shiftFlash = 1;
 }
 
-/* ---------------- Rendering ---------------- */
-function boardToPx(x){ return PAD + x*CELL; }
-
-function drawBoard(){
-  // Hit-stop: hold the current frame exactly as-is for a beat on impact,
-  // rather than continuing to animate through the moment of contact.
-  if(performance.now() < hitStopUntil) return;
-  const now = performance.now();
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-  ctx.save();
-  if(shakeAmt > 0.2){
-    ctx.translate((Math.random()-0.5)*shakeAmt, (Math.random()-0.5)*shakeAmt);
-    shakeAmt *= 0.88;
-  } else {
-    shakeAmt = 0;
-  }
-
-  for(const t of tiles){
-    const px = boardToPx(t.x), py = boardToPx(t.y);
-    const isSel = selectedTile && selectedTile.x===t.x && selectedTile.y===t.y;
-    const isReach = phase==='picking' && reachableSet.has(t.x+','+t.y);
-
-    ctx.save();
-    const grad = ctx.createLinearGradient(px,py,px+CELL,py+CELL);
-    grad.addColorStop(0, isSel ? '#3a3220' : '#161c28');
-    grad.addColorStop(1, isSel ? '#241f14' : '#0f131c');
-    ctx.fillStyle = grad;
-    roundRect(px+2,py+2,CELL-4,CELL-4,6);
-    ctx.fill();
-
-    ctx.strokeStyle = isReach ? 'rgba(232,178,61,0.55)' : 'rgba(60,70,90,0.35)';
-    ctx.lineWidth = isReach ? 2 : 1;
-    roundRect(px+2,py+2,CELL-4,CELL-4,6);
-    ctx.stroke();
-
-    // keycap bevel: dark bottom-right edge (the key's side wall), light
-    // top-left edge (catching the light), plus a soft glossy sheen
-    const isPressed = landFlashes.some(f => f.x===t.x && f.y===t.y && (now - f.start) < 220);
-    ctx.save();
-    ctx.beginPath();
-    roundRect(px+2,py+2,CELL-4,CELL-4,6);
-    ctx.clip();
-    ctx.strokeStyle = isPressed ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.38)';
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.moveTo(px+CELL-4, py+4);
-    ctx.lineTo(px+CELL-4, py+CELL-4);
-    ctx.lineTo(px+4, py+CELL-4);
-    ctx.stroke();
-    ctx.strokeStyle = isPressed ? 'rgba(0,0,0,0.25)' : 'rgba(255,255,255,0.09)';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(px+4, py+CELL-7);
-    ctx.lineTo(px+4, py+4);
-    ctx.lineTo(px+CELL-7, py+4);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.ellipse(px+CELL*0.32, py+CELL*0.3, CELL*0.26, CELL*0.14, -0.4, 0, Math.PI*2);
-    ctx.fillStyle = 'rgba(255,255,255,0.035)';
-    ctx.fill();
-    ctx.restore();
-
-    // subtle keyboard-style label on empty keys (never on tiles with an icon)
-    if(t.type === 'plain'){
-      const label = KEY_LABELS[t.y*GRID + t.x];
-      ctx.font = '11px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillStyle = 'rgba(180,190,210,0.16)';
-      ctx.fillText(label, px+CELL/2, py+CELL/2);
-    }
-
-    if(t.type !== 'plain'){
-      const def = TILE_DEFS[t.type];
-      const glowColor = def ? def.color : '#e8b23d';
-      const glow = ctx.createRadialGradient(px+CELL/2,py+CELL/2,2, px+CELL/2,py+CELL/2, CELL*0.55);
-      glow.addColorStop(0, glowColor+'55');
-      glow.addColorStop(1, glowColor+'00');
-      ctx.fillStyle = glow;
-      ctx.beginPath();
-      ctx.arc(px+CELL/2, py+CELL/2, CELL*0.55, 0, Math.PI*2);
-      ctx.fill();
-
-      ctx.font = '22px sans-serif';
-      ctx.textAlign='center'; ctx.textBaseline='middle';
-      const icon = def ? def.icon : '❓';
-      ctx.fillText(icon, px+CELL/2, py+CELL/2);
-      // ghost preview one row below — where this icon is heading after the scroll (vanishes off the bottom edge)
-      if(t.y+1 < GRID){
-        const gpx = boardToPx(t.x), gpy = boardToPx(t.y+1);
-        ctx.globalAlpha = 0.22;
-        ctx.font = '15px sans-serif';
-        ctx.fillText(icon, gpx+CELL/2, gpy+CELL-14);
-        ctx.globalAlpha = 1;
-      }
-    }
-    ctx.restore();
-  }
-
-  if(shiftFlash > 0.02){
-    ctx.strokeStyle = `rgba(232,178,61,${shiftFlash})`;
-    ctx.lineWidth = 3;
-    ctx.strokeRect(4,4,canvas.width-8,canvas.height-8);
-    shiftFlash *= 0.9;
-  }
-
-  // key depress/flash where a jelly just landed
-  if(landFlashes.length){
-    landFlashes.forEach(f=>{
-      const age = now - f.start;
-      const life = Math.max(0, 1 - age/220);
-      if(life <= 0) return;
-      const px = boardToPx(f.x), py = boardToPx(f.y);
-      ctx.save();
-      ctx.globalAlpha = life * 0.5;
-      ctx.fillStyle = '#000';
-      roundRect(px+3, py+3, CELL-6, CELL-6, 6);
-      ctx.fill();
-      ctx.globalAlpha = life;
-      ctx.strokeStyle = 'rgba(232,178,61,0.9)';
-      ctx.lineWidth = 2;
-      roundRect(px+2, py+2, CELL-4, CELL-4, 6);
-      ctx.stroke();
-      ctx.restore();
-    });
-    landFlashes = landFlashes.filter(f => (now - f.start) < 220);
-  }
-
-  // explosion cells — the actual board squares a weapon tile blew up, fading over ~500ms
-  if(explosionCells.length){
-    explosionCells.forEach(c=>{
-      const age = now - c.start;
-      const life = Math.max(0, 1 - age/500);
-      if(life <= 0) return;
-      const px = boardToPx(c.x), py = boardToPx(c.y);
-      ctx.save();
-      ctx.globalAlpha = life * 0.65;
-      ctx.fillStyle = c.color;
-      roundRect(px+2,py+2,CELL-4,CELL-4,6);
-      ctx.fill();
-      ctx.globalAlpha = life;
-      ctx.strokeStyle = c.color;
-      ctx.lineWidth = 2;
-      roundRect(px+2,py+2,CELL-4,CELL-4,6);
-      ctx.stroke();
-      ctx.restore();
-    });
-    explosionCells = explosionCells.filter(c => (now - c.start) < 500);
-  }
-
-  // drop shadows — the tell-tale growing dark ellipse under a Random Drop victim
-  if(dropShadows.length){
-    dropShadows.forEach(s=>{
-      const p = Math.min(1, (now - s.start) / s.dur);
-      const px = boardToPx(s.x) + CELL/2, py = boardToPx(s.y) + CELL/2;
-      ctx.save();
-      ctx.globalAlpha = 0.55 * p;
-      ctx.fillStyle = '#000';
-      ctx.beginPath();
-      ctx.ellipse(px, py + 10, (CELL*0.38) * p, (CELL*0.16) * p, 0, 0, Math.PI*2);
-      ctx.fill();
-      ctx.restore();
-    });
-    dropShadows = dropShadows.filter(s => (now - s.start) < s.dur);
-  }
-
-  // jump ground shadows — shrink and fade as the jelly rises, grow back on landing
-  for(const j of jellies){
-    if(!j.alive || !(j.jumpLift > 0.5)) continue;
-    const gx = boardToPx(j.px) + CELL/2, gy = boardToPx(j.py) + CELL/2;
-    const shrink = 1 - (j.jumpLift / 28) * 0.5;
-    ctx.save();
-    ctx.globalAlpha = 0.4 * shrink;
-    ctx.fillStyle = '#000';
-    ctx.beginPath();
-    ctx.ellipse(gx, gy + 14, 15*shrink, 6*shrink, 0, 0, Math.PI*2);
-    ctx.fill();
-    ctx.restore();
-  }
-
-  // jellies
-  for(const j of jellies){
-    if(!j.alive && !j.dying) continue;
-    const px = boardToPx(j.px) + CELL/2;
-    const py = boardToPx(j.py) + CELL/2 - (j.jumpLift || 0);
-    drawJelly(px,py,j);
-  }
-
-  // falling Random Drop object / Air Strike missile — plummets from off-canvas
-  if(fallingObjects.length){
-    fallingObjects.forEach(o=>{
-      const p = Math.min(1, (now - o.start) / o.dur);
-      const ease = p*p; // accelerating fall
-      const px = boardToPx(o.targetX) + CELL/2;
-      const py = -40 + (boardToPx(o.targetY) + CELL/2 + 40) * ease;
-      if(o.shape === 'missile' && Math.random() < 0.6){
-        particles.push({x:px, y:py+8, vx:(Math.random()-0.5)*0.4, vy:0.3+Math.random()*0.3, life:0.5, color:'#999', size:2.5+Math.random()*1.5});
-      }
-      ctx.save();
-      ctx.translate(px, py);
-      ctx.rotate(o.shape === 'missile' ? 0 : (1-p) * 0.6);
-      drawDropObject(o.shape, o.shape === 'missile' ? 22 : 32);
-      ctx.restore();
-    });
-    fallingObjects = fallingObjects.filter(o => (now - o.start) < o.dur);
-  }
-
-  // Pickup collection: icon pops up, enlarges, then spins+shrinks into the jelly
-  if(collectFx.length){
-    collectFx.forEach(f=>{
-      const p = Math.min(1, (now - f.start) / f.dur);
-      const jx = boardToPx(f.jelly.px) + CELL/2, jy = boardToPx(f.jelly.py) + CELL/2;
-      let x, y, scale, rot;
-      if(p < 0.35){
-        const pp = p/0.35;
-        x = f.x0; y = f.y0 - 18*pp;
-        scale = 1 + 0.5*pp;
-        rot = 0;
-      } else {
-        const pp = (p-0.35)/0.65;
-        const liftY = f.y0 - 18;
-        x = f.x0 + (jx-f.x0)*pp;
-        y = liftY + (jy-liftY)*pp;
-        scale = 1.5 * (1-pp);
-        rot = pp * Math.PI * 3;
-      }
-      ctx.save();
-      ctx.translate(x, y);
-      ctx.rotate(rot);
-      ctx.scale(scale, scale);
-      ctx.font = '22px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(f.icon, 0, 0);
-      ctx.restore();
-      if(p >= 0.97 && !f.burstFired){
-        f.burstFired = true;
-        burst(jx, jy, f.color, 12); // small coloured burst as it's absorbed
-      }
-    });
-    collectFx = collectFx.filter(f => (now - f.start) < f.dur);
-  }
-
-  // First-turn tutorial: faint arrows showing where each icon is about to
-  // shift to, plus a preview of the predicted icon under the cursor.
-  if(tutorialActive && phase === 'picking'){
-    ctx.save();
-    ctx.strokeStyle = 'rgba(232,178,61,0.4)';
-    ctx.fillStyle = 'rgba(232,178,61,0.4)';
-    ctx.lineWidth = 2;
-    tiles.forEach(t=>{
-      if(t.type === 'plain' || t.y >= GRID-1) return;
-      const x0 = boardToPx(t.x)+CELL/2, y0 = boardToPx(t.y)+CELL/2+10;
-      const y1 = boardToPx(t.y+1)+CELL/2-10;
-      ctx.beginPath();
-      ctx.moveTo(x0, y0);
-      ctx.lineTo(x0, y1);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(x0-4, y1-6);
-      ctx.lineTo(x0, y1);
-      ctx.lineTo(x0+4, y1-6);
-      ctx.stroke();
-    });
-    ctx.restore();
-
-    // Always-visible on every reachable tile (not hover-gated — hover doesn't
-    // exist on touch devices, and a single tap must commit the move).
-    reachableSet.forEach(key=>{
-      const [rx, ry] = key.split(',').map(Number);
-      const predicted = predictTileAt(rx, ry);
-      if(predicted.type === 'plain') return;
-      const def = TILE_DEFS[predicted.type];
-      const px = boardToPx(rx)+CELL/2, py = boardToPx(ry)+CELL/2;
-      ctx.save();
-      ctx.globalAlpha = 0.6;
-      ctx.font = '18px sans-serif';
-      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText(def.icon, px, py);
-      ctx.restore();
-    });
-  }
-
-  // Air Strike target reticles — pulsing crosshairs on cells about to be hit
-  if(airStrikeReticles.length){
-    const pulse = 0.55 + Math.sin(now/110)*0.35;
-    airStrikeReticles.forEach(r=>{
-      if(!r.active) return;
-      const px = boardToPx(r.x)+CELL/2, py = boardToPx(r.y)+CELL/2;
-      ctx.save();
-      ctx.strokeStyle = `rgba(255,60,60,${pulse})`;
-      ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.arc(px,py,14,0,Math.PI*2); ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(px-19,py); ctx.lineTo(px-9,py);
-      ctx.moveTo(px+9,py); ctx.lineTo(px+19,py);
-      ctx.moveTo(px,py-19); ctx.lineTo(px,py-9);
-      ctx.moveTo(px,py+9); ctx.lineTo(px,py+19);
-      ctx.stroke();
-      ctx.restore();
-    });
-  }
-
-  // Laser charge — thin targeting lines through the whole row+column, and a
-  // brightening glow on the collector building up to the moment it fires.
-  if(laserCharge){
-    const p = Math.min(1, (now - laserCharge.start) / laserCharge.dur);
-    const cx = boardToPx(laserCharge.x)+CELL/2, cy = boardToPx(laserCharge.y)+CELL/2;
-    const boardL = PAD, boardR = PAD+GRID*CELL, boardT = PAD, boardB = PAD+GRID*CELL;
-    ctx.save();
-    ctx.strokeStyle = `rgba(255,225,77,${0.12+p*0.35})`;
-    ctx.lineWidth = 1;
-    ctx.setLineDash([4,4]);
-    ctx.beginPath();
-    ctx.moveTo(boardL, cy); ctx.lineTo(boardR, cy);
-    ctx.moveTo(cx, boardT); ctx.lineTo(cx, boardB);
-    ctx.stroke();
-    ctx.setLineDash([]);
-    const glowR = 20 + Math.sin(p*Math.PI*7)*4 + p*6;
-    const grad = ctx.createRadialGradient(cx,cy,2,cx,cy,glowR);
-    grad.addColorStop(0, `rgba(255,240,150,${0.55*p})`);
-    grad.addColorStop(1, 'rgba(255,240,150,0)');
-    ctx.fillStyle = grad;
-    ctx.beginPath(); ctx.arc(cx,cy,glowR,0,Math.PI*2); ctx.fill();
-    ctx.restore();
-  }
-
-  // Laser beams — four continuous beams fired out from the collector.
-  if(laserBeamFx){
-    const age = now - laserBeamFx.start;
-    const alpha = Math.max(0, 1 - age/laserBeamFx.dur);
-    const cx = boardToPx(laserBeamFx.x)+CELL/2, cy = boardToPx(laserBeamFx.y)+CELL/2;
-    const boardL = PAD, boardR = PAD+GRID*CELL, boardT = PAD, boardB = PAD+GRID*CELL;
-    ctx.save();
-    ctx.globalAlpha = alpha;
-    ctx.strokeStyle = laserBeamFx.color;
-    ctx.lineWidth = 6;
-    ctx.shadowColor = laserBeamFx.color;
-    ctx.shadowBlur = 16;
-    ctx.beginPath();
-    ctx.moveTo(boardL, cy); ctx.lineTo(boardR, cy);
-    ctx.moveTo(cx, boardT); ctx.lineTo(cx, boardB);
-    ctx.stroke();
-    ctx.shadowBlur = 0;
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = '#ffffff';
-    ctx.beginPath();
-    ctx.moveTo(boardL, cy); ctx.lineTo(boardR, cy);
-    ctx.moveTo(cx, boardT); ctx.lineTo(cx, boardB);
-    ctx.stroke();
-    ctx.restore();
-  }
-
-  // particles
-  particles.forEach(p=>{
-    ctx.globalAlpha = Math.max(0, p.life);
-    ctx.fillStyle = p.color;
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
-    ctx.fill();
-    ctx.globalAlpha = 1;
-  });
-  particles = particles.filter(p=>p.life > 0);
-  particles.forEach(p=>{ p.x += p.vx; p.y += p.vy; p.vy += 0.15; p.life -= 0.03; });
-
-  shockwaves.forEach(s=>{
-    ctx.globalAlpha = Math.max(0, s.alpha);
-    ctx.strokeStyle = s.color;
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.arc(s.x, s.y, s.radius, 0, Math.PI*2);
-    ctx.stroke();
-    ctx.globalAlpha = 1;
-    s.radius += (s.maxRadius - s.radius) * 0.18 + 1.5;
-    s.alpha -= 0.045;
-  });
-  shockwaves = shockwaves.filter(s=>s.alpha > 0.02);
-
-  // floating damage/heal numbers punching upward off the hit jelly
-  floatTexts.forEach(f=>{
-    ctx.globalAlpha = Math.max(0, f.life);
-    ctx.font = f.big ? 'bold 20px sans-serif' : 'bold 15px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillStyle = f.color;
-    ctx.strokeStyle = 'rgba(0,0,0,0.7)';
-    ctx.lineWidth = f.big ? 4 : 3;
-    ctx.strokeText(f.text, f.x, f.y);
-    ctx.fillText(f.text, f.x, f.y);
-    ctx.globalAlpha = 1;
-  });
-  floatTexts.forEach(f=>{ f.y -= (f.big ? 0.45 : 0.7); f.life -= (f.big ? 0.011 : 0.018); });
-  floatTexts = floatTexts.filter(f=>f.life > 0);
-
-  ctx.restore();
-
-  // big bold weapon-name callout — "NUKE", "BLAST", etc. — drawn outside the
-  // shake transform so it reads clearly while the board underneath rattles
-  if(weaponBanners.length){
-    ctx.save();
-    weaponBanners.forEach(b=>{
-      const life = b.life;
-      const scale = life > 0.85 ? (1 - life)/0.15 : 1; // quick pop-in
-      ctx.globalAlpha = Math.min(1, life * 1.6);
-      ctx.textAlign = 'center';
-      ctx.translate(canvas.width/2, 46);
-      ctx.scale(0.7 + scale*0.3, 0.7 + scale*0.3);
-      ctx.font = 'bold 30px sans-serif';
-      ctx.fillStyle = 'rgba(0,0,0,0.6)';
-      ctx.fillText(b.label, 3, 3);
-      ctx.fillStyle = b.color;
-      ctx.strokeStyle = 'rgba(0,0,0,0.8)';
-      ctx.lineWidth = 3;
-      ctx.strokeText(b.label, 0, 0);
-      ctx.fillText(b.label, 0, 0);
-      ctx.setTransform(1,0,0,1,0,0);
-    });
-    ctx.globalAlpha = 1;
-    ctx.restore();
-  }
-  weaponBanners.forEach(b=> b.life -= 0.02);
-  weaponBanners = weaponBanners.filter(b=>b.life > 0);
-
-  // Nuke countdown — a big "3, 2, 1" centered over the board.
-  if(nukeCountdown){
-    const age = now - nukeCountdown.start;
-    const life = Math.max(0, 1 - age/200);
-    if(life > 0){
-      ctx.save();
-      ctx.globalAlpha = Math.min(1, life*1.5);
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.translate(canvas.width/2, canvas.height/2);
-      const pop = 1 + (1-life)*0.5;
-      ctx.scale(pop, pop);
-      ctx.font = 'bold 64px sans-serif';
-      ctx.fillStyle = 'rgba(0,0,0,0.55)';
-      ctx.fillText(String(nukeCountdown.value), 4, 4);
-      ctx.fillStyle = '#ff4d4d';
-      ctx.strokeStyle = 'rgba(0,0,0,0.8)';
-      ctx.lineWidth = 4;
-      ctx.strokeText(String(nukeCountdown.value), 0, 0);
-      ctx.fillText(String(nukeCountdown.value), 0, 0);
-      ctx.restore();
-    }
-  }
-
-  if(screenFlash.alpha > 0.01){
-    ctx.save();
-    ctx.globalAlpha = screenFlash.alpha;
-    ctx.fillStyle = screenFlash.color;
-    ctx.fillRect(0,0,canvas.width,canvas.height);
-    ctx.restore();
-    screenFlash.alpha *= 0.82;
-  }
-
-  // lingering scorch overlay after a Nuke — fades slowly over ~1.8s
-  if(scorchUntil > now){
-    const remaining = scorchUntil - now;
-    const alpha = Math.min(0.28, remaining/1800 * 0.28);
-    ctx.save();
-    ctx.globalAlpha = alpha;
-    ctx.fillStyle = '#1a0f08';
-    ctx.fillRect(0,0,canvas.width,canvas.height);
-    ctx.restore();
-  }
-}
 
 function burst(x, y, color, count){
   for(let i=0;i<count;i++){
@@ -1050,279 +450,6 @@ function triggerIconEffect(type, j){
   }
 }
 
-function roundRect(x,y,w,h,r){
-  ctx.beginPath();
-  ctx.moveTo(x+r,y);
-  ctx.arcTo(x+w,y,x+w,y+h,r);
-  ctx.arcTo(x+w,y+h,x,y+h,r);
-  ctx.arcTo(x,y+h,x,y,r);
-  ctx.arcTo(x,y,x+w,y,r);
-  ctx.closePath();
-}
-
-function drawJelly(cx,cy,j){
-  const t = performance.now()/300 + j.wobble;
-  let squish = 1 + Math.sin(t)*0.07;
-  const r = 20;
-  const now = performance.now();
-  let deathAlpha = 1;
-  let cyOffset = 0, cxOffset = 0;
-  let reactionRotation = 0, reactionTint = '#ff2b2b', reactionTintAlpha = 0;
-  let rx = {active:false};
-
-  if(j.dying){
-    // Melt into a colored puddle: progressively flatten (the existing
-    // scale(1/squish, squish) naturally spreads it wide as squish shrinks),
-    // then fade out in the final stretch.
-    const dp = Math.min(1, (now - j.dyingStart) / 1700);
-    const squashP = Math.min(1, dp / 0.55);
-    squish = Math.max(0.08, 1 - squashP*0.88);
-    deathAlpha = dp > 0.8 ? Math.max(0, 1 - (dp-0.8)/0.2) : 1;
-    // Laser deaths twitch electrically for their first beat; Handbag deaths
-    // spin sideways as they go down.
-    if(j.deathCause === 'laserShock' && dp < 0.3){
-      cxOffset += (Math.random()-0.5) * 6;
-    } else if(j.deathCause === 'sideWhack'){
-      reactionRotation = (1-squashP) * 0.6;
-    }
-  } else {
-    rx = playReactionFrame(j, now); // {cxOffset, cyOffset, squishMult, rotation, tintColor, tintAlpha}
-    cyOffset = rx.cyOffset; cxOffset = rx.cxOffset;
-    squish *= rx.squishMult;
-    reactionRotation = rx.rotation;
-    reactionTint = rx.tintColor;
-    reactionTintAlpha = rx.tintAlpha;
-
-    if(!rx.active){
-      const landAge = j.landPunch ? now - j.landPunch : Infinity;
-      if(landAge < 420){
-        // rebound + diminishing wobbles, riding on top of the ambient jiggle
-        const decay = Math.exp(-landAge/140);
-        squish *= 1 - Math.sin(landAge/40) * 0.22 * decay;
-        cyOffset -= Math.sin(landAge/40) * 5 * decay;
-      }
-    }
-    // in-air jump squash/stretch from resolveJump (compress before launch, stretch mid-arc)
-    if(j.jumpSquish && j.jumpSquish !== 1) squish *= j.jumpSquish;
-    // frightened trembling for everyone while a Nuke counts down
-    if(j.alive && now < panicUntil){
-      cxOffset += Math.sin(now/35 + j.wobble*10) * 2.2;
-      cyOffset += Math.cos(now/28 + j.wobble*7) * 1.4;
-    }
-  }
-  cy += cyOffset;
-  cx += cxOffset;
-
-  ctx.save();
-  ctx.globalAlpha = deathAlpha;
-
-  if(j === spotlightJelly){
-    // The ONLY way we mark "this is the acting jelly" now: a bright solid
-    // gold ring, pulsing faster than the player's own dashed identifier ring.
-    const sp = 1 + Math.sin(performance.now()/140)*0.16;
-    ctx.save();
-    ctx.strokeStyle = '#ffd35c';
-    ctx.lineWidth = 3.5;
-    ctx.shadowColor = '#ffd35c';
-    ctx.shadowBlur = 10;
-    ctx.beginPath();
-    ctx.arc(cx, cy, (r+13)*sp, 0, Math.PI*2);
-    ctx.stroke();
-    ctx.restore();
-  }
-
-  if(j.isPlayer){
-    const pulse = 1 + Math.sin(performance.now()/260)*0.12;
-    ctx.save();
-    ctx.strokeStyle = 'rgba(232,178,61,0.9)';
-    ctx.lineWidth = 2.5;
-    ctx.setLineDash([4,3]);
-    ctx.beginPath();
-    ctx.arc(cx, cy, (r+9)*pulse, 0, Math.PI*2);
-    ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.restore();
-
-    ctx.save();
-    ctx.font = 'bold 10px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillStyle = '#e8b23d';
-    ctx.fillText((j.name||'').toUpperCase(), cx, cy - r - 16);
-    ctx.restore();
-  } else {
-    ctx.save();
-    ctx.font = '9px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillStyle = 'rgba(233,230,218,0.75)';
-    ctx.fillText(j.name, cx, cy - r - 12);
-    ctx.restore();
-  }
-
-  ctx.save();
-  ctx.translate(cx,cy);
-  const totalTilt = (j.jumpTilt||0) + (reactionRotation||0);
-  if(totalTilt) ctx.rotate(totalTilt);
-  ctx.scale(1/squish, squish);
-
-  // wobbly blob outline instead of a perfect circle
-  const points = 10;
-  ctx.beginPath();
-  for(let i=0;i<=points;i++){
-    const ang = (i/points)*Math.PI*2;
-    const wob = Math.sin(ang*3 + t*1.4) * 1.8 + Math.sin(ang*5 - t*0.8) * 1.1;
-    const rad = r + wob;
-    const px = Math.cos(ang)*rad, py = Math.sin(ang)*rad*0.94 + r*0.06;
-    if(i===0) ctx.moveTo(px,py); else ctx.lineTo(px,py);
-  }
-  ctx.closePath();
-
-  const grad = ctx.createRadialGradient(-r*0.35,-r*0.4,2, 0,0,r*1.15);
-  grad.addColorStop(0, lighten(j.color, 0.55));
-  grad.addColorStop(0.55, j.color);
-  grad.addColorStop(1, lighten(j.color, -0.15));
-  ctx.fillStyle = grad;
-  ctx.fill();
-  ctx.strokeStyle = 'rgba(0,0,0,0.3)';
-  ctx.lineWidth = 1.5;
-  ctx.stroke();
-
-  // hit-flash tint over the same silhouette, fading out — color/style set by
-  // the active reaction type (red for damage, dark splat for flatten, etc)
-  if(rx.active && reactionTintAlpha > 0){
-    ctx.globalAlpha = reactionTintAlpha;
-    ctx.fillStyle = reactionTint;
-    ctx.fill();
-    ctx.globalAlpha = 1;
-  }
-
-  // glossy highlight
-  ctx.beginPath();
-  ctx.ellipse(-r*0.35, -r*0.45, r*0.32, r*0.18, -0.5, 0, Math.PI*2);
-  ctx.fillStyle = 'rgba(255,255,255,0.35)';
-  ctx.fill();
-
-  // face
-  ctx.fillStyle = '#10131a';
-  drawJellyFace(j, now, rx);
-  ctx.restore();
-
-  if(j.weaponCharge && !j.dying){
-    ctx.font='13px sans-serif';
-    ctx.textAlign='center';
-    ctx.fillText('⚔️', cx+16, cy-18);
-  }
-  if(!j.dying){
-    const badges = [];
-    if(j.shielded) badges.push('🛡️');
-    if(j.invisible) badges.push('🕶️');
-    if(j.frozen) badges.push('❄️');
-    if(j.rageCharge) badges.push('☣️');
-    if(j.tripleJump) badges.push('↗️');
-    if(j.handbagTurns > 0) badges.push('👜'+j.handbagTurns);
-    if(badges.length){
-      ctx.font='16px sans-serif';
-      ctx.textAlign='center';
-      badges.forEach((b,i)=> ctx.fillText(b, cx-16+i*16, cy-20));
-    }
-  }
-  ctx.restore(); // matches the deathAlpha save at the top of this function
-}
-
-// Readable expressions at small size — priority order matters since only
-// one state is shown at a time (a fresh hit always wins over "low HP nerves").
-function drawJellyFace(j, now, rx){
-  let state = 'happy';
-  const reactionAge = j.reaction ? now - j.reaction.start : Infinity;
-  const reactionDur = j.reaction ? (REACTION_DEFS[j.reaction.type]||REACTION_DEFS.launch).dur : 0;
-
-  if(j.dying){
-    state = 'dying';
-  } else if(j.reaction && reactionAge < reactionDur * 0.35){
-    state = 'eyesShut'; // the instant of impact
-  } else if(now < panicUntil){
-    state = 'panic'; // Nuke countdown
-  } else if(j.reaction && reactionAge >= reactionDur && reactionAge < reactionDur + 260){
-    state = 'dazed'; // just recovering from a hit
-  } else if(j.rageCharge){
-    state = 'angry';
-  } else if(j.alive && j.hp > 0 && j.hp < 30){
-    state = 'nervous';
-  } else if(dropShadows.some(s => s.x===j.x && s.y===j.y)){
-    state = 'lookUp'; // a Random Drop shadow is growing beneath them
-  } else if(j.jumpTilt){
-    state = 'lookDir'; // mid-jump, eyes toward the destination
-  }
-
-  const lookX = state === 'lookDir' ? Math.sign(j.jumpTilt) * 1.6 : 0;
-  const lookY = state === 'lookUp' ? -2.2 : 0;
-
-  if(state === 'eyesShut'){
-    ctx.strokeStyle = '#10131a';
-    ctx.lineWidth = 1.6;
-    ctx.beginPath(); ctx.moveTo(-8,-2); ctx.lineTo(-4,-2); ctx.moveTo(4,-2); ctx.lineTo(8,-2); ctx.stroke();
-    ctx.beginPath(); ctx.arc(0,5,2.6,0,Math.PI,false); ctx.stroke();
-  } else if(state === 'panic'){
-    ctx.fillStyle = '#f4f1e8';
-    ctx.beginPath(); ctx.arc(-6,-2,3.4,0,Math.PI*2); ctx.fill();
-    ctx.beginPath(); ctx.arc(6,-2,3.4,0,Math.PI*2); ctx.fill();
-    ctx.fillStyle = '#10131a';
-    ctx.beginPath(); ctx.arc(-6+lookX,-2+lookY,1.5,0,Math.PI*2); ctx.fill();
-    ctx.beginPath(); ctx.arc(6+lookX,-2+lookY,1.5,0,Math.PI*2); ctx.fill();
-    ctx.beginPath(); ctx.arc(0,5,2.6,0,Math.PI*2); ctx.fill();
-  } else if(state === 'dazed'){
-    ctx.strokeStyle = '#10131a';
-    ctx.lineWidth = 1.4;
-    ctx.beginPath(); ctx.arc(-6,-3,2.2,0,Math.PI*1.5); ctx.stroke();
-    ctx.beginPath(); ctx.arc(6,-1,2.2,0,Math.PI*1.5); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(-3,5); ctx.lineTo(3,5); ctx.stroke();
-  } else if(state === 'angry'){
-    ctx.strokeStyle = '#10131a';
-    ctx.lineWidth = 1.6;
-    ctx.beginPath(); ctx.moveTo(-9,-6); ctx.lineTo(-3,-4); ctx.moveTo(9,-6); ctx.lineTo(3,-4); ctx.stroke();
-    ctx.fillStyle = '#10131a';
-    ctx.beginPath(); ctx.arc(-6,-2,2,0,Math.PI*2); ctx.fill();
-    ctx.beginPath(); ctx.arc(6,-2,2,0,Math.PI*2); ctx.fill();
-    ctx.beginPath(); ctx.arc(0,7,5,Math.PI,0,false); ctx.stroke();
-  } else if(state === 'nervous'){
-    ctx.fillStyle = '#10131a';
-    ctx.beginPath(); ctx.arc(-6,-2,2.2,0,Math.PI*2); ctx.fill();
-    ctx.beginPath(); ctx.arc(6,-2,2.2,0,Math.PI*2); ctx.fill();
-    ctx.strokeStyle = '#10131a';
-    ctx.lineWidth = 1.4;
-    ctx.beginPath();
-    ctx.moveTo(-5,5);
-    ctx.quadraticCurveTo(-2.5,3,0,5);
-    ctx.quadraticCurveTo(2.5,7,5,5);
-    ctx.stroke();
-  } else if(state === 'dying'){
-    // Shocked expression that holds, then sinks into the puddle and fades.
-    const dp = j.dyingStart ? Math.min(1, (performance.now() - j.dyingStart) / 1700) : 0;
-    if(dp < 0.85){
-      const sinkY = Math.max(0, (dp - 0.5) / 0.5) * 10;
-      ctx.fillStyle = '#f4f1e8';
-      ctx.beginPath(); ctx.arc(-6,-2+sinkY,3.2,0,Math.PI*2); ctx.fill();
-      ctx.beginPath(); ctx.arc(6,-2+sinkY,3.2,0,Math.PI*2); ctx.fill();
-      ctx.fillStyle = '#10131a';
-      ctx.beginPath(); ctx.arc(-6,-2+sinkY,1.4,0,Math.PI*2); ctx.fill();
-      ctx.beginPath(); ctx.arc(6,-2+sinkY,1.4,0,Math.PI*2); ctx.fill();
-      ctx.strokeStyle = '#10131a';
-      ctx.lineWidth = 1.4;
-      ctx.beginPath(); ctx.arc(0,5+sinkY,2.6,0,Math.PI*2); ctx.stroke();
-    }
-  } else {
-    ctx.fillStyle = '#10131a';
-    ctx.beginPath(); ctx.arc(-6+lookX,-2+lookY,2.2,0,Math.PI*2); ctx.fill();
-    ctx.beginPath(); ctx.arc(6+lookX,-2+lookY,2.2,0,Math.PI*2); ctx.fill();
-    ctx.strokeStyle = '#10131a';
-    ctx.lineWidth = 1.4;
-    if(state === 'lookUp'){
-      ctx.beginPath(); ctx.arc(0,5,2.4,0,Math.PI*2); ctx.stroke();
-    } else {
-      ctx.beginPath(); ctx.arc(lookX*0.5,4,5,0,Math.PI,false); ctx.stroke();
-    }
-  }
-}
-
 function lighten(hex, amt){
   const c = hex.replace('#','');
   const num = parseInt(c,16);
@@ -1332,6 +459,463 @@ function lighten(hex, amt){
   r=Math.min(255,Math.max(0,r)); g=Math.min(255,Math.max(0,g)); b=Math.min(255,Math.max(0,b));
   return `rgb(${r},${g},${b})`;
 }
+
+/* =========================================================
+   Pixel renderer. Game logic keeps working in 486px "logic space";
+   the board is painted as pixel art at 1/3 scale (162px) and blown up 3x,
+   then crisp UI text (names, numbers, callouts) goes on top at full res.
+   ========================================================= */
+const S3 = 3, ART = 162;
+function boardToPx(x) { return PAD + x * CELL; }
+const R = Math.random;
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+function mk(w, h) { const c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d'); x.imageSmoothingEnabled = false; return [c, x]; }
+const [art, ax] = mk(ART, ART);
+const OUT = '#07051a';
+function hexRGB(h) { if (h.startsWith('rgb')) { const m = h.match(/\d+/g); return [+m[0], +m[1], +m[2]]; } const n = parseInt(h.slice(1), 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; }
+function rgbStr(r, g, b) { return `rgb(${clamp(Math.round(r), 0, 255)},${clamp(Math.round(g), 0, 255)},${clamp(Math.round(b), 0, 255)})`; }
+function tones(h) { const [r, g, b] = hexRGB(h); return { d: [r * .5, g * .5, b * .62], m: [r, g, b], l: [r + (255 - r) * .45, g + (255 - g) * .45, b + (255 - b) * .45], dd: [r * .28, g * .28, b * .4] }; }
+function pcirc(c, x, y, r, col) { c.fillStyle = col; x = Math.round(x); y = Math.round(y); for (let dy = -r; dy <= r; dy++) { const w = Math.floor(Math.sqrt(r * r - dy * dy + r * .6)); c.fillRect(x - w, y + dy, w * 2 + 1, 1); } }
+function pring(c, x, y, r, col, gap) { c.fillStyle = col; const n = Math.max(12, Math.floor(r * 6.3)); for (let i = 0; i < n; i++) { if (gap && Math.floor(i / gap) % 2) continue; const a = i / n * Math.PI * 2; c.fillRect(Math.round(x + Math.cos(a) * r), Math.round(y + Math.sin(a) * r), 1, 1); } }
+function pell(c, x, y, rx, ry, col) { c.fillStyle = col; x = Math.round(x); y = Math.round(y); ry = Math.max(1, ry); for (let dy = -Math.ceil(ry); dy <= Math.ceil(ry); dy++) { const k = 1 - (dy * dy) / (ry * ry); if (k < 0) continue; const w = Math.round(rx * Math.sqrt(k)); c.fillRect(x - w, y + dy, w * 2 + 1, 1); } }
+
+/* ---------- pixel icons (12x12 maps, outlined when baked) ---------- */
+function bakeIcon(map, pal) {
+  const h = map.length, w = 12, [c, x] = mk(w + 2, h + 2), g = [];
+  for (let j = 0; j < h; j++) { const row = (map[j] + '............').slice(0, 12); g.push(row); }
+  const on = (i, j) => j >= 0 && j < h && i >= 0 && i < w && g[j][i] !== '.';
+  for (let j = -1; j <= h; j++) for (let i = -1; i <= w; i++) {
+    if (on(i, j)) { x.fillStyle = pal[g[j][i]] || '#ff00ff'; x.fillRect(i + 1, j + 1, 1, 1); }
+    else if (on(i - 1, j) || on(i + 1, j) || on(i, j - 1) || on(i, j + 1)) { x.fillStyle = OUT; x.fillRect(i + 1, j + 1, 1, 1); }
+  }
+  return c;
+}
+function miniIcon(src) { const [c, x] = mk(8, 8); x.drawImage(src, 0, 0, 14, 14, 0, 0, 8, 8); return c; }
+const IMAP = {
+  nuke: [['....yyyy....', '..yyyyyyyy..', '.yykkyykkyy.', '.ykkkyykkky.', 'yykkkyykkkyy', 'yyykkWWkkyyy', 'yyyyyWWyyyyy', 'yyyyyyyyyyyy', '.yyyykkyyyy.', '.yyykkkkyyy.', '..yykkkkyy..', '....yyyy....'], { y: '#ffd230', W: '#fff6c0', k: '#2a1a10' }],
+  handbag: [['....hhhh....', '...h....h...', '...h....h...', '..pppppppp..', '.pPPPPPPPPp.', '.pPppppppPp.', '.pppppppppp.', '.ppppyyppppp', '.ppppyypppp.', '.pppppppppp.', '.pppppppppp.', '..dddddddd..'], { h: '#8a2a5a', p: '#ff6fa8', P: '#ffb0d0', y: '#ffd230', d: '#c03a7a' }],
+  laser: [['......yyyy..', '.....yWyy...', '....yWyy....', '...yWyy.....', '..yyyyyyyy..', '.....yyyy...', '....yyyy....', '...yyy......', '..yyy.......', '..yy........', '.y..........', '............'], { y: '#ffe14d', W: '#ffffff' }],
+  airstrike: [['.....gg.....', '.....gW.....', '.....gg.....', '....gggg....', '..gggggggg..', 'gggggrrggggg', 'dddddggddddd', '.....gg.....', '.....gg.....', '....gggg....', '...dddddd...', '.....oo.....'], { g: '#c8ccd8', W: '#ffffff', d: '#7a8094', r: '#ff4d4d', o: '#ff9d3d' }],
+  blast: [['.....o......', '.o...oo...o.', '..o.oyyo.o..', '...oyyyyo...', '.ooyyWWyyoo.', 'ooyyWWWWyyoo', '.ooyyWWyyoo.', '...oyyyyo...', '..o.oyyo.o..', '.o...oo...o.', '.....o......', '............'], { o: '#ff6a2a', y: '#ffd230', W: '#fff6c0' }],
+  randomdrop: [['....rrrr....', '..rrwwwwrr..', '.rwwrrrrwwr.', '.rwrwwwwrwr.', 'rwrww..wwrwr', 'rwrw.rr.wrwr', 'rwrw.rr.wrwr', 'rwrww..wwrwr', '.rwrwwwwrwr.', '.rwwrrrrwwr.', '..rrwwwwrr..', '....rrrr....'], { r: '#ff3a5a', w: '#ffffff' }],
+  invisible: [['............', '............', '............', 'kkkkkkkkkkkk', 'kkkkkkkkkkkk', '.kbbk..kbbk.', '.kbkk..kbkk.', '.kkkk..kkkk.', '..kk....kk..', '............', '............', '............'], { k: '#1a1a26', b: '#6a8ad8' }],
+  debonus: [['rr........rr', 'rrr......rrr', '.rrr....rrr.', '..rrr..rrr..', '...rrrrrr...', '....rWrr....', '....rrrr....', '...rrrrrr...', '..rrr..rrr..', '.rrr....rrr.', 'rrr......rrr', 'rr........rr'], { r: '#ff4d4d', W: '#ffd0d0' }],
+  shield: [['yyyyyyyyyyyy', 'yWWWWyyyyyyY', 'yWyyyyyyyyYY', 'yyyyyyyyyYYY', 'yyyyyyyyYYYY', 'yyyyyyyYYYYY', '.yyyyyyYYYY.', '.yyyyyyYYYY.', '..yyyyyYYY..', '...yyyyYY...', '....yyyY....', '.....yY.....'], { y: '#ffd35c', W: '#fff6c0', Y: '#c98a1a' }],
+  freeze: [['.....cc.....', '...c.cc.c...', '....cccc....', '.c...cc...c.', '..cc.cc.cc..', 'cccccWWccccc', 'cccccWWccccc', '..cc.cc.cc..', '.c...cc...c.', '....cccc....', '...c.cc.c...', '.....cc.....'], { c: '#7ae8ff', W: '#ffffff' }],
+  rage: [['.....r......', '....rr......', '....rrr..r..', '...rrrr.rr..', '..rrorrrrr..', '..rroorrrr..', '.rrooooorrr.', '.rroyyyoorr.', '.rrooyWyorr.', '.rrooyyoorr.', '..rroooorr..', '...rrrrrr...'], { r: '#e8243a', o: '#ff8a2a', y: '#ffd230', W: '#fff6c0' }],
+  triplejump: [['.....gg.....', '....gWgg....', '...gg..gg...', '..gg....gg..', '.....gg.....', '....gggg....', '...gg..gg...', '..gg....gg..', '.....gg.....', '....gggg....', '...gg..gg...', '..gg....gg..'], { g: '#8dff6b', W: '#ffffff' }],
+  teleport: [['....pppp....', '..ppccccpp..', '.pccwwwwccp.', 'pccw....wccp', 'pcw..cc..wcp', 'pcw.cwwc.wcp', 'pcw.cwwc.wcp', 'pcw..cc..wcp', 'pccw....wccp', '.pccwwwwccp.', '..ppccccpp..', '....pppp....'], { p: '#a259ff', c: '#3ad6d9', w: '#c8f8ff' }],
+  mine: [['.........y..', '........y.o.', '.......ff...', '......ff....', '...kkkkkk...', '..kkkkkkkk..', '.kkWkkkkkkk.', '.kWkkkkkkrk.', '.kkkkkkkkkk.', '.kkkkkkkkkk.', '..kkkkkkkk..', '...kkkkkk...'], { k: '#3a3a52', W: '#9a9ab8', y: '#ffe14d', o: '#ff6a2a', f: '#8a6a3a', r: '#ff3a3a' }],
+  superjelly: [['..........y.', '.ggg....gyyy', 'gWWgg..gggy.', 'gWggggggggg.', 'gggggggggggg', 'gggggggggggg', '.gggggggggg.', '..gggggggg..', '...gggggg...', '....gggg....', '.....gg.....', '............'], { g: '#4ae07a', W: '#d8ffe0', y: '#ffe14d' }],
+  health: [['....gggg....', '....gWgg....', '....gggg....', '....gggg....', 'gggggggggggg', 'gWgggggggggg', 'gggggggggggg', 'gggggggggggg', '....gggg....', '....gggg....', '....gggg....', '....gggg....'], { g: '#5ee08a', W: '#d8ffe0' }]
+};
+const ICONS = {}, MINI = {};
+for (const k in IMAP) { ICONS[k] = bakeIcon(IMAP[k][0], IMAP[k][1]); MINI[k] = miniIcon(ICONS[k]); }
+ICONS.sword = bakeIcon(['..........ww', '.........wW.', '........wW..', '.......wW...', '......wW....', '..b..wW.....', '...bwW......', '....b.......', '...b.b......', '..h...b.....', '.h..........', '............'], { w: '#c8d4ea', W: '#ffffff', b: '#c9a03a', h: '#6b4422' });
+const EMOJI = { '🛡️': 'shield', '🕶️': 'invisible', '☣️': 'rage', '↗️': 'triplejump', '👜': 'handbag', '❄️': 'freeze' };
+const DROPMAP = {
+  anvil: [['................', '................', '................', '..dddddddddddd..', 'dddggggggggggdd.', '.ddgWWWWWWgggd..', '...ddggggggdd...', '.....dggggd.....', '.....dggggd.....', '....ddggggdd....', '...dgggggggd....', '..dggggggggggd..', '..dddddddddddd..', '................', '................', '................'], { d: '#2a2c34', g: '#5a5e6a', W: '#9aa0b0' }],
+  piano: [['................', '..kkkkkkkkkkkk..', '.kbbbbbbbbbbbbk.', '.kbBBBBBBBBBBbk.', '.kbbbbbbbbbbbbk.', '.kbbbbbbbbbbbbk.', '.kwkwkwkwkwkwwk.', '.kwkwkwkwkwkwwk.', '.kwwwwwwwwwwwwk.', '.kkkkkkkkkkkkkk.', '..k..........k..', '..k..........k..', '.kk..........kk.', '................', '................', '................'], { k: '#1c1712', b: '#3a2e22', B: '#5a4a38', w: '#efe9df' }],
+  axe: [['................', '......ssss......', '....ssssssss....', '...sWWssssssss..', '...sWssssssss...', '....ssssssss....', '......sssshh....', '.........hh.....', '........hh......', '.......hh.......', '......hh........', '.....hh.........', '....hh..........', '...hh...........', '................', '................'], { s: '#c9ced6', W: '#ffffff', h: '#8a5a2e' }],
+  missile: [['................', '.......rr.......', '......rWWr......', '......rwwr......', '......wwww......', '......wwww......', '......wwww......', '......wkkw......', '......wwww......', '.....wwwwww.....', '....rwwwwwwr....', '....r.wwww.r....', '.......oo.......', '......oyyo......', '.......oo.......', '................'], { r: '#e8243a', W: '#ffffff', w: '#d8dce8', k: '#3a3d44', o: '#ff8a2a', y: '#ffe14d' }]
+};
+const DROPS = {};
+for (const k in DROPMAP) { const [m, p] = DROPMAP[k]; const [c, x] = mk(18, 18); const on = (i, j) => j >= 0 && j < 16 && i >= 0 && i < 16 && m[j][i] !== '.'; for (let j = -1; j <= 16; j++) for (let i = -1; i <= 16; i++) { if (on(i, j)) { x.fillStyle = p[m[j][i]]; x.fillRect(i + 1, j + 1, 1, 1); } else if (on(i - 1, j) || on(i + 1, j) || on(i, j - 1) || on(i, j + 1)) { x.fillStyle = OUT; x.fillRect(i + 1, j + 1, 1, 1); } } DROPS[k] = c; }
+
+/* ---------- jelly sprites (re-rendered per frame for squish and wobble) ---------- */
+const JW = 32, JH = 30;
+const jellyCanvases = new Map();
+function jellyCanvas(key) { let c = jellyCanvases.get(key); if (!c) { c = mk(JW, JH); c.push(c[1].createImageData(JW, JH)); jellyCanvases.set(key, c); } return c; }
+function renderJelly(key, color, o) {
+  const [c, x, img] = jellyCanvas(key), d = img.data; d.fill(0);
+  const T = tones(color), sq = o.squish, t = o.t, rad0 = o.r || 7.2;
+  const mask = new Uint8Array(JW * JH);
+  for (let y = 0; y < JH; y++) for (let xx = 0; xx < JW; xx++) {
+    const dx = xx + .5 - 16, dy = y + .5 - 16, ux = dx * sq, uy = dy / sq, a = Math.atan2(uy, ux);
+    const rr = rad0 + Math.sin(a * 3 + t * 1.4) * .5 + Math.sin(a * 5 - t * .8) * .3;
+    const vy = uy < 0 ? uy / .95 : uy / .78;
+    if (ux * ux + vy * vy <= rr * rr) mask[y * JW + xx] = 1;
+  }
+  const put = (xx, y, col, al = 1) => { if (xx < 0 || y < 0 || xx >= JW || y >= JH) return; const i = (y * JW + xx) * 4; d[i] = col[0]; d[i + 1] = col[1]; d[i + 2] = col[2]; d[i + 3] = 255 * al; };
+  const M = (xx, y) => xx >= 0 && y >= 0 && xx < JW && y < JH && mask[y * JW + xx];
+  const tint = o.tintA > 0 ? hexRGB(o.tint) : null;
+  for (let y = 0; y < JH; y++) for (let xx = 0; xx < JW; xx++) {
+    if (M(xx, y)) {
+      const dx = (xx + .5 - 16) * sq, dy = (y + .5 - 16) / sq, L = -dx * .055 - dy * .085;
+      let col = L > .42 ? T.l : L < -.38 ? T.d : T.m;
+      if (!M(xx + 1, y) || !M(xx, y + 1)) col = T.d;
+      if (!M(xx, y + 2) && M(xx, y + 1)) col = T.d;
+      if (tint) col = [col[0] + (tint[0] - col[0]) * o.tintA, col[1] + (tint[1] - col[1]) * o.tintA, col[2] + (tint[2] - col[2]) * o.tintA];
+      put(xx, y, col, o.alpha);
+    } else if (M(xx - 1, y) || M(xx + 1, y) || M(xx, y - 1) || M(xx, y + 1)) put(xx, y, [7, 5, 26], o.alpha);
+  }
+  // gloss
+  const gx = Math.round(16 - 3.2 / sq), gy = Math.round(16 - 3.6 * sq);
+  for (const [px, py] of [[0, 0], [1, 0], [0, 1], [2, -1]]) if (M(gx + px, gy + py)) put(gx + px, gy + py, [255, 255, 255], o.alpha * .9);
+  // face
+  const D = [16, 19, 26], Wt = [244, 241, 232];
+  const ex = 2.6 / Math.max(.7, sq), ey = Math.round(16 - .4 * sq + (o.sink || 0)), my = Math.round(16 + 2.4 * sq + (o.sink || 0));
+  const lx = Math.round(o.lookX || 0), ly = Math.round(o.lookY || 0);
+  const L1 = Math.round(16 - ex), R1 = Math.round(16 + ex) - 1;
+  const st = o.face;
+  if (st === 'eyesShut') { for (const e of [L1, R1]) { put(e - 1, ey, D, o.alpha); put(e, ey, D, o.alpha); } put(15, my, D, o.alpha); put(16, my, D, o.alpha); }
+  else if (st === 'panic' || st === 'dying') { for (const e of [L1, R1]) { put(e - 1, ey - 1, Wt, o.alpha); put(e, ey - 1, Wt, o.alpha); put(e - 1, ey, Wt, o.alpha); put(e, ey, Wt, o.alpha); put(e - (lx < 0 ? 1 : 0), ey - (ly < 0 ? 1 : 0), D, o.alpha); } put(15, my, D, o.alpha); put(16, my, D, o.alpha); put(15, my + 1, D, o.alpha); put(16, my + 1, D, o.alpha); }
+  else if (st === 'dazed') { for (const e of [L1, R1]) { put(e - 1, ey - 1, D, o.alpha); put(e, ey, D, o.alpha); put(e - 1, ey + 1, D, o.alpha); put(e + 1, ey - 1, D, o.alpha); put(e + 1, ey + 1, D, o.alpha); } for (let k = -1; k <= 1; k++) put(16 + k, my, D, o.alpha); }
+  else if (st === 'angry') { put(L1 - 1, ey - 2, D, o.alpha); put(L1, ey - 1, D, o.alpha); put(R1 + 1, ey - 2, D, o.alpha); put(R1, ey - 1, D, o.alpha); put(L1, ey, D, o.alpha); put(R1, ey, D, o.alpha); put(14, my + 1, D, o.alpha); put(15, my, D, o.alpha); put(16, my, D, o.alpha); put(17, my + 1, D, o.alpha); }
+  else if (st === 'nervous') { for (const e of [L1, R1]) { put(e, ey - 1, D, o.alpha); put(e, ey, D, o.alpha); } [0, 1, 0, 1, 0].forEach((k, i) => put(14 + i, my + k, D, o.alpha)); }
+  else { for (const e of [L1, R1]) { put(e + lx, ey - 1 + ly, D, o.alpha); put(e + lx, ey + ly, D, o.alpha); } if (st === 'lookUp') { put(15, my, D, o.alpha); put(16, my, D, o.alpha); } else { put(14 + lx, my, D, o.alpha); put(15 + lx, my + 1, D, o.alpha); put(16 + lx, my + 1, D, o.alpha); put(17 + lx, my, D, o.alpha); } }
+  x.putImageData(img, 0, 0);
+  return c;
+}
+const portraitCache = {};
+function jellyPortrait(color, scale = 4) {
+  if (portraitCache[color + scale]) return portraitCache[color + scale];
+  const src = renderJelly('portrait', color, { squish: 1, t: 1.2, face: 'happy', alpha: 1 });
+  const [c, x] = mk(24 * scale, 22 * scale); x.drawImage(src, 4, 5, 24, 22, 0, 0, 24 * scale, 22 * scale);
+  return (portraitCache[color + scale] = c.toDataURL());
+}
+
+/* ---------- board backdrop (static) ---------- */
+const [boardBg, bbx] = mk(ART, ART);
+(function () {
+  bbx.fillStyle = '#0c0920'; bbx.fillRect(0, 0, ART, ART);
+  for (let y = 0; y < ART; y += 2) for (let x = (y / 2) % 2 ? 1 : 0; x < ART; x += 4) { bbx.fillStyle = '#100c28'; bbx.fillRect(x, y, 1, 1); }
+  bbx.fillStyle = '#2a1f52'; bbx.fillRect(0, 0, ART, 2); bbx.fillRect(0, ART - 2, ART, 2); bbx.fillRect(0, 0, 2, ART); bbx.fillRect(ART - 2, 0, 2, ART);
+  bbx.fillStyle = '#4a3a8a'; bbx.fillRect(1, 1, ART - 2, 1); bbx.fillRect(1, 1, 1, ART - 2);
+  for (const [cx, cy] of [[2, 2], [ART - 4, 2], [2, ART - 4], [ART - 4, ART - 4]]) { bbx.fillStyle = '#e8b23d'; bbx.fillRect(cx, cy, 2, 2); }
+})();
+
+/* ---------- frame render ---------- */
+let needDraw = true;
+function drawBoard() { needDraw = true; }
+const A = v => Math.round(v / S3);
+function cellA(gx) { return A(boardToPx(gx)); }
+function drawTile(t, now) {
+  const x = cellA(t.x), y = cellA(t.y);
+  const isSel = selectedTile && selectedTile.x === t.x && selectedTile.y === t.y;
+  const isReach = phase === 'picking' && reachableSet.has(t.x + ',' + t.y);
+  const pressed = landFlashes.some(f => f.x === t.x && f.y === t.y && (now - f.start) < 220);
+  const p = pressed ? 1 : 0;
+  ax.fillStyle = '#05040f'; ax.fillRect(x + 1, y + 1, 20, 20);
+  ax.fillStyle = isSel ? '#6a5218' : isReach ? '#241e48' : '#191433'; ax.fillRect(x + 1, y + 1 + p, 20, 19 - p);
+  ax.fillStyle = isSel ? '#c9962a' : isReach ? '#3a3274' : '#2a2452'; ax.fillRect(x + 2, y + 2 + p, 18, 15);
+  ax.fillStyle = isSel ? '#ffe08a' : isReach ? '#5248a0' : '#3a3270'; ax.fillRect(x + 2, y + 2 + p, 18, 1); ax.fillRect(x + 2, y + 2 + p, 1, 14);
+  if (isReach && !isSel) { const on = Math.floor(now / 260) % 2; ax.fillStyle = on ? '#e8b23d' : '#a87a1a'; for (const [cx, cy] of [[x + 1, y + 1], [x + 19, y + 1], [x + 1, y + 19], [x + 19, y + 19]]) ax.fillRect(cx, cy, 2, 1), ax.fillRect(cx + (cx > x + 10 ? 1 : 0), cy + (cy > y + 10 ? -1 : 0) + (cy > y + 10 ? 0 : 1), 1, 1); }
+  if (t.type === 'plain') { ax.fillStyle = '#332c62'; ax.fillRect(x + 10, y + 9 + p, 2, 2); return; }
+  const def = TILE_DEFS[t.type], ic = ICONS[t.type];
+  const [r, g, b] = hexRGB(def.color);
+  ax.fillStyle = `rgba(${r},${g},${b},.22)`; ax.fillRect(x + 3, y + 3 + p, 16, 13);
+  const bob = Math.round(Math.sin(now / 320 + t.x + t.y * 2) * .6);
+  ax.drawImage(ic, x + 4, y + 2 + p + bob);
+}
+function renderFrame() {
+  const now = performance.now();
+  if (now < hitStopUntil) return;
+  let sx = 0, sy = 0;
+  if (shakeAmt > .2) { sx = Math.round((R() - .5) * shakeAmt / S3); sy = Math.round((R() - .5) * shakeAmt / S3); shakeAmt *= .88; } else shakeAmt = 0;
+  ax.setTransform(1, 0, 0, 1, 0, 0); ax.globalAlpha = 1;
+  ax.drawImage(boardBg, 0, 0);
+  ax.setTransform(1, 0, 0, 1, sx, sy);
+  for (const t of tiles) drawTile(t, now);
+  // ghost of where each icon is heading
+  for (const t of tiles) if (t.type !== 'plain' && t.y + 1 < GRID) { ax.globalAlpha = .3; ax.drawImage(MINI[t.type], cellA(t.x) + 13, cellA(t.y + 1) + 12); ax.globalAlpha = 1; }
+  if (shiftFlash > .02) { ax.globalAlpha = shiftFlash; ax.strokeStyle = '#e8b23d'; ax.lineWidth = 1; ax.strokeRect(2.5, 2.5, ART - 5, ART - 5); ax.globalAlpha = 1; shiftFlash *= .9; }
+  for (const f of landFlashes) { const life = Math.max(0, 1 - (now - f.start) / 220); if (!life) continue; ax.globalAlpha = life; ax.strokeStyle = '#ffd35c'; ax.strokeRect(cellA(f.x) + 1.5, cellA(f.y) + 1.5, 19, 19); ax.globalAlpha = 1; }
+  landFlashes = landFlashes.filter(f => (now - f.start) < 220);
+  for (const c of explosionCells) { const life = Math.max(0, 1 - (now - c.start) / 500); if (!life) continue; const x = cellA(c.x), y = cellA(c.y); ax.globalAlpha = life * .6; ax.fillStyle = c.color; ax.fillRect(x + 1, y + 1, 20, 20); ax.globalAlpha = life; ax.strokeStyle = c.color; ax.strokeRect(x + 1.5, y + 1.5, 19, 19); if (Math.floor(now / 60) % 2) { ax.fillStyle = '#ffffff'; ax.fillRect(x + 4 + Math.floor(R() * 14), y + 4 + Math.floor(R() * 14), 1, 1); } ax.globalAlpha = 1; }
+  explosionCells = explosionCells.filter(c => (now - c.start) < 500);
+  for (const s of dropShadows) { const p = Math.min(1, (now - s.start) / s.dur); ax.globalAlpha = .6 * p; pell(ax, cellA(s.x) + 11, cellA(s.y) + 15, 7 * p, 2.5 * p, '#000000'); ax.globalAlpha = 1; }
+  dropShadows = dropShadows.filter(s => (now - s.start) < s.dur);
+  // ground shadows
+  for (const j of jellies) { if (!j.alive && !j.dying) continue; const lift = j.jumpLift || 0, k = 1 - (lift / 28) * .5; ax.globalAlpha = .45 * k; pell(ax, A(boardToPx(j.px) + CELL / 2), A(boardToPx(j.py) + CELL / 2) + 6, 6 * k, 1.6 * k, '#000000'); ax.globalAlpha = 1; }
+  // rings and jellies
+  const jl = [];
+  for (const j of jellies) {
+    if (!j.alive && !j.dying) continue;
+    const st = jellyState(j, now);
+    const cx = A(boardToPx(j.px) + CELL / 2 + st.cxo), cy = A(boardToPx(j.py) + CELL / 2 - (j.jumpLift || 0) + st.cyo);
+    if (j === spotlightJelly) { const sp = 1 + Math.sin(now / 140) * .12; pring(ax, cx, cy, 11 * sp, '#ffd35c'); pring(ax, cx, cy, 12 * sp, 'rgba(255,211,92,.4)'); }
+    if (j.isPlayer && !j.dying) { const pu = 1 + Math.sin(now / 260) * .08; pring(ax, cx, cy, 9.5 * pu, '#e8b23d', 3); }
+    const spr = renderJelly(j.id, j.color, st);
+    ax.drawImage(spr, cx - 16, cy - 16);
+    jl.push({ j, cx, cy });
+  }
+  for (const o of fallingObjects) {
+    const p = Math.min(1, (now - o.start) / o.dur), e = p * p, px = A(boardToPx(o.targetX) + CELL / 2), py = Math.round(-14 + (A(boardToPx(o.targetY) + CELL / 2) + 14) * e);
+    if (o.shape === 'missile' && R() < .6) particles.push({ x: px * S3, y: (py + 8) * S3, vx: (R() - .5) * .4, vy: .3 + R() * .3, life: .5, color: '#9a9aa8', size: 3 });
+    ax.drawImage(DROPS[o.shape] || DROPS.anvil, px - 9, py - 9);
+  }
+  fallingObjects = fallingObjects.filter(o => (now - o.start) < o.dur);
+  for (const f of collectFx) {
+    const p = Math.min(1, (now - f.start) / f.dur), jx = boardToPx(f.jelly.px) + CELL / 2, jy = boardToPx(f.jelly.py) + CELL / 2;
+    let x, y, sc;
+    if (p < .35) { const q = p / .35; x = f.x0; y = f.y0 - 18 * q; sc = 1 + .5 * q; } else { const q = (p - .35) / .65; x = f.x0 + (jx - f.x0) * q; y = f.y0 - 18 + (jy - f.y0 + 18) * q; sc = 1.5 * (1 - q); }
+    const ic = ICONS[f.type] || ICONS.health, s = Math.max(2, Math.round(14 * sc));
+    ax.drawImage(ic, A(x) - Math.round(s / 2), A(y) - Math.round(s / 2), s, s);
+    if (p >= .97 && !f.burstFired) { f.burstFired = true; burst(jx, jy, f.color, 12); }
+  }
+  collectFx = collectFx.filter(f => (now - f.start) < f.dur);
+  if (tutorialActive && phase === 'picking') {
+    const on = Math.floor(now / 200) % 2;
+    for (const t of tiles) { if (t.type === 'plain' || t.y >= GRID - 1) continue; const x0 = cellA(t.x) + 11, y0 = cellA(t.y) + 17, y1 = cellA(t.y + 1) + 6; ax.fillStyle = 'rgba(232,178,61,.75)'; for (let y = y0; y < y1; y += 2) ax.fillRect(x0, y + on, 1, 1); ax.fillRect(x0 - 2, y1 - 1, 5, 1); ax.fillRect(x0 - 1, y1, 3, 1); ax.fillRect(x0, y1 + 1, 1, 1); }
+    reachableSet.forEach(key => { const [rx, ry] = key.split(',').map(Number), pr = predictTileAt(rx, ry); if (pr.type === 'plain') return; ax.globalAlpha = .55 + Math.sin(now / 200) * .2; ax.drawImage(ICONS[pr.type], cellA(rx) + 4, cellA(ry) + 3); ax.globalAlpha = 1; });
+  }
+  if (airStrikeReticles.length) { const on = Math.floor(now / 110) % 2; airStrikeReticles.forEach(r => { if (!r.active) return; const cx = cellA(r.x) + 11, cy = cellA(r.y) + 11, col = on ? '#ff3a3a' : '#ff9a9a'; pring(ax, cx, cy, 5, col); ax.fillStyle = col; ax.fillRect(cx - 8, cy, 3, 1); ax.fillRect(cx + 6, cy, 3, 1); ax.fillRect(cx, cy - 8, 1, 3); ax.fillRect(cx, cy + 6, 1, 3); }); }
+  if (laserCharge) { const p = Math.min(1, (now - laserCharge.start) / laserCharge.dur), cx = cellA(laserCharge.x) + 11, cy = cellA(laserCharge.y) + 11; ax.fillStyle = `rgba(255,225,77,${.25 + p * .5})`; const off = Math.floor(now / 50) % 4; for (let k = 4 + off; k < ART - 4; k += 4) { ax.fillRect(k, cy, 1, 1); ax.fillRect(cx, k, 1, 1); } pcirc(ax, cx, cy, Math.round(2 + p * 4 + Math.sin(p * 40)), `rgba(255,240,150,${.3 + .5 * p})`); }
+  if (laserBeamFx) { const a = Math.max(0, 1 - (now - laserBeamFx.start) / laserBeamFx.dur), cx = cellA(laserBeamFx.x) + 11, cy = cellA(laserBeamFx.y) + 11; ax.globalAlpha = a; ax.fillStyle = laserBeamFx.color; ax.fillRect(4, cy - 2, ART - 8, 5); ax.fillRect(cx - 2, 4, 5, ART - 8); ax.fillStyle = '#ffffff'; ax.fillRect(4, cy, ART - 8, 1); ax.fillRect(cx, 4, 1, ART - 8); ax.globalAlpha = 1; }
+  for (const p of particles) { ax.globalAlpha = Math.max(0, p.life); ax.fillStyle = p.color; const s = p.size > 3.5 ? 2 : 1; ax.fillRect(A(p.x), A(p.y), s, s); }
+  ax.globalAlpha = 1;
+  particles = particles.filter(p => p.life > 0); particles.forEach(p => { p.x += p.vx; p.y += p.vy; p.vy += .15; p.life -= .03; });
+  for (const s of shockwaves) { ax.globalAlpha = Math.max(0, s.alpha); pring(ax, A(s.x), A(s.y), s.radius / S3, s.color); pring(ax, A(s.x), A(s.y), s.radius / S3 - 1, s.color, 2); s.radius += (s.maxRadius - s.radius) * .18 + 1.5; s.alpha -= .045; }
+  ax.globalAlpha = 1; shockwaves = shockwaves.filter(s => s.alpha > .02);
+  ax.setTransform(1, 0, 0, 1, 0, 0);
+  if (screenFlash.alpha > .01) { ax.globalAlpha = screenFlash.alpha; ax.fillStyle = screenFlash.color; ax.fillRect(0, 0, ART, ART); ax.globalAlpha = 1; screenFlash.alpha *= .82; }
+  if (scorchUntil > now) { ax.globalAlpha = Math.min(.3, (scorchUntil - now) / 1800 * .3); ax.fillStyle = '#1a0f08'; ax.fillRect(0, 0, ART, ART); ax.globalAlpha = 1; }
+
+  // blow up to the real canvas, then crisp text on top
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.imageSmoothingEnabled = false; ctx.globalAlpha = 1;
+  ctx.drawImage(art, 0, 0, ART * S3, ART * S3);
+  for (const { j, cx, cy } of jl) {
+    if (j.dying) continue;
+    const X = (cx + sx) * S3, Y = (cy + sy) * S3;
+    ptext((j.name || '').toUpperCase(), X, Y - 34, 11, j.isPlayer ? '#ffd35c' : '#e9e6da');
+    const badges = [];
+    if (j.weaponCharge) badges.push(['sword']);
+    if (j.shielded) badges.push(['shield']); if (j.invisible) badges.push(['invisible']); if (j.frozen) badges.push(['freeze']); if (j.rageCharge) badges.push(['rage']); if (j.tripleJump) badges.push(['triplejump']);
+    if (j.handbagTurns > 0) badges.push(['handbag', j.handbagTurns]);
+    badges.forEach(([k, n], i) => { const bx = X - badges.length * 11 + i * 22 + 1, by = Y + 20; ctx.drawImage(ICONS[k], bx, by, 21, 21); if (n) ptext(String(n), bx + 19, by + 18, 10, '#ffffff'); });
+  }
+  for (const f of floatTexts) {
+    ctx.globalAlpha = Math.max(0, f.life);
+    const ic = EMOJI[f.text]; if (ic) ctx.drawImage(ICONS[ic], Math.round(f.x) - 10, Math.round(f.y) - 18, 21, 21);
+    else ptext(f.text, f.x, f.y, f.big ? 20 : 14, f.color);
+    ctx.globalAlpha = 1;
+  }
+  floatTexts.forEach(f => { f.y -= (f.big ? .45 : .7); f.life -= (f.big ? .011 : .018); }); floatTexts = floatTexts.filter(f => f.life > 0);
+  for (const b of weaponBanners) {
+    const sc = b.life > .85 ? (1 - b.life) / .15 : 1;
+    ctx.globalAlpha = Math.min(1, b.life * 1.6);
+    ctx.fillStyle = 'rgba(7,5,26,.78)'; const bh = 40 * (.7 + sc * .3); ctx.fillRect(0, 46 - bh / 2 - 4, canvas.width, bh);
+    ctx.fillStyle = b.color; ctx.fillRect(0, 46 - bh / 2 - 4, canvas.width, 3); ctx.fillRect(0, 46 + bh / 2 - 7, canvas.width, 3);
+    ptext(b.label, canvas.width / 2, 54, Math.round(22 * (.7 + sc * .3)), b.color, canvas.width - 24);
+    ctx.globalAlpha = 1;
+  }
+  weaponBanners.forEach(b => b.life -= .02); weaponBanners = weaponBanners.filter(b => b.life > 0);
+  if (nukeCountdown) { const life = Math.max(0, 1 - (now - nukeCountdown.start) / 200); if (life > 0) { ctx.globalAlpha = Math.min(1, life * 1.5); ptext(String(nukeCountdown.value), canvas.width / 2, canvas.height / 2 + 30, Math.round(72 * (1 + (1 - life) * .4)), '#ff4d4d'); ctx.globalAlpha = 1; } }
+}
+const PFONT = '"Pixelify Sans","Silkscreen","Courier New",monospace';
+function ptext(s, x, y, size, col, maxW) {
+  ctx.font = `700 ${size}px ${PFONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+  let w = ctx.measureText(s).width; if (maxW && w > maxW) { size = Math.floor(size * maxW / w); ctx.font = `700 ${size}px ${PFONT}`; }
+  x = Math.round(x); y = Math.round(y); const o = Math.max(2, Math.round(size / 9));
+  ctx.fillStyle = OUT; for (const [dx, dy] of [[-o, 0], [o, 0], [0, -o], [0, o], [o, o], [-o, o], [o, -o], [-o, -o], [o, o + o]]) ctx.fillText(s, x + dx, y + dy);
+  ctx.fillStyle = col; ctx.fillText(s, x, y);
+}
+function jellyState(j, now) {
+  const t = now / 300 + j.wobble;
+  let squish = 1 + Math.sin(t) * .07, alpha = 1, cxo = 0, cyo = 0, tint = '#ff2b2b', tintA = 0, sink = 0;
+  if (j.dying) {
+    const dp = Math.min(1, (now - j.dyingStart) / 1700), sq = Math.min(1, dp / .55);
+    squish = Math.max(.32, 1 - sq * .68); alpha = dp > .8 ? Math.max(0, 1 - (dp - .8) / .2) : 1; sink = Math.max(0, (dp - .5) / .5) * 3;
+    if (j.deathCause === 'laserShock' && dp < .3) cxo += (R() - .5) * 6;
+  } else {
+    const rx = playReactionFrame(j, now);
+    cyo = rx.cyOffset; cxo = rx.cxOffset; squish *= rx.squishMult; tint = rx.tintColor; tintA = rx.active ? rx.tintAlpha : 0;
+    if (!rx.active) { const la = j.landPunch ? now - j.landPunch : Infinity; if (la < 420) { const dec = Math.exp(-la / 140); squish *= 1 - Math.sin(la / 40) * .22 * dec; cyo -= Math.sin(la / 40) * 5 * dec; } }
+    if (j.jumpSquish && j.jumpSquish !== 1) squish *= j.jumpSquish;
+    if (j.alive && now < panicUntil) { cxo += Math.sin(now / 35 + j.wobble * 10) * 2.2; cyo += Math.cos(now / 28 + j.wobble * 7) * 1.4; }
+    if (j.invisible && !j.isPlayer) alpha = .35 + Math.sin(now / 160) * .1;
+    else if (j.invisible) alpha = .6;
+  }
+  // face, same priority as the original
+  let face = 'happy';
+  const ra = j.reaction ? now - j.reaction.start : Infinity, rd = j.reaction ? (REACTION_DEFS[j.reaction.type] || REACTION_DEFS.launch).dur : 0;
+  if (j.dying) face = 'dying';
+  else if (j.reaction && ra < rd * .35) face = 'eyesShut';
+  else if (now < panicUntil) face = 'panic';
+  else if (j.reaction && ra >= rd && ra < rd + 260) face = 'dazed';
+  else if (j.rageCharge) face = 'angry';
+  else if (j.alive && j.hp > 0 && j.hp < 30) face = 'nervous';
+  else if (dropShadows.some(s => s.x === j.x && s.y === j.y)) face = 'lookUp';
+  else if (j.jumpTilt) face = 'lookDir';
+  if (j.frozen && !j.dying) { tint = '#bff4ff'; tintA = Math.max(tintA, .45); }
+  return { squish: clamp(squish, .3, 1.8), t, alpha, cxo, cyo, tint, tintA, face, sink, lookX: face === 'lookDir' ? Math.sign(j.jumpTilt) : 0, lookY: face === 'lookUp' ? -1 : 0 };
+}
+
+/* ---------- audio: a tiny NES-style sound chip (2 pulse, triangle, noise) ---------- */
+let AC = null, MG = null, MUS = null, SFX = null, muted = false;
+const PW = {}, NZ = {};
+function pulseWave(d) {
+  const n = 48, re = new Float32Array(n), im = new Float32Array(n);
+  for (let k = 1; k < n; k++) { re[k] = Math.sin(2 * Math.PI * k * d) / (Math.PI * k); im[k] = (1 - Math.cos(2 * Math.PI * k * d)) / (Math.PI * k); }
+  return AC.createPeriodicWave(re, im);
+}
+function lfsrNoise(short) {
+  const len = short ? 93 * 64 : 32767, b = AC.createBuffer(1, len, AC.sampleRate), d = b.getChannelData(0);
+  let r = 1;
+  for (let i = 0; i < len; i++) { const fb = (r & 1) ^ ((r >> (short ? 6 : 1)) & 1); r = (r >> 1) | (fb << 14); d[i] = (r & 1) ? .9 : -.9; }
+  return b;
+}
+function initAudio() {
+  if (AC) { if (AC.state === 'suspended') AC.resume(); return; }
+  try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return; }
+  MG = AC.createGain(); MG.gain.value = muted ? 0 : 1;
+  const lp = AC.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 9000;
+  const hp = AC.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 45;
+  const comp = AC.createDynamicsCompressor(); comp.threshold.value = -14; comp.ratio.value = 4;
+  MG.connect(hp); hp.connect(lp); lp.connect(comp); comp.connect(AC.destination);
+  MUS = AC.createGain(); MUS.gain.value = .55; MUS.connect(MG);
+  SFX = AC.createGain(); SFX.gain.value = .6; SFX.connect(MG);
+  PW[.125] = pulseWave(.125); PW[.25] = pulseWave(.25); PW[.5] = pulseWave(.5);
+  NZ.long = lfsrNoise(false); NZ.short = lfsrNoise(true);
+  if (pendingSong) { const s0 = pendingSong; pendingSong = null; musPlay(s0); }
+}
+const mtof = m => 440 * Math.pow(2, (m - 69) / 12);
+function nm(s) { const m = /^([A-G])([#b]?)(\d)$/.exec(s); const b = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 }[m[1]] + (m[2] === '#' ? 1 : m[2] === 'b' ? -1 : 0); return 12 * (+m[3] + 1) + b; }
+/* one pulse/triangle voice; f2 makes a pitch sweep, steps quantises it like the NES sweep unit */
+function voice(bus, wave, f1, t, dur, vol, o = {}) {
+  const osc = AC.createOscillator();
+  if (wave === 'tri') osc.type = 'triangle'; else osc.setPeriodicWave(PW[wave]);
+  if (o.f2) {
+    if (o.steps) { for (let i = 0; i <= o.steps; i++) osc.frequency.setValueAtTime(f1 * Math.pow(o.f2 / f1, i / o.steps), t + dur * i / (o.steps + 1)); }
+    else { osc.frequency.setValueAtTime(f1, t); osc.frequency.exponentialRampToValueAtTime(o.f2, t + dur); }
+  } else osc.frequency.setValueAtTime(f1, t);
+  const g = AC.createGain(), dec = o.decay ?? .7;
+  g.gain.setValueAtTime(vol, t);
+  if (o.env === 'pluck') g.gain.exponentialRampToValueAtTime(vol * .05 + .0001, t + dur);
+  else { g.gain.setValueAtTime(vol, t); g.gain.linearRampToValueAtTime(vol * dec, t + Math.min(.12, dur * .5)); g.gain.setValueAtTime(vol * dec, t + dur - .012); g.gain.linearRampToValueAtTime(0, t + dur); }
+  if (o.vib && dur > .3) { const l = AC.createOscillator(), lg = AC.createGain(); l.frequency.value = o.vibR || 5.5; lg.gain.setValueAtTime(0, t); lg.gain.linearRampToValueAtTime(f1 * (o.vibD || .012), t + (o.vibDelay ?? .18)); l.connect(lg); lg.connect(osc.frequency); l.start(t); l.stop(t + dur + .02); }
+  osc.connect(g); g.connect(bus); osc.start(t); osc.stop(t + dur + .03);
+}
+function nz(bus, kind, r1, r2, t, dur, vol) {
+  const s = AC.createBufferSource(); s.buffer = NZ[kind]; s.loop = true;
+  s.playbackRate.setValueAtTime(r1, t); if (r2) s.playbackRate.exponentialRampToValueAtTime(r2, t + dur);
+  const g = AC.createGain(); g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.0005, t + dur);
+  s.connect(g); g.connect(bus); s.start(t, R() * .3); s.stop(t + dur + .02);
+}
+function jingle(notes, step, wave = .25, vol = .13, last = 1) {
+  if (!AC) return; const t0 = AC.currentTime + .01;
+  notes.forEach((n, i) => { if (n) voice(SFX, wave, mtof(nm(n)), t0 + i * step, (i === notes.length - 1 ? step * last : step) * .95, vol, { decay: .8, vib: true }); });
+}
+const ARP = {
+  G: ['G3', 'B3', 'D4', 'G4'], D: ['D4', 'F#4', 'A4', 'D5'], Em: ['E3', 'G3', 'B3', 'E4'], C: ['C4', 'E4', 'G4', 'C5'], F: ['F3', 'A3', 'C4', 'F4'],
+  Dm: ['D4', 'F4', 'A4', 'D5'], Bb: ['Bb3', 'D4', 'F4', 'Bb4'], Am: ['A3', 'C4', 'E4', 'A4'], B7: ['B2', 'D#3', 'F#3', 'A3'], E: ['E4', 'G#4', 'B4', 'E5'],
+  Bm: ['B3', 'D4', 'F#4', 'B4'], A: ['A3', 'C#4', 'E4', 'A4'], Cm: ['C4', 'Eb4', 'G4', 'C5'], D7: ['D3', 'F#3', 'A3', 'C4'], Eb: ['Eb4', 'G4', 'Bb4', 'Eb5'], Gm: ['G3', 'Bb3', 'D4', 'G4']
+};
+const ROOT = { G: 'G', D: 'D', Em: 'E', C: 'C', F: 'F', Dm: 'D', Bb: 'Bb', Am: 'A', B7: 'B', E: 'E', Bm: 'B', A: 'A', Cm: 'C', D7: 'D', Eb: 'Eb', Gm: 'G' };
+const REST = '. . . . . . . . . . . . . . . .';
+const arp16 = c => Array.from({ length: 16 }, (_, i) => ARP[c][i % 4]).join(' ');
+const arp8 = c => Array.from({ length: 16 }, (_, i) => i % 2 ? '.' : ARP[c][[0, 1, 2, 3, 2, 1, 0, 1][i / 2]]).join(' ');
+const boxArp = c => Array.from({ length: 16 }, (_, i) => i % 2 ? '.' : ARP[c][[3, 2, 1, 2, 3, 2, 1, 0][i / 2]].replace(/\d/, d => +d + 1)).join(' ');
+const bassSlow = c => { const r = ROOT[c]; return `${r}2 - - - - - - - ${r}2 - - - ${r}3 - - -`; };
+const bass8 = c => { const r = ROOT[c]; return `${r}2 . ${r}3 . ${r}2 . ${r}3 . ${r}2 . ${r}3 . ${r}2 . ${r}3 .`; };
+const bassRun = c => { const r = ROOT[c]; return `${r}2 - ${r}3 ${r}2 . ${r}2 ${r}3 . ${r}2 - ${r}3 ${r}2 . ${r}2 ${r}3 .`; };
+const DR = {
+  light: 'k . h . . . h . k . h . . . h .', tabor: 'k . . h k . h . k . . h k . h .', gallop: 'k . h k s . h k k . h k s . h h',
+  march: 'k . s . k . s . k . s . k s s s', heart: 'k . k . . . . . k . k . . . . .', drip: '. . . . . . h . . . . . . . . .',
+  c: 'k h h h s h h h k h k h s h h h', f: 's s s s s . s s s s . s s s s s', none: REST
+};
+function mkSong(bpm, intro, body) {
+  const bars = intro.concat(body);
+  bars.forEach(b => { b.L = parse(b.lead || REST); b.H = b.harm === 'echo' ? null : parse(b.harm || REST); b.B = parse(b.bass || REST); b.D = (b.drum || REST).split(/\s+/); });
+  return { bpm, bars, loop: intro.length };
+}
+function parse(str) {
+  const tk = str.split(/\s+/), ev = [];
+  for (let i = 0; i < tk.length; i++) { const t = tk[i]; if (t === '.' || t === '-') continue; let l = 1; while (tk[i + l] === '-') l++; ev.push({ s: i, n: t, l }); }
+  return ev;
+}
+const SONGS = {};
+function song(name, bpm, chords, leads, o = {}) {
+  const body = [];
+  chords.forEach((c, i) => body.push({ lead: leads[i], harm: (o.harm || arp8)(c), bass: (o.bass || bassSlow)(c), drum: o.drum || DR.none, duty: o.duty || .25, pluck: o.pluck, vibD: o.vibD, vibR: o.vibR }));
+  chords.forEach((c, i) => body.push({ lead: leads[i], harm: o.harm2 === 'echo' ? 'echo' : (o.harm2 || o.harm || arp8)(c), bass: (o.bass2 || o.bass || bassSlow)(c), drum: o.drum2 || o.drum || DR.none, duty: o.duty2 || .5, pluck: o.pluck2, vibD: o.vibD2 ?? o.vibD, vibR: o.vibR }));
+  SONGS[name] = mkSong(bpm, [{ harm: (o.harm || arp8)(chords[0]), bass: (o.bass || bassSlow)(chords[0]), drum: o.drum || DR.none }], body);
+}
+
+const mus = { on: false, song: null, name: '', bar: 0, next: 0, timer: 0 };
+let pendingSong = null;
+function musPlay(name) {
+  if (!AC) { pendingSong = name; return; }
+  if (mus.on && mus.name === name) return;
+  mus.song = SONGS[name]; mus.name = name; mus.on = true; mus.bar = 0; mus.next = AC.currentTime + .08;
+  if (!mus.timer) mus.timer = setInterval(musTick, 30);
+}
+function musStop() { mus.on = false; mus.name = ''; pendingSong = null; }
+function musDuck(v) { if (MUS) MUS.gain.setTargetAtTime(v, AC.currentTime, .1); }
+function musTick() {
+  if (!mus.on || !AC || AC.state !== 'running') return;
+  const S0 = mus.song, sd = 60 / S0.bpm / 4, bl = sd * 16;
+  if (mus.next < AC.currentTime - .2) mus.next = AC.currentTime + .02;
+  while (mus.next < AC.currentTime + .25) { playBar(S0.bars[mus.bar], mus.next, sd); mus.next += bl; mus.bar++; if (mus.bar >= S0.bars.length) mus.bar = S0.loop; }
+}
+function playBar(b, t0, sd) {
+  for (const e of b.L) voice(MUS, b.duty || .25, mtof(nm(e.n)), t0 + e.s * sd, b.pluck ? Math.max(e.l, 2) * sd : e.l * sd * .92, b.pluck ? .075 : .08, b.pluck ? { env: 'pluck' } : { decay: .75, vib: true, vibD: b.vibD, vibR: b.vibR });
+  if (b.H) for (const e of b.H) voice(MUS, .125, mtof(nm(e.n)), t0 + e.s * sd, sd * 1.6, .03, { env: 'pluck' });
+  else for (const e of b.L) voice(MUS, .125, mtof(nm(e.n)), t0 + (e.s + 3) * sd, e.l * sd * .9, .028, { decay: .7, vib: true, vibD: b.vibD, vibR: b.vibR });
+  for (const e of b.B) voice(MUS, 'tri', mtof(nm(e.n)), t0 + e.s * sd, e.l * sd * .9, .25, { decay: 1 });
+  b.D.forEach((d, i) => {
+    const t = t0 + i * sd;
+    if (d === 'k') { voice(MUS, 'tri', 170, t, .09, .3, { f2: 50, env: 'pluck' }); nz(MUS, 'long', .12, null, t, .03, .05); }
+    else if (d === 's') nz(MUS, 'long', .45, .3, t, .13, .12);
+    else if (d === 'h') nz(MUS, 'short', 1, null, t, .03, .03);
+  });
+}
+
+/* ---------- Jelly Riot score + sound effects (chip) ---------- */
+song('menu', 132, ['C', 'G', 'Am', 'F', 'C', 'G', 'F', 'G'], ['E5 - G5 - C6 - G5 - A5 - G5 - E5 - C5 -', 'D5 - G5 - B5 - G5 - D6 - B5 - G5 - - -', 'C5 - E5 - A5 - E5 - C6 - B5 - A5 - - -', 'A5 - G5 - F5 - A5 - C6 - - - A5 - - -', 'G5 - E5 - C5 - E5 - G5 - C6 - E6 - - -', 'D6 - B5 - G5 - B5 - D6 - - - G5 - - -', 'F5 - A5 - C6 - A5 - F5 - E5 - D5 - - -', 'D5 - - - E5 - F5 - G5 - - - . . . .'], { bass: bass8, drum: DR.light, harm2: 'echo', duty: .25, duty2: .125, pluck2: true });
+song('battle', 152, ['Am', 'F', 'C', 'G', 'Am', 'F', 'G', 'E'], ['A5 - C6 A5 E5 - A5 - G5 - E5 - C5 - E5 -', 'F5 - A5 - C6 - A5 - F5 - G5 A5 - - . .', 'E5 - G5 - C6 - E6 - D6 - C6 - G5 - E5 -', 'D5 - G5 - B5 - D6 - B5 - A5 - G5 - - -', 'A5 - - - E6 - - - C6 - B5 - A5 - G5 -', 'F5 - A5 - C6 - F6 - E6 - C6 - A5 - - -', 'G5 - B5 - D6 - G6 - F6 - D6 - B5 - G5 -', 'G#5 - B5 - E6 - - - D6 - B5 - G#5 - - -'], { harm: arp16, bass: bassRun, drum: DR.c, duty: .25, duty2: .5, harm2: 'echo' });
+song('showdown', 172, ['Em', 'C', 'D', 'B7', 'Em', 'C', 'D', 'B7'], ['E5 - B5 - E6 - B5 - G5 - B5 - E6 - F#6 -', 'G6 - E6 - C6 - G5 - E5 - G5 - C6 - E6 -', 'F#6 - D6 - A5 - F#5 - D5 - F#5 - A5 - D6 -', 'D#6 - B5 - F#5 - D#5 - B4 - D#5 - F#5 - B5 -', 'E5 - B5 - E6 - B5 - G5 - B5 - E6 - F#6 -', 'G6 - E6 - C6 - G5 - E5 - G5 - C6 - E6 -', 'A5 - D6 - F#6 - A6 - F#6 - D6 - A5 - F#5 -', 'B5 - - - D#6 - - - F#6 - - - . . . .'], { harm: arp16, bass: bassRun, drum: DR.gallop, drum2: DR.f, duty: .5, duty2: .25, harm2: 'echo' });
+let sfxOn = true, musicOn = true;
+try { sfxOn = localStorage.getItem('jelly-sfx') !== '0'; musicOn = localStorage.getItem('jelly-music') !== '0'; } catch (e) {}
+const V = (w, f, d, v, o) => voice(SFX, w, f, AC.currentTime + .005 + ((o && o.at) || 0), d, v, o || {});
+const N = (k, a, b, d, v, at = 0) => nz(SFX, k, a, b, AC.currentTime + .005 + at, d, v);
+const SFXDEF = {
+  jump: () => V(.25, 330, .1, .06, { f2: 720, steps: 5, env: 'pluck' }),
+  launch: () => { V(.5, 180, .14, .07, { f2: 460, steps: 4, env: 'pluck' }); N('long', .9, .4, .12, .03); },
+  whoosh: () => N('long', .9, .3, .16, .05),
+  clack: () => { V('tri', 240, .07, .28, { f2: 100, env: 'pluck' }); N('short', 1.2, null, .03, .05); },
+  slap: () => { V('tri', 160, .1, .25, { f2: 70, env: 'pluck' }); N('long', .4, null, .08, .06); },
+  wobble: () => V(.25, 700, .12, .045, { f2: 520, steps: 3, env: 'pluck' }),
+  whistle: () => V(.5, 1500, .55, .05, { f2: 420 }),
+  pianoCrash: () => { ['A3', 'Bb3', 'C4', 'Eb4', 'F4', 'Ab4'].forEach((n, i) => V(.5, mtof(nm(n)), .5, .035, { env: 'pluck', at: i * .015 })); N('long', .25, .1, .5, .12); },
+  chargeLaser: () => V(.125, 200, .45, .05, { f2: 1100, steps: 9 }),
+  laserFire: () => { V(.125, 2000, .28, .08, { f2: 180, steps: 7 }); N('short', 1.6, .4, .2, .05); },
+  crackle: () => { for (let i = 0; i < 5; i++) N('short', .6 + R(), null, .03, .06, i * .03); V('tri', 90, .1, .25, { env: 'pluck', at: .15 }); },
+  alarm: () => { for (let i = 0; i < 4; i++) V(.5, i % 2 ? 700 : 500, .12, .06, { at: i * .14 }); },
+  countdownBeep: () => V(.5, 880, .1, .08, { env: 'pluck' }),
+  nukeFlash: () => { N('long', 1, .06, 1.1, .3); V('tri', 140, .8, .45, { f2: 28 }); },
+  handbagSwing: () => N('long', .9, .35, .13, .06),
+  handbagWhack: () => { V('tri', 170, .14, .35, { f2: 55, env: 'pluck' }); N('long', .45, null, .1, .12); },
+  blastCharge: () => V(.25, 110, .46, .05, { f2: 520, steps: 7 }),
+  pressureWave: () => { V('tri', 100, .5, .45, { f2: 28 }); N('long', .3, .07, .55, .2); },
+  iceForm: () => { V(.125, 1500, .08, .05, { env: 'pluck' }); V(.125, 2200, .1, .05, { env: 'pluck', at: .06 }); V(.125, 1800, .14, .04, { env: 'pluck', at: .12 }); },
+  iceCrack: () => { N('short', 2, .6, .12, .1); V(.25, 900, .12, .05, { f2: 300, steps: 3 }); },
+  rageSurge: () => { V(.5, 110, .32, .07, { f2: 330, steps: 6 }); N('long', .5, .2, .3, .08); },
+  shimmerInvisible: () => ['C6', 'E6', 'G6', 'C7'].forEach((n, i) => V(.125, mtof(nm(n)), .14, .04, { env: 'pluck', at: i * .05 })),
+  shieldPulse: () => { V('tri', 262, .22, .28); V(.25, 523, .22, .04, { env: 'pluck', at: .03 }); },
+  axeChop: () => { N('long', .9, .2, .1, .15); V('tri', 220, .12, .3, { f2: 80, env: 'pluck' }); },
+  anvilThud: () => { V('tri', 95, .4, .45, { f2: 38 }); N('long', .16, null, .3, .14); },
+  yelpSmall: () => V(.25, 950, .09, .05, { f2: 620, env: 'pluck' }),
+  yelpBig: () => V(.5, 760, .2, .06, { f2: 300, steps: 4 }),
+  shift: () => V(.25, 523, .15, .05, { f2: 262, steps: 4, env: 'pluck' }),
+  tick: () => V(.125, 1250, .03, .035, { env: 'pluck' }),
+  settle: () => jingle(['E6', 'B6'], .07, .25, .1, 2),
+  clash: () => { N('long', .7, .2, .2, .15); V(.5, 190, .16, .06, { f2: 120 }); },
+  hit: () => { V('tri', 150, .16, .35, { f2: 48, env: 'pluck' }); N('long', .55, null, .08, .1); },
+  shadowForm: () => V(.25, 420, .12, .04, { f2: 540, steps: 2 }),
+  explosion: () => { N('long', .7, .05, .6, .3); V('tri', 130, .45, .45, { f2: 30 }); },
+  heal: () => jingle(['C6', 'E6', 'G6', 'C7'], .055, .125, .09, 3),
+  pickup: () => jingle(['A5', 'E6'], .05, .25, .08, 2),
+  out: () => V(.5, 420, .55, .07, { f2: 70, steps: 9 }),
+  win: () => jingle(['C5', 'E5', 'G5', 'C6', '', 'G5', 'C6', 'E6'], .1, .25, .12, 6),
+  lose: () => jingle(['G4', 'F#4', 'F4', 'E4'], .2, .5, .1, 4)
+};
+function playSfx(name) { if (!AC || !sfxOn) return; const f = SFXDEF[name]; if (f) try { f(); } catch (e) {} }
+function startMusic() { if (musicOn) musPlay('battle'); else pendingMusic = 'battle'; }
+function stopMusic() { musStop(); }
+let pendingMusic = 'menu';
+function applyAudioPrefs() { if (MUS) MUS.gain.value = musicOn ? .5 : 0; if (SFX) SFX.gain.value = sfxOn ? .6 : 0; }
 
 /* ---------------- Game flow ---------------- */
 let reachableSet = new Set();
@@ -2025,7 +1609,7 @@ async function runJellyOffAnimation(group){
   const row = document.getElementById('jofRow');
   row.innerHTML = rolls.map((r,i)=>`
     <div class="jof-jelly" id="jofJ${i}" style="animation-delay:${i*0.07}s;color:${r.jelly.color}">
-      <div class="jof-dot" style="background:${r.jelly.color}"></div>
+      <img class="jof-dot" alt="" src="${jellyPortrait(r.jelly.color)}">
       <div class="jof-num" id="jofNum${i}">–</div>
       <div class="jof-name">${r.jelly.name}</div>
     </div>`).join('');
@@ -2193,93 +1777,6 @@ function pickDropVariant(){
   return DROP_VARIANTS[0];
 }
 
-// Original readable sprites for the three Random Drop objects — drawn with
-// canvas shapes rather than emoji, centered on (0,0) at the given size.
-function drawDropObject(shape, size){
-  ctx.save();
-  const s = size/32; // scale factor against a 32px base design
-  ctx.scale(s, s);
-  if(shape === 'axe'){
-    // handle
-    ctx.fillStyle = '#8a5a2e';
-    roundRect(-3, -2, 6, 26, 2);
-    ctx.fill();
-    // blade
-    ctx.fillStyle = '#c9ced6';
-    ctx.beginPath();
-    ctx.moveTo(-2,-18);
-    ctx.lineTo(16,-14);
-    ctx.lineTo(16,-2);
-    ctx.lineTo(-2,-6);
-    ctx.closePath();
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(0,0,0,0.35)';
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-    // blade edge highlight
-    ctx.strokeStyle = 'rgba(255,255,255,0.6)';
-    ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(14,-13); ctx.lineTo(14,-3); ctx.stroke();
-  } else if(shape === 'anvil'){
-    ctx.fillStyle = '#3a3d44';
-    // base
-    roundRect(-10,10,20,7,2); ctx.fill();
-    // body
-    roundRect(-9,-2,18,10,2); ctx.fill();
-    // horn + top face (classic anvil silhouette)
-    ctx.beginPath();
-    ctx.moveTo(-9,-2);
-    ctx.lineTo(-20,-6);
-    ctx.lineTo(-16,-9);
-    ctx.lineTo(-9,-8);
-    ctx.closePath();
-    ctx.fill();
-    ctx.beginPath();
-    ctx.moveTo(9,-2);
-    ctx.lineTo(13,-10);
-    ctx.lineTo(-9,-10);
-    ctx.lineTo(-9,-2);
-    ctx.closePath();
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(0,0,0,0.4)';
-    ctx.lineWidth = 1.2;
-    ctx.stroke();
-    ctx.fillStyle = 'rgba(255,255,255,0.18)';
-    ctx.fillRect(-8,-9,14,2);
-  } else if(shape === 'piano'){
-    // upright piano: dark body + fallboard + a strip of keys
-    ctx.fillStyle = '#1c1712';
-    roundRect(-16,-16,32,26,3); ctx.fill();
-    ctx.fillStyle = '#2b241c';
-    ctx.fillRect(-16,-16,32,6); // top lid
-    ctx.fillStyle = '#efe9df';
-    ctx.fillRect(-14,6,28,5); // key bed (white keys)
-    ctx.fillStyle = '#1c1712';
-    for(let i=-13;i<14;i+=4) ctx.fillRect(i,6,2,3.2); // black keys
-    ctx.strokeStyle = 'rgba(255,255,255,0.12)';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(-16,-16,32,26);
-  } else if(shape === 'missile'){
-    // small red-tipped missile with tail fins, used by Air Strike
-    ctx.fillStyle = '#555';
-    ctx.beginPath();
-    ctx.moveTo(0,-14); ctx.lineTo(6,6); ctx.lineTo(-6,6);
-    ctx.closePath();
-    ctx.fill();
-    ctx.fillStyle = '#ff4d4d';
-    ctx.beginPath();
-    ctx.moveTo(0,-14); ctx.lineTo(3,-6); ctx.lineTo(-3,-6);
-    ctx.closePath();
-    ctx.fill();
-    ctx.fillStyle = '#333';
-    ctx.fillRect(-8,2,4,6);
-    ctx.fillRect(4,2,4,6);
-  }
-  ctx.restore();
-}
-
-// Random Drop: pick one opponent, grow a shadow under them, drop the object,
-// flatten them on impact, then let them peel back off the tile.
 function detonateRandomDrop(j, done){
   const tdef = TILE_DEFS.randomdrop;
   announceEffectBanner(j, 'Random Drop', tdef.color);
@@ -2677,7 +2174,7 @@ let collectFx = [];
 function spawnCollectFx(tileX, tileY, jelly, type){
   const def = TILE_DEFS[type];
   collectFx.push({
-    icon: def.icon, color: def.color,
+    icon: def.icon, color: def.color, type,
     x0: boardToPx(tileX)+CELL/2, y0: boardToPx(tileY)+CELL/2,
     jelly, start: performance.now(), dur: 340
   });
@@ -2927,244 +2424,89 @@ document.getElementById('overlayWatchBtn').addEventListener('click', ()=>{
   nextTurn();
 });
 
-/* idle render loop for jelly wobble even between turns */
-function idleLoop(){
-  if(phase !== 'resolving') drawBoard();
-  requestAnimationFrame(idleLoop);
+
+/* ---------- HUD, layout, audio wiring and the frame loop ---------- */
+const ICON_URL = {};
+for (const k in ICONS) ICON_URL[k] = ICONS[k].toDataURL();
+function renderSidebar() {
+  const list = document.getElementById('jellyList');
+  list.innerHTML = jellies.map(j => {
+    const hp = Math.max(0, Math.round(j.hp)), b = [];
+    if (j.shielded) b.push('shield'); if (j.invisible) b.push('invisible'); if (j.frozen) b.push('freeze'); if (j.rageCharge) b.push('rage'); if (j.tripleJump) b.push('triplejump'); if (j.handbagTurns > 0) b.push('handbag');
+    const segs = Array.from({ length: 10 }, (_, i) => `<i class="${i < Math.ceil(hp / 10) ? 'on' : ''}"></i>`).join('');
+    return `<div class="jc${j.alive ? '' : ' dead'}${j.isPlayer ? ' me' : ''}" style="--c:${j.color}">
+      <img class="jp" alt="" src="${jellyPortrait(j.color, 2)}">
+      <div class="jt"><b>${escapeHtml(j.name)}</b><span>${j.alive ? hp : 'OUT'}</span></div>
+      <div class="hp">${segs}</div>
+      <div class="bd">${b.map(k => `<img alt="" src="${ICON_URL[k]}">`).join('')}</div>
+    </div>`;
+  }).join('');
 }
-requestAnimationFrame(idleLoop);
+function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
 
-/* ---------------- Audio: original procedural chiptune (no external files) ---------------- */
-let actx = null;
-let musicGain = null;
-let musicTimer = null;
-let muted = false;
-
-function initAudio(){
-  if(actx) return;
-  actx = new (window.AudioContext || window.webkitAudioContext)();
-  musicGain = actx.createGain();
-  musicGain.gain.value = 0.18;
-  musicGain.connect(actx.destination);
-  // All sound effects route through one compressor bus — this is the
-  // volume normalization / anti-clipping layer so nothing ever spikes
-  // or stacks into a harsh wall of noise.
-  sfxBus = actx.createDynamicsCompressor();
-  sfxBus.threshold.value = -22;
-  sfxBus.knee.value = 18;
-  sfxBus.ratio.value = 9;
-  sfxBus.attack.value = 0.002;
-  sfxBus.release.value = 0.16;
-  sfxBus.connect(actx.destination);
+const appEl = document.getElementById('app'), wrapEl = document.getElementById('boardWrap');
+function layout() {
+  const port = appEl.clientHeight > appEl.clientWidth * 1.15;
+  appEl.dataset.mode = port ? 'port' : 'wide';
+  const w = wrapEl.clientWidth, h = wrapEl.clientHeight, s = Math.max(120, Math.floor(Math.min(w, h)));
+  canvas.style.width = s + 'px'; canvas.style.height = s + 'px';
 }
-let sfxBus = null;
-let activeVoices = 0;
-const MAX_ACTIVE_VOICES = 10; // hard cap on simultaneous oscillators
+addEventListener('resize', layout); addEventListener('orientationchange', () => setTimeout(layout, 120));
+if (window.ResizeObserver) new ResizeObserver(layout).observe(wrapEl);
 
-function beep(freq, dur, type='square', gainVal=0.15, when=0){
-  if(!actx || muted) return;
-  if(activeVoices >= MAX_ACTIVE_VOICES) return; // limit simultaneous playback
-  activeVoices++;
-  const osc = actx.createOscillator();
-  const gain = actx.createGain();
-  osc.type = type;
-  // small random detune so repeated hits never sound perfectly identical
-  osc.frequency.value = freq * (1 + (Math.random()-0.5) * 0.1);
-  gain.gain.value = gainVal;
-  osc.connect(gain); gain.connect(sfxBus || actx.destination);
-  const t0 = actx.currentTime + when;
-  gain.gain.setValueAtTime(gainVal, t0);
-  gain.gain.exponentialRampToValueAtTime(0.001, t0+dur);
-  osc.start(t0);
-  osc.stop(t0+dur);
-  osc.onended = () => { activeVoices = Math.max(0, activeVoices-1); };
-}
-
-function playSfx(name){
-  if(!actx) return;
-  switch(name){
-    case 'jump': beep(520,0.08,'square',0.12); break;
-    case 'launch': beep(180,0.07,'sine',0.14); beep(280,0.06,'sine',0.12,0.05); break;
-    case 'whoosh': beep(900,0.05,'sawtooth',0.05); beep(480,0.07,'sawtooth',0.04,0.04); break;
-    case 'clack': beep(320,0.04,'square',0.16); break;
-    case 'slap': beep(150,0.09,'sine',0.12); break;
-    case 'wobble': beep(700,0.05,'triangle',0.06); beep(600,0.05,'triangle',0.05,0.05); break;
-    case 'whistle':
-      // descending whistle as the Random Drop object falls
-      beep(1100,0.09,'sine',0.08,0.00);
-      beep(900,0.09,'sine',0.08,0.06);
-      beep(700,0.09,'sine',0.08,0.12);
-      beep(520,0.11,'sine',0.09,0.18);
-      break;
-    case 'pianoCrash':
-      // a broken, dissonant cluster of piano notes
-      [220,233,262,311,349,415].forEach((f,i)=> beep(f, 0.5, 'triangle', 0.1, i*0.02));
-      beep(110, 0.6, 'sine', 0.14, 0.02);
-      break;
-    case 'chargeLaser':
-      // escalating electrical whine as the Laser charges up
-      for(let i=0;i<6;i++) beep(200+i*70, 0.08, 'sawtooth', 0.05, i*0.07);
-      break;
-    case 'laserFire':
-      beep(1400,0.05,'square',0.16);
-      beep(1800,0.06,'square',0.12,0.03);
-      break;
-    case 'crackle':
-      // electrical crackling followed by a rubber snap
-      for(let i=0;i<5;i++) beep(150+Math.random()*400, 0.03, 'sawtooth', 0.06, i*0.03);
-      beep(90, 0.08, 'square', 0.14, 0.15);
-      break;
-    case 'alarm':
-      // short up-down siren warning a Nuke is coming
-      beep(500,0.12,'square',0.1); beep(700,0.12,'square',0.1,0.14);
-      beep(500,0.12,'square',0.1,0.28); beep(700,0.12,'square',0.1,0.42);
-      break;
-    case 'countdownBeep': beep(880,0.09,'square',0.14); break;
-    case 'nukeFlash': beep(2200,0.1,'square',0.2); beep(1600,0.12,'sawtooth',0.16,0.02); break;
-    case 'handbagSwing': beep(500,0.07,'sine',0.06); beep(380,0.09,'sine',0.06,0.05); break;
-    case 'handbagWhack': beep(140,0.09,'square',0.2); beep(90,0.1,'sine',0.15,0.02); break;
-    case 'blastCharge':
-      for(let i=0;i<5;i++) beep(120+i*30, 0.1, 'sawtooth', 0.06, i*0.09);
-      break;
-    case 'pressureWave': beep(80,0.28,'sine',0.22); beep(60,0.32,'square',0.14,0.03); break;
-    case 'iceForm': beep(1500,0.06,'sine',0.08); beep(1100,0.08,'sine',0.06,0.05); break;
-    case 'iceCrack': beep(900,0.04,'square',0.1); beep(500,0.05,'square',0.09,0.03); beep(300,0.07,'square',0.08,0.06); break;
-    case 'rageSurge':
-      // crackling electrical surge — distinct from Laser's clean charge
-      for(let i=0;i<4;i++) beep(180+Math.random()*220, 0.05, 'sawtooth', 0.1, i*0.045);
-      beep(90, 0.2, 'square', 0.12, 0.18);
-      break;
-    case 'shimmerInvisible':
-      // soft ascending shimmer, no percussive edge
-      [700,880,1100,1400].forEach((f,i)=> beep(f, 0.14, 'sine', 0.06, i*0.05));
-      break;
-    case 'shieldPulse':
-      // a single warm, rounded pulse — protective, not aggressive
-      beep(260, 0.18, 'sine', 0.14);
-      beep(390, 0.2, 'triangle', 0.1, 0.03);
-      break;
-    case 'axeChop':
-      beep(220, 0.07, 'square', 0.18);
-      beep(140, 0.12, 'sawtooth', 0.16, 0.02);
-      break;
-    case 'anvilThud':
-      beep(70, 0.3, 'sine', 0.24);
-      beep(50, 0.35, 'square', 0.16, 0.03);
-      break;
-    case 'yelpSmall': beep(650,0.07,'triangle',0.09); break;
-    case 'yelpBig': beep(420,0.1,'triangle',0.13); beep(300,0.12,'triangle',0.1,0.06); break;
-    case 'shift': beep(300,0.1,'sine',0.1); beep(260,0.12,'sine',0.08,0.05); break;
-    case 'tick': beep(200+Math.random()*300,0.04,'square',0.06); break;
-    case 'settle': beep(660,0.1,'square',0.14); beep(880,0.14,'square',0.16,0.08); break;
-    case 'clash': beep(180,0.15,'sawtooth',0.15); beep(140,0.15,'sawtooth',0.1,0.05); break;
-    case 'hit': beep(110,0.2,'square',0.18); break;
-    case 'shadowForm': beep(420,0.05,'square',0.07); beep(520,0.06,'square',0.08,0.07); break;
-    case 'explosion':
-      beep(90,0.35,'sawtooth',0.22);
-      beep(60,0.4,'square',0.18,0.03);
-      beep(140,0.15,'sawtooth',0.15,0.02);
-      beep(45,0.5,'sine',0.16,0.06);
-      break;
-    case 'heal': beep(660,0.12,'triangle',0.14); beep(880,0.12,'triangle',0.12,0.08); break;
-    case 'pickup': beep(740,0.08,'square',0.13); beep(980,0.1,'square',0.13,0.06); break;
-    case 'out': beep(160,0.3,'sawtooth',0.16); beep(90,0.4,'sawtooth',0.14,0.1); break;
-    case 'win': [523,659,784,1046].forEach((f,i)=>beep(f,0.2,'square',0.16,i*0.14)); break;
-    case 'lose': [392,349,293].forEach((f,i)=>beep(f,0.3,'sawtooth',0.14,i*0.18)); break;
-  }
-}
-
-// Soft generative ambience, built from scratch (not the original soundtrack).
-// Off by default and deliberately non-repeating: notes are picked with light
-// randomness from a scale each pass, so it never loops identically.
-const scale = [261.63,293.66,329.63,392.00,440.00,523.25,587.33]; // C major-ish, airy
-let musicOn = false;
-
-function playPad(freq){
-  if(!actx || muted || !musicOn) return;
-  const osc = actx.createOscillator();
-  const osc2 = actx.createOscillator();
-  const gain = actx.createGain();
-  osc.type = 'sine'; osc2.type = 'sine';
-  osc.frequency.value = freq;
-  osc2.frequency.value = freq * 1.003; // gentle detune, no harsh beating
-  gain.gain.value = 0;
-  osc.connect(gain); osc2.connect(gain); gain.connect(actx.destination);
-  const t0 = actx.currentTime;
-  const dur = 2.4 + Math.random()*1.2;
-  gain.gain.linearRampToValueAtTime(0.05, t0+0.6);
-  gain.gain.linearRampToValueAtTime(0, t0+dur);
-  osc.start(t0); osc2.start(t0);
-  osc.stop(t0+dur); osc2.stop(t0+dur);
-}
-
-function scheduleNextNote(){
-  if(!musicOn) return;
-  const note = scale[Math.floor(Math.random()*scale.length)] * (Math.random()<0.3 ? 0.5 : 1);
-  playPad(note);
-  const wait = 1400 + Math.random()*1600;
-  musicTimer = setTimeout(scheduleNextNote, wait);
-}
-
-function startMusic(){
-  if(!musicOn) return;
-  clearTimeout(musicTimer);
-  scheduleNextNote();
-}
-function stopMusic(){
-  clearTimeout(musicTimer);
-  musicTimer = null;
-}
-
-document.getElementById('muteBtn').addEventListener('click', (e)=>{
-  musicOn = !musicOn;
-  e.target.textContent = musicOn ? 'Music: On' : 'Music: Off';
-  if(musicOn && phase !== 'gameover' && phase !== 'idle') startMusic();
-  else stopMusic();
+/* audio buttons + first-gesture unlock */
+function syncAudioBtns() { const m = document.getElementById('muteBtn'), f = document.getElementById('sfxBtn'); m.classList.toggle('off', !musicOn); f.classList.toggle('off', !sfxOn); m.setAttribute('aria-pressed', musicOn); f.setAttribute('aria-pressed', sfxOn); }
+syncAudioBtns();
+document.getElementById('muteBtn').addEventListener('click', e => {
+  initAudio(); musicOn = !musicOn; try { localStorage.setItem('jelly-music', musicOn ? '1' : '0'); } catch (_) {}
+  applyAudioPrefs(); if (musicOn) musPlay(phase === 'idle' || phase === 'gameover' ? 'menu' : 'battle'); syncAudioBtns(); e.currentTarget.blur();
 });
+document.getElementById('sfxBtn').addEventListener('click', e => { initAudio(); sfxOn = !sfxOn; try { localStorage.setItem('jelly-sfx', sfxOn ? '1' : '0'); } catch (_) {} applyAudioPrefs(); syncAudioBtns(); e.currentTarget.blur(); });
+document.getElementById('logToggle').addEventListener('click', () => { const s = document.getElementById('logSection'); s.classList.toggle('collapsed'); document.getElementById('logToggleIcon').textContent = s.classList.contains('collapsed') ? '+' : '-'; });
+document.getElementById('rulesClose').addEventListener('click', () => document.getElementById('rulesOverlay').classList.remove('show'));
+document.getElementById('rulesBtn').addEventListener('click', () => { document.getElementById('rulesClose').hidden = phase === 'idle' || phase === 'gameover'; });
+addEventListener('pointerdown', () => { initAudio(); applyAudioPrefs(); if (phase === 'idle' && musicOn) musPlay('menu'); }, { once: true });
+document.addEventListener('visibilitychange', () => { if (!AC) return; document.hidden ? AC.suspend() : AC.resume(); });
 
-document.getElementById('sfxBtn').addEventListener('click', (e)=>{
-  muted = !muted;
-  e.target.textContent = muted ? 'Sound: Off' : 'Sound: On';
-});
-
-// Collapsible battle log (mobile) — purely a display toggle, never touches layout elsewhere.
-document.getElementById('logToggle').addEventListener('click', ()=>{
-  const section = document.getElementById('logSection');
-  section.classList.toggle('collapsed');
-  document.getElementById('logToggleIcon').textContent = section.classList.contains('collapsed') ? '▾' : '▴';
-});
-
-// Unlock Web Audio on the very first tap anywhere, in case the player taps
-// something other than Start first — autoplay policies require a real gesture.
-function unlockAudioOnce(){
-  initAudio();
-  if(actx && actx.state === 'suspended') actx.resume();
-  window.removeEventListener('pointerdown', unlockAudioOnce);
-}
-window.addEventListener('pointerdown', unlockAudioOnce, {once:true});
-
-// Pause cleanly in the background, resume without any queued/duplicated
-// sound when the tab/app comes back — Web Audio timers keep "playing" while
-// hidden otherwise, which is how you get a pile of sounds firing at once.
-document.addEventListener('visibilitychange', ()=>{
-  if(!actx) return;
-  if(document.hidden){
-    actx.suspend();
-  } else {
-    actx.resume();
-  }
-});
-
-// Reduce particle load on weaker phones — the weapon impact itself (shockwaves,
-// screen shake, damage text) is untouched; only the decorative particle count drops.
-const lowPowerMode = (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4)
-  || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+/* gentler particle load on phones */
+const lowPowerMode = (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4) || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 const _burst = burst;
-burst = function(x, y, color, count){
-  return _burst(x, y, color, lowPowerMode ? Math.max(4, Math.round(count*0.55)) : count);
-};
+burst = function (x, y, color, count) { return _burst(x, y, color, lowPowerMode ? Math.max(4, Math.round(count * .55)) : count); };
 
-drawBoard();
+/* orientation hint (shared across Stormie games) */
+let ohT = 0, ohDone = false;
+function orientTick(dt) {
+  const touch = matchMedia('(pointer:coarse)').matches;
+  if (ohDone || !touch || phase !== 'picking') return;
+  ohT += dt; if (ohT < 3) return; ohDone = true;
+  try { if (localStorage.getItem('stormie-orient')) return; localStorage.setItem('stormie-orient', '1'); } catch (e) { return; }
+  document.getElementById('orientTxt').textContent = appEl.dataset.mode === 'port' ? 'Tip: turn your phone sideways for a wider view.' : 'Tip: turn your phone upright for a bigger board.';
+  const o = document.getElementById('orient'); o.classList.add('show'); setTimeout(() => o.classList.remove('show'), 5000);
+}
+
+/* the frame loop: one render per frame, music follows the fight */
+let lastT = performance.now(), lastPhase = phase, menuTO = 0;
+function frameLoop(now) {
+  const dt = Math.min(.1, (now - lastT) / 1000); lastT = now;
+  renderFrame();
+  orientTick(dt);
+  if (phase !== lastPhase) {
+    if (phase === 'gameover') { clearTimeout(menuTO); menuTO = setTimeout(() => { if (phase === 'gameover' && musicOn) musPlay('menu'); }, 3200); }
+    lastPhase = phase;
+  }
+  if (musicOn && AC && (phase === 'picking' || phase === 'resolving')) { const alive = jellies.filter(j => j.alive).length; musPlay(alive <= 2 ? 'showdown' : 'battle'); }
+  requestAnimationFrame(frameLoop);
+}
+/* a live board behind the title screen */
+makeTiles(); spawnJellies(); renderSidebar();
+document.getElementById('playerNameInput').addEventListener('input', e => { const p = jellies.find(j => j.isPlayer); if (p && phase === 'idle') { p.name = e.target.value.trim() || 'You'; renderSidebar(); } });
+layout();
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(layout);
+requestAnimationFrame(t => { lastT = t; frameLoop(t); });
+if (/[?&]debug/.test(location.search)) window.__jr = { info: () => ({ phase, turn: turnNumber, alive: jellies.filter(j => j.alive).map(j => j.name + ':' + Math.round(j.hp)), reach: [...reachableSet] }), pick(x, y) { if (phase === 'picking') commitPlayerMove({ x, y }); }, jellies: () => jellies, setTimer(ms) { timerDuration = ms; } };
+
+document.querySelectorAll('img[data-icon]').forEach(i => { i.src = ICON_URL[i.dataset.icon]; });
+
 </script>
 </body>
 </html>
