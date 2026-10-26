@@ -223,7 +223,7 @@ button{font:inherit;color:inherit;touch-action:manipulation}
 
 <script>
 const GRID = 7;
-// Original, subtle key labels for the board's plain tiles — a believable
+// Original, subtle key labels for the board's plain tiles: a believable
 // keyboard-style character set, not a copy of any real keyboard's artwork.
 const KEY_LABELS = ('QWERTYUASDFGHZXCVBN1234567890!@#$%^&*()-=+[]{}'.split(''));
 while(KEY_LABELS.length < GRID*GRID) KEY_LABELS.push('·');
@@ -262,7 +262,7 @@ const TILE_DEFS = {
 };
 const TILE_TYPES = Object.keys(TILE_DEFS);
 
-// Weighted spawn table — the game direction is aggressive and weapon-heavy:
+// Weighted spawn table: the game direction is aggressive and weapon-heavy:
 // weapons/hazards make up ~60% of spawn weight, Nuke stays rare but present.
 const TILE_WEIGHT = {
   blast:8, randomdrop:8, laser:8, handbag:8, mine:8, airstrike:8,
@@ -286,9 +286,9 @@ let jellies = [];
 let tiles = [];
 let turnNumber = 0;
 let phase = 'idle'; // idle, picking, resolving, gameover
-let difficulty = 'normal'; // easy | normal | hard — set from the start modal
+let difficulty = 'normal'; // easy | normal | hard: set from the start modal
 let tutorialActive = true; // shown during the player's first picking phase only
-let hoverCell = null; // {x,y} — for the shift-prediction preview while tutorialActive
+let hoverCell = null; // {x,y}: for the shift-prediction preview while tutorialActive
 let spectating = false; // true once the player chooses "Watch the Battle" after dying
 let selectedTile = null;
 let timerId = null;
@@ -326,7 +326,7 @@ function makeTiles(){
       tiles.push({x,y,type:'plain'});
     }
   }
-  // ~9-11 special tiles to start, weighted so strong weapons are rare —
+  // ~9-11 special tiles to start, weighted so strong weapons are rare -
   // never a guaranteed one-of-each anymore.
   const specialCount = 16 + Math.floor(Math.random()*5); // 16-20
   const pool = tiles.slice();
@@ -402,13 +402,13 @@ function addShockwave(x,y,color,maxRadius){
   shockwaves.push({x,y,radius:6,maxRadius:maxRadius||70,color,alpha:1});
 }
 function flashScreen(color, alpha){
-  // The board must never wash in a weapon's colour — always a neutral black
+  // The board must never wash in a weapon's colour: always a neutral black
   // dim, capped low, so tiles/background stay legible and only briefly dim.
   screenFlash.color = '#000000';
   screenFlash.alpha = Math.min(alpha, 0.2);
 }
 
-// Big, obvious feedback for grabbing something — this is the whole point
+// Big, obvious feedback for grabbing something: this is the whole point
 // of picking a tile, so it needs to actually read as an event.
 function triggerIconEffect(type, j){
   const px = boardToPx(j.px) + CELL/2, py = boardToPx(j.py) + CELL/2;
@@ -974,7 +974,7 @@ function startGame(){
   nextTurn();
 }
 
-// Turn lifecycle guards — see the resolution-race postmortem: a turn must
+// Turn lifecycle guards: see the resolution-race postmortem: a turn must
 // resolve exactly once and nextTurn() must be scheduled at most once.
 let turnId = 0;          // bumped each time a resolution episode begins
 let turnFinished = true; // finishTurnResolution() may run once per episode
@@ -1082,7 +1082,7 @@ function predictTileAt(x, y){
 
 // Scores one possible destination for an AI jelly. useCorrectShift decides
 // whether it reads the post-shift tile (accurate) or the current one
-// (a misjudged guess) — this is what separates the difficulty tiers.
+// (a misjudged guess): this is what separates the difficulty tiers.
 // Roughly estimate a weapon's damage, whether it can hit multiple rivals from
 // (x,y), and whether it can finish off a weakened/vulnerable opponent.
 function estimateWeaponThreat(type, x, y, opponents){
@@ -1145,7 +1145,7 @@ function scoreDestination(mover, x, y, useCorrectShift, opponents){
     } else if(type === 'freeze' || type === 'debonus'){
       score += 35;
     } else if(type === 'invisible'){
-      score += mover.invisible ? 5 : 18; // less appealing than before — the AI wants to fight, not hide
+      score += mover.invisible ? 5 : 18; // less appealing than before: the AI wants to fight, not hide
     } else if(type === 'teleport'){
       score += mover.hp < 25 ? 15 : -10;
     } else if(type === 'handbag'){
@@ -1153,7 +1153,7 @@ function scoreDestination(mover, x, y, useCorrectShift, opponents){
     }
   }
 
-  // Landing on another jelly triggers a Jelly Off — deliberately pursue this
+  // Landing on another jelly triggers a Jelly Off: deliberately pursue this
   // against a weak opponent, avoid it against a healthier one.
   const occupant = opponents.find(o => o.x===x && o.y===y);
   if(occupant){
@@ -1175,7 +1175,7 @@ function scoreDestination(mover, x, y, useCorrectShift, opponents){
 // avoid an invisible jelly (item 8's "AI should not intentionally target").
 function chooseAiMove(j, opts, opponents){
   if(difficulty === 'easy'){
-    // Still aggressive, just less accurate about it — attack more often than
+    // Still aggressive, just less accurate about it: attack more often than
     // not, but sometimes just take the best-looking nearby option blindly.
     if(Math.random() < 0.55){
       const scored = opts.map(o => ({o, s: scoreDestination(j, o.x, o.y, false, opponents)}));
@@ -1212,7 +1212,7 @@ function commitPlayerMove(tile){
 }
 
 // Shared by the human's move and, in spectator mode, the auto-advanced
-// "turn" once the player is out — AI picks for everyone else, tiles shift,
+// "turn" once the player is out: AI picks for everyone else, tiles shift,
 // everyone jumps.
 // Safety net: turn resolution should never legitimately take anywhere near
 // this long (worst observed case is ~6s with a heavy weapon volley plus a
@@ -1331,7 +1331,7 @@ function resolveJump(id){
 }
 
 // Resolve landings one at a time (not all in one silent instant) so each hit
-// is actually watchable — the whole point of the game is *seeing* the damage
+// is actually watchable: the whole point of the game is *seeing* the damage
 // happen.
 function shuffle(arr){
   const a = arr.slice();
@@ -1362,7 +1362,7 @@ function resolveSingleLandings(list, i, done){
   });
 }
 
-// At most one Nuke/Air Strike resolves per turn — if a second is collected
+// At most one Nuke/Air Strike resolves per turn: if a second is collected
 // the same cycle, it's deferred to the very start of the next resolution
 // phase instead of piling on top of the first.
 let pendingUltimate = null; // {jelly, type}
@@ -1396,7 +1396,7 @@ function resolveTileEffectPhases(eligible, done){
 }
 
 function afterLanding(id){
-  if(id !== turnId) return; // stale — a newer turn has already begun
+  if(id !== turnId) return; // stale: a newer turn has already begun
   // group by landed tile to find Jelly Off collisions
   const groups = {};
   for(const j of jellies){
@@ -1444,7 +1444,7 @@ function afterLanding(id){
   });
 }
 
-// Handbag isn't a one-shot explosion — for 3 of the wielder's turns, it
+// Handbag isn't a one-shot explosion: for 3 of the wielder's turns, it
 // automatically swings at whoever is standing on an adjacent tile.
 function resolveHandbagSwings(list, i, done){
   if(i >= list.length){ done(); return; }
@@ -1574,7 +1574,7 @@ function applyJellyOffOutcome(rolls){
     logMsg(`${loser.name} took a hit (-15 HP).`, 'hit');
     burst(cx, cy, loser.color, 12);
 
-    // Punch them into a random valid adjacent key — never off the board,
+    // Punch them into a random valid adjacent key: never off the board,
     // and avoid stacking two losers on the same destination when another
     // free key is available.
     const preferDx = Math.sign(loser.x - winner.jelly.x);
@@ -1648,7 +1648,7 @@ async function runJellyOffAnimation(group){
 }
 
 function otherJellies(j){ return jellies.filter(k=>k.alive && k!==j); }
-// "Your Laser..." for the player, "Glob's Laser..." for AI — never "You's".
+// "Your Laser..." for the player, "Glob's Laser..." for AI: never "You's".
 function possessive(j){ return j.isPlayer ? 'Your' : `${j.name}'s`; }
 function jelliesWithin(j, radius){
   return otherJellies(j).filter(k => Math.max(Math.abs(k.x-j.x), Math.abs(k.y-j.y)) <= radius);
@@ -1665,14 +1665,14 @@ function spawnFloatText(x, y, text, color, big){
 }
 
 // A big bold weapon-name callout, like "NUKE" flashing over the board when
-// it goes off — this is what actually sells the hit, not just the number.
+// it goes off: this is what actually sells the hit, not just the number.
 let weaponBanners = [];
 function spawnWeaponBanner(label, color){
-  weaponBanners = []; // only one weapon banner at a time — never let two overlap
+  weaponBanners = []; // only one weapon banner at a time: never let two overlap
   weaponBanners.push({label: label.toUpperCase(), color, life:1});
 }
 
-// Cinematic queue infrastructure — every weapon effect is a strictly
+// Cinematic queue infrastructure: every weapon effect is a strictly
 // exclusive beat: spotlight the actor, announce "NAME'S TURN -> WEAPON",
 // play out completely, then force-clear every trace before the next begins.
 let spotlightJelly = null;
@@ -1705,7 +1705,7 @@ function clearAllEffectVisuals(){
 
 // Every weapon-style effect must call this instead of `done()` directly:
 // clear the board completely, hold it clean for a readable beat, THEN
-// signal completion — never a fixed timing shorter than the animation.
+// signal completion: never a fixed timing shorter than the animation.
 function finishEffect(done){
   clearAllEffectVisuals();
   drawBoard();
@@ -1731,7 +1731,7 @@ function damageJelly(source, target, amt, hitType, forceDir, severity){
   const dmg = source.rageCharge ? amt*2 : amt;
   target.hp -= dmg;
   playHitReaction(target, hitType || 'launch', forceDir, severity);
-  // Logged (not announced) — the weapon's own banner already carries the
+  // Logged (not announced): the weapon's own banner already carries the
   // headline, so per-target hits shouldn't keep stealing the spotlight.
   logMsg(`${possessive(source)} attack hit ${target.name}${wasInvisible ? ', revealing them' : ''} (-${dmg} HP).`, 'hit');
   playSfx('explosion');
@@ -1749,22 +1749,22 @@ function dirBetween(a, b){
 // Weapon tiles explode outward from the tile the jelly lands on, in a square
 // area measured in grid squares (radius 1 = 3x3, radius 2 = 5x5, etc).
 // Laser is a straight line down the row+column instead of a square.
-// Random Drop is handled separately (see detonateRandomDrop) — it targets one
+// Random Drop is handled separately (see detonateRandomDrop): it targets one
 // opponent with a falling-object sequence instead of a generic square blast.
 // Blast and Laser deal variable damage (distance-based / randomized) rather
-// than one flat number — dmgFn overrides def.dmg when present.
-// Air Strike gets its own multi-missile sequence (see detonateAirStrike) —
+// than one flat number: dmgFn overrides def.dmg when present.
+// Air Strike gets its own multi-missile sequence (see detonateAirStrike) -
 // pulled out of the generic AoE path just like Random Drop.
-// Laser gets its own charge → beam sequence (see detonateLaser) — pulled out
+// Laser gets its own charge → beam sequence (see detonateLaser): pulled out
 // of the generic AoE path just like Random Drop and Air Strike.
-// Nuke gets its own siren/countdown/flash sequence (see detonateNuke) —
+// Nuke gets its own siren/countdown/flash sequence (see detonateNuke) -
 // pulled out of the generic AoE path just like the other special weapons.
 const AOE_DEFS = {
   blast:      {radius:4,  shape:'square', label:'Blast',
                dmgFn: (dist) => dist<=1 ? 40 : dist<=2 ? 30 : 20}
 };
 
-// Object variants — damage matches the reference weights (axe/anvil/piano).
+// Object variants: damage matches the reference weights (axe/anvil/piano).
 const DROP_VARIANTS = [
   {name:'a heavy axe', shape:'axe', dmg:25, weight:5},
   {name:'a one-ton anvil', shape:'anvil', dmg:35, weight:3},
@@ -1929,7 +1929,7 @@ function detonateLaser(j, done){
   }, chargeDur);
 }
 
-// Nuke: the most theatrical weapon in the game — warning, panic, a quick
+// Nuke: the most theatrical weapon in the game: warning, panic, a quick
 // countdown, a full-board flash with a beat of near-silence, then the deep
 // detonation. Every unshielded opponent gets launched. Capped near 2.5s total.
 let nukeCountdown = null; // {value, start}
@@ -1986,7 +1986,7 @@ function detonateNuke(j, done){
 }
 
 // Tracked squares so drawBoard can flash the exact tiles the explosion
-// covered — this is what makes the blast feel like it happened on the
+// covered: this is what makes the blast feel like it happened on the
 // board itself, not just to whoever was standing in it.
 // ── Reusable physical hit-reaction system ──────────────────────────────
 // Every weapon gets its own recognizable victim reaction instead of one
@@ -1996,42 +1996,42 @@ let hitStopUntil = 0;
 function triggerHitStop(ms){ hitStopUntil = Math.max(hitStopUntil, performance.now()+ms); }
 
 const REACTION_DEFS = {
-  // Generic knockback pop — Air Strike and anything without a bespoke reaction.
+  // Generic knockback pop: Air Strike and anything without a bespoke reaction.
   launch: { dur: 300, render(p,dx,dy,sev){
     const kick = Math.sin(p*Math.PI);
     return { cxOffset:0, cyOffset:-kick*11*sev, squishMult:1-(1-p)*0.4*sev, rotation:0, tintColor:'#ff2b2b', tintAlpha:(1-p)*0.65 };
   }},
-  // Random Drop — squashed nearly flat, slow reform.
+  // Random Drop: squashed nearly flat, slow reform.
   flatten: { dur: 480, render(p){
     return { cxOffset:0, cyOffset:0, squishMult:1-(1-p)*0.78, rotation:0, tintColor:'#7a3a1a', tintAlpha:(1-p)*0.55 };
   }},
-  // Handbag — knocked sideways in the swing direction.
+  // Handbag: knocked sideways in the swing direction.
   sideWhack: { dur: 340, render(p,dx,dy,sev){
     const kick = Math.sin(p*Math.PI);
     return { cxOffset:dx*kick*16*sev, cyOffset:-kick*3, squishMult:1-(1-p)*0.3, rotation:dx*kick*0.25, tintColor:'#ff2b2b', tintAlpha:(1-p)*0.6 };
   }},
-  // Laser — pale flash, convulsive jitter, stretched rather than squashed.
+  // Laser: pale flash, convulsive jitter, stretched rather than squashed.
   laserShock: { dur: 320, render(p,dx,dy){
     const kick = Math.sin(p*Math.PI);
     return { cxOffset:dx*kick*5, cyOffset:dy*kick*5-kick*2, squishMult:1+kick*0.18, rotation:(Math.random()-0.5)*0.06*kick, tintColor:'#e8ffff', tintAlpha:(1-p)*0.7 };
   }},
-  // Blast — pushed away from the explosion center; closer = travels farther (severity).
+  // Blast: pushed away from the explosion center; closer = travels farther (severity).
   blastKnockback: { dur: 380, render(p,dx,dy,sev){
     const kick = Math.sin(p*Math.PI);
     return { cxOffset:dx*kick*24*sev, cyOffset:dy*kick*24*sev-kick*6, squishMult:1-(1-p)*0.3, rotation:dx*kick*0.15*sev, tintColor:'#ff7a3d', tintAlpha:(1-p)*0.6 };
   }},
-  // Mine — small self-inflicted jolt, less dramatic.
+  // Mine: small self-inflicted jolt, less dramatic.
   minePop: { dur: 220, render(p){
     const kick = Math.sin(p*Math.PI);
     return { cxOffset:0, cyOffset:-kick*6, squishMult:1-(1-p)*0.25, rotation:0, tintColor:'#ffb347', tintAlpha:(1-p)*0.5 };
   }},
-  // Nuke — the biggest reaction in the game: launched, scorched, spinning.
+  // Nuke: the biggest reaction in the game: launched, scorched, spinning.
   nukeLaunch: { dur: 520, render(p,dx,dy,sev){
     const kick = Math.sin(p*Math.PI);
     const spin = dx || 1;
     return { cxOffset:dx*kick*8, cyOffset:-kick*22*sev, squishMult:1-(1-p)*0.45, rotation:kick*0.35*spin, tintColor:'#fff6d9', tintAlpha:(1-p)*0.8 };
   }},
-  // Status effects (Rage/Invisible/Shield/Triple Jump/Freeze) — a quick,
+  // Status effects (Rage/Invisible/Shield/Triple Jump/Freeze): a quick,
   // punchy pop so a buff reads as a character beat, not just an icon+text.
   buffPop: { dur: 240, render(p,dx,dy,sev){
     const kick = Math.sin(p*Math.PI);
@@ -2039,7 +2039,7 @@ const REACTION_DEFS = {
   }}
 };
 
-// A light, non-damaging pop for status effects — no hit-stop, just a quick
+// A light, non-damaging pop for status effects: no hit-stop, just a quick
 // character beat so a buff/debuff doesn't read as a silent menu interaction.
 function playBuffReaction(target){
   target.reaction = { type:'buffPop', start: performance.now(), dirX:0, dirY:0, severity:1 };
@@ -2072,7 +2072,7 @@ let explosionCells = [];
 // Destination key briefly flashing/depressing when a jelly lands on it.
 let landFlashes = [];
 function spawnLandFlash(x,y){ landFlashes.push({x,y,start:performance.now()}); }
-// object itself falling from off-screen — this is deliberately its own thing
+// object itself falling from off-screen: this is deliberately its own thing
 // per the reference, not just another square-radius explosion.
 let dropShadows = [];
 let fallingObjects = [];
@@ -2100,7 +2100,7 @@ function cellsInLine(cx, cy){
   return out;
 }
 
-// Telegraph, then detonate, then stagger the individual hits — a weapon
+// Telegraph, then detonate, then stagger the individual hits: a weapon
 // should be recognizable and watchable, not an instant silent number change.
 function detonate(j, type, done){
   const def = AOE_DEFS[type];
@@ -2185,7 +2185,7 @@ function applyTileEffect(j, done){
   if(t.type === 'plain'){ done(); return; }
   const type = t.type;
   const def = TILE_DEFS[type];
-  t.type = 'plain'; // the static tile icon is gone now — the animated collectFx takes over
+  t.type = 'plain'; // the static tile icon is gone now: the animated collectFx takes over
 
   spawnCollectFx(j.x, j.y, j, type);
   const px = boardToPx(j.px)+CELL/2, py = boardToPx(j.py)+CELL/2;
@@ -2354,7 +2354,7 @@ function checkWin(){
   const watchBtn = document.getElementById('overlayWatchBtn');
 
   // Player just died but rivals remain, and they haven't chosen to spectate
-  // yet — offer the choice instead of ending the match outright.
+  // yet: offer the choice instead of ending the match outright.
   if(!player.alive && alive.length > 1 && !spectating){
     disarmResolutionWatchdog();
     phase = 'gameover';
