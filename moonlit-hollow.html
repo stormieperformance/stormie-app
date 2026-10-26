@@ -445,10 +445,12 @@ function voice(bus, wave, f1, t, dur, vol, o = {}) {
   if (o.f2) {
     if (o.steps) { for (let i = 0; i <= o.steps; i++) osc.frequency.setValueAtTime(f1 * Math.pow(o.f2 / f1, i / o.steps), t + dur * i / (o.steps + 1)); }
     else { osc.frequency.setValueAtTime(f1, t); osc.frequency.exponentialRampToValueAtTime(o.f2, t + dur); }
-  } else osc.frequency.setValueAtTime(f1, t);
+  } else if (o.from) { osc.frequency.setValueAtTime(o.from, t); osc.frequency.exponentialRampToValueAtTime(f1, t + (o.glide || .07)); }
+  else osc.frequency.setValueAtTime(f1, t);
   const g = AC.createGain(), dec = o.decay ?? .7;
-  g.gain.setValueAtTime(vol, t);
-  if (o.env === 'pluck') g.gain.exponentialRampToValueAtTime(vol * .05 + .0001, t + dur);
+  g.gain.setValueAtTime(o.att ? 0 : vol, t);
+  if (o.att) { g.gain.linearRampToValueAtTime(vol, t + o.att); g.gain.setValueAtTime(vol * dec, t + Math.max(o.att, dur - .03)); g.gain.linearRampToValueAtTime(0, t + dur); }
+  else if (o.env === 'pluck') g.gain.exponentialRampToValueAtTime(vol * .05 + .0001, t + dur);
   else { g.gain.setValueAtTime(vol, t); g.gain.linearRampToValueAtTime(vol * dec, t + Math.min(.12, dur * .5)); g.gain.setValueAtTime(vol * dec, t + dur - .012); g.gain.linearRampToValueAtTime(0, t + dur); }
   if (o.vib && dur > .3) { const l = AC.createOscillator(), lg = AC.createGain(); l.frequency.value = o.vibR || 5.5; lg.gain.setValueAtTime(0, t); lg.gain.linearRampToValueAtTime(f1 * (o.vibD || .012), t + (o.vibDelay ?? .18)); l.connect(lg); lg.connect(osc.frequency); l.start(t); l.stop(t + dur + .02); }
   osc.connect(g); g.connect(bus); osc.start(t); osc.stop(t + dur + .03);
@@ -588,18 +590,34 @@ function musTick() {
   if (mus.next < AC.currentTime - .2) mus.next = AC.currentTime + .02;
   while (mus.next < AC.currentTime + .25) { playBar(S0.bars[mus.bar], mus.next, sd); mus.next += bl; mus.bar++; if (mus.bar >= S0.bars.length) mus.bar = S0.loop; }
 }
+/* instruments: a pipe organ, a gliding theremin and a celesta music box */
+function organ(f, t, d, v) { voice(MUS, .5, f, t, d, v * .62, { att: .03, decay: .92 }); voice(MUS, 'tri', f / 2, t, d, v * 1.5, { att: .03, decay: .95 }); voice(MUS, .125, f * 2, t, d, v * .3, { att: .05, decay: .9 }); }
+function celesta(f, t, d, v) { voice(MUS, 'tri', f * 2, t, Math.max(d, .35), v * 1.6, { env: 'pluck' }); voice(MUS, .125, f * 4, t, .18, v * .25, { env: 'pluck' }); }
+let thereminPrev = 0;
 function playBar(b, t0, sd) {
-  for (const e of b.L) voice(MUS, b.duty || .25, mtof(nm(e.n)), t0 + e.s * sd, b.pluck ? Math.max(e.l, 2) * sd : e.l * sd * .92, b.pluck ? .075 : .08, b.pluck ? { env: 'pluck' } : { decay: .75, vib: true, vibD: b.vibD, vibR: b.vibR });
-  if (b.H) for (const e of b.H) voice(MUS, .125, mtof(nm(e.n)), t0 + e.s * sd, sd * 1.6, .03, { env: 'pluck' });
-  else for (const e of b.L) voice(MUS, .125, mtof(nm(e.n)), t0 + (e.s + 3) * sd, e.l * sd * .9, .028, { decay: .7, vib: true, vibD: b.vibD, vibR: b.vibR });
-  for (const e of b.B) voice(MUS, 'tri', mtof(nm(e.n)), t0 + e.s * sd, e.l * sd * .9, .25, { decay: 1 });
+  const inst = b.inst || 'organ';
+  for (const e of b.L) {
+    const f = mtof(nm(e.n)), t = t0 + e.s * sd, d = b.pluck ? Math.max(e.l, 2) * sd : e.l * sd * .95;
+    if (inst === 'theremin') { voice(MUS, 'tri', f, t, d, .2, { from: thereminPrev || f, glide: Math.min(.12, d * .4), att: .04, decay: .9, vib: true, vibD: .028, vibR: 5.4, vibDelay: .06 }); voice(MUS, .125, f, t + .02, d, .018, { from: thereminPrev || f, glide: .1, decay: .8 }); thereminPrev = f; }
+    else if (inst === 'celesta') celesta(f, t, d, .07);
+    else organ(f, t, d, .075);
+  }
+  if (b.H) for (const e of b.H) celesta(mtof(nm(e.n)) / 2, t0 + e.s * sd, sd * 1.8, .028);
+  else for (const e of b.L) voice(MUS, .125, mtof(nm(e.n)), t0 + (e.s + 3) * sd, e.l * sd * .9, .024, { decay: .7, vib: true, vibD: .02, vibR: 4 });
+  for (const e of b.B) { const f = mtof(nm(e.n)), d = e.l * sd * .95; voice(MUS, 'tri', f, t0 + e.s * sd, d, .26, { att: .02, decay: 1 }); voice(MUS, .5, f * 2, t0 + e.s * sd, d, .022, { att: .03, decay: .9 }); }
   b.D.forEach((d, i) => {
     const t = t0 + i * sd;
-    if (d === 'k') { voice(MUS, 'tri', 170, t, .09, .3, { f2: 50, env: 'pluck' }); nz(MUS, 'long', .12, null, t, .03, .05); }
-    else if (d === 's') nz(MUS, 'long', .45, .3, t, .13, .12);
-    else if (d === 'h') nz(MUS, 'short', 1, null, t, .03, .03);
+    if (d === 'k') voice(MUS, 'tri', 120, t, .22, .34, { f2: 38, env: 'pluck' });
+    else if (d === 's') nz(MUS, 'long', .28, .18, t, .18, .09);
+    else if (d === 'h') nz(MUS, 'short', .7, null, t, .04, .025);
   });
 }
+/* who plays what */
+SONGS.hollow.bars.forEach(b => { b.inst = b.pluck ? 'celesta' : b.duty === .5 ? 'organ' : 'theremin'; });
+SONGS.tower.bars.forEach((b, i) => { b.inst = i < 9 ? 'theremin' : 'organ'; });
+SONGS.flight.bars.forEach(b => { b.inst = 'organ'; });
+SONGS.boss.bars.forEach(b => { b.inst = 'organ'; });
+SONGS.dawn.bars.forEach(b => { b.inst = 'celesta'; });
 
 /* ---------- sprites ---------- */
 const WREG = {
