@@ -39,6 +39,15 @@ button{font:inherit;color:inherit;touch-action:manipulation}
 .boss[hidden]{display:none}.boss .bar{max-width:none;height:8px;margin-top:2px}.boss .bar i{background:var(--red)}
 .stage{position:relative;flex:none;box-shadow:0 0 0 3px #0b1a12,0 0 0 6px #8a6a3a,0 0 0 8px #5a4220,0 20px 40px -12px #000;background:#5ab8f0}
 .stage canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges}
+.bubs{position:absolute;inset:0;pointer-events:none;z-index:4;overflow:hidden}
+.bub{position:absolute;left:0;top:0;max-width:min(62%,240px);width:max-content;padding:5px 8px;background:#fffdf4;color:#2a2238;border-radius:8px;box-shadow:0 0 0 2px #2a2238,3px 3px 0 rgba(0,0,0,.3);
+  font-family:var(--label);font-size:clamp(11px,1.5vw,16px);line-height:1.3;letter-spacing:.02em;text-align:center;text-wrap:balance;animation:bubIn .14s ease-out}
+.bub::after{content:"";position:absolute;left:var(--tail,50%);bottom:-7px;margin-left:-6px;border:6px solid transparent;border-top-color:#2a2238;border-bottom:0}
+.bub.angry{color:#c8302a}
+.bub.teacher{background:#ffe9a8;color:#7a1a10;box-shadow:0 0 0 3px #7a1a10,3px 3px 0 rgba(0,0,0,.35);font-size:clamp(12px,1.7vw,18px);font-weight:700}
+.bub.teacher::after{border-top-color:#7a1a10}
+.bub.boss{background:#2a2238;color:#ffb0a8;box-shadow:0 0 0 2px #ffb0a8}
+@keyframes bubIn{from{opacity:0}}
 .dock{width:100%;max-width:760px;min-height:112px;display:flex;align-items:center;justify-content:center;padding:6px 4px;z-index:8;position:relative}
 .dock .tip{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:max-content;max-width:96%}
 .tip{max-width:620px;text-align:center;font-family:var(--label);font-size:12px;line-height:1.5;color:var(--chalk);background:rgba(11,26,18,.9);box-shadow:inset 0 0 0 1px var(--yellow);padding:.55em .9em;opacity:0;transition:opacity .25s;text-wrap:balance;pointer-events:none}
@@ -126,7 +135,7 @@ button{font:inherit;color:inherit;touch-action:manipulation}
     <div class="meter" id="hBustBox"><span>Busted</span><div class="bar"><i id="hBust" style="width:0"></i></div></div>
     <div class="rep" id="hRep">0</div>
   </div>
-  <div class="stage" id="stage"><div class="boss" id="hBoss" hidden>BRICK<div class="bar"><i id="hBossHp"></i></div></div></div>
+  <div class="stage" id="stage"><div class="bubs" id="bubs"></div><div class="boss" id="hBoss" hidden>BRICK<div class="bar"><i id="hBossHp"></i></div></div></div>
   <div class="dock">
     <div class="tip" id="tip"></div>
     <div class="dlg" id="dlg" hidden><div class="who" id="dWho"></div><p class="line" id="dLine"></p><div class="opts" id="dOpts"></div></div>
@@ -811,19 +820,22 @@ const Fx = {
     sc.tweens.add({ targets: t, scale: 2, duration: 220, ease: 'Back.out' });
     sc.tweens.add({ targets: t, alpha: 0, delay: ms, duration: 300, onComplete: () => t.destroy() });
   },
+  /* speech bubbles are real HTML text over the canvas, so they stay crisp and readable at any size */
   say(sc, a, text, ms = 1600, col = '#2a2238') {
     for (const bb of sc.bubbles) if (bb.a === a) bb.kill = true;
-    const t = sc.add.bitmapText(0, 0, 'px', text.toUpperCase()).setLetterSpacing(-1).setOrigin(.5, 1).setDepth(925).setTint(hex(col));
-    const w = Math.round(t.width) + 6, g = sc.add.graphics().setDepth(924);
-    g.fillStyle(0xffffff, .96); g.fillRoundedRect(-w / 2, -10, w, 10, 3); g.fillTriangle(-2, 0, 3, 0, 0, 3); g.lineStyle(1, 0x2a2238, 1); g.strokeRoundedRect(-w / 2, -10, w, 10, 3);
-    sc.bubbles.push({ a, t, g, w, until: sc.time.now + ms });
+    const el = document.createElement('div');
+    el.className = 'bub' + (a.team === 'teacher' ? ' teacher' : a.boss ? ' boss' : col === '#c83a2a' ? ' angry' : '');
+    el.textContent = text; document.getElementById('bubs').appendChild(el);
+    sc.bubbles.push({ a, el, until: sc.time.now + ms });
   },
   updBubbles(sc) {
-    const cam = sc.cameras.main;
+    const cam = sc.cameras.main, cv = sc.game.canvas, k = cv.clientWidth / cam.width, W = cv.clientWidth;
     for (const bb of sc.bubbles) {
-      if (bb.kill || sc.time.now > bb.until || bb.a.gone) { bb.t.destroy(); bb.g.destroy(); bb.dead = true; continue; }
-      const a = bb.a, x = Math.round(clamp(a.x, cam.scrollX + bb.w / 2 + 2, cam.scrollX + cam.width - bb.w / 2 - 2)), y = Math.round(Math.max(13, a.y - a.z - a.h - 4));
-      bb.t.setPosition(x, y - 1); bb.g.setPosition(x, y);
+      if (bb.kill || sc.time.now > bb.until || bb.a.gone || !sc.sys.isActive()) { bb.el.remove(); bb.dead = true; continue; }
+      const a = bb.a, w = bb.el.offsetWidth, sx = (a.x - cam.scrollX) * k, sy = (a.y - a.z - a.h - 5) * k;
+      const x = clamp(sx - w / 2, 4, W - w - 4);
+      bb.el.style.transform = `translate(${Math.round(cv.offsetLeft + x)}px,${Math.round(cv.offsetTop + Math.max(4, sy - bb.el.offsetHeight))}px)`;
+      bb.el.style.setProperty('--tail', Math.round(clamp(sx - x, 10, w - 10)) + 'px');
     }
     sc.bubbles = sc.bubbles.filter(b => !b.dead);
   },
@@ -924,7 +936,7 @@ class Yard extends Phaser.Scene {
     const D = this.D = DAYS[G.day];
     /* free the per-kid textures from the last recess */
     for (const k of this.textures.getTextureKeys()) if (/^kid\d+$/.test(k)) this.textures.remove(k);
-    this.bubbles = []; this.kids = []; this.balls = []; this.items = []; this.t = D.len; this.live = false; this.ending = false; this.fightOn = false; this.fightT = 0; this.chantT = 0; this.dayRep0 = G.rep; this.bossSpawned = false;
+    this.bubbles = []; document.getElementById('bubs').innerHTML = ''; this.kids = []; this.balls = []; this.items = []; this.t = D.len; this.live = false; this.ending = false; this.fightOn = false; this.fightT = 0; this.chantT = 0; this.dayRep0 = G.rep; this.bossSpawned = false;
     G.hp = Math.max(G.hp, 60);
     setMode('yard'); playSong('recess');
     const cam = this.cameras.main; cam.setBounds(0, 0, YW, GH); cam.setRoundPixels(true);
@@ -1505,7 +1517,7 @@ function bindDeck() {
 
 /* ---------- the principal's office ---------- */
 function office(why) {
-  G.over = true; playSong('office');
+  G.over = true; playSong('office'); $('bubs').innerHTML = '';
   for (const s of game.scene.getScenes(true)) if (s.scene.key !== 'boot') s.scene.pause();
   const s = G.stats, day = DAYS[Math.min(G.day, 4)].name;
   const rank = RANKS.filter(r => G.rep >= r[0]).pop()[1];
