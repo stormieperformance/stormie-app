@@ -1,0 +1,1904 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#0e0a16">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Trash Shift | Stormie Games</title>
+<meta name="description" content="Trash Shift: a night-shift garbage collector arcade game. Grab bags, wheel bins, throw clean shots into the truck and escape raccoons, angry residents and a rival crew. Free in your browser.">
+<meta property="og:title" content="Trash Shift | Stormie Games">
+<meta property="og:image" content="https://stormie.app/trash-shift-preview.jpg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600;700&family=Silkscreen&display=swap" rel="stylesheet">
+<style>
+:root{--night:#0e0a16;--ink:#fff6e8;--muted:#b8b0c8;--vis:#ff8a1e;--lime:#b8ff4a;--cyan:#8ff7ff;--red:#ff5a5a;--deck:200px;
+  --display:"Pixelify Sans","Courier New",monospace;--label:"Silkscreen","Courier New",monospace;color-scheme:dark}
+*,*::before,*::after{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;margin:0;background:var(--night);color:var(--ink);overflow:hidden;overscroll-behavior:none}
+body{font-family:var(--display);-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;touch-action:none}
+button{font:inherit;color:inherit;touch-action:manipulation}
+.app{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;
+  padding:max(6px,env(safe-area-inset-top)) max(6px,env(safe-area-inset-right)) max(8px,env(safe-area-inset-bottom)) max(6px,env(safe-area-inset-left));
+  background:radial-gradient(ellipse 90% 60% at 50% 35%,#2a1838 0%,transparent 70%),repeating-linear-gradient(-45deg,rgba(255,138,30,.03) 0 10px,transparent 10px 20px),var(--night)}
+.hud{width:100%;max-width:900px;display:flex;align-items:center;gap:10px;min-height:38px;padding:0 2px 6px;font-family:var(--label);font-size:11px;letter-spacing:.06em;z-index:6}
+.hud[hidden]{visibility:hidden;display:flex}
+.hud .sc{font-family:var(--display);font-weight:700;font-size:20px;color:var(--vis);min-width:64px;text-shadow:2px 2px 0 #000}
+.hud .st{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink)}
+.hud .hop{display:flex;align-items:center;gap:2px}.hud .hop[hidden]{display:none}
+.hud .hop span{margin-right:4px;color:var(--muted)}
+.hud .hop i{display:block;width:8px;height:12px;background:#2a2238;box-shadow:inset 0 0 0 1px #4a3e5e}
+.hud .hop i.on{background:var(--lime)}.hud .hop i.full{background:var(--red);animation:blink .5s steps(2) infinite}
+@keyframes blink{50%{opacity:.4}}
+.app.tp .hud .hop span{display:none}
+.app.tp .hud{gap:6px}
+.hud .tm{color:var(--muted);min-width:46px;text-align:right}.hud .tm.over{color:var(--red)}
+.tb{font-family:var(--label);font-size:10px;letter-spacing:.06em;color:var(--muted);background:rgba(14,10,22,.8);border:1px solid #4a3e5e;padding:7px 9px;min-height:34px;cursor:pointer}
+.tb:hover,.tb:focus-visible{color:var(--vis);border-color:var(--vis);outline:none}
+.tb.off{color:#5a5070;text-decoration:line-through}
+.stage{position:relative;flex:none;box-shadow:0 0 0 3px #07050c,0 0 0 5px #3a2e4e,0 20px 50px -14px #000;background:#0a0818}
+.stage canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges}
+.dock{width:100%;max-width:900px;min-height:58px;display:flex;align-items:center;justify-content:center;padding:6px 4px;z-index:6;pointer-events:none}
+.tip{max-width:620px;text-align:center;font-family:var(--label);font-size:12px;line-height:1.5;letter-spacing:.03em;color:var(--ink);background:rgba(14,10,22,.9);
+  box-shadow:inset 0 0 0 1px var(--vis);padding:.55em .9em;opacity:0;transition:opacity .25s;text-wrap:balance}
+.tip.show{opacity:1}
+.deck{display:none;width:100%;max-width:560px;flex:1;min-height:0;z-index:5;justify-content:space-between;align-items:center;gap:12px;padding:4px 6px}
+.app.tp .deck,.app.tl .deck{display:flex}
+.pad{display:grid;gap:10px}
+.padL{grid-template-columns:1fr 1fr;width:46%}
+.padR{grid-template-columns:1fr 1fr;grid-template-rows:auto auto;width:48%}
+.cb{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border:none;cursor:pointer;color:var(--ink);
+  background:linear-gradient(180deg,#3a2e4e,#221a30);box-shadow:inset 0 0 0 2px #5a4a74,0 4px 0 #07050c;border-radius:14px;min-height:72px;font-family:var(--label);font-size:11px;letter-spacing:.06em;touch-action:none}
+.cb svg{width:30px;height:30px}
+.cb em{font-style:normal}
+.cb.on{transform:translateY(3px);box-shadow:inset 0 0 0 2px var(--vis),0 1px 0 #07050c;background:linear-gradient(180deg,#4a3a60,#2a2040)}
+.cb[data-a=jump]{grid-column:1/3;min-height:78px;background:linear-gradient(180deg,#ff9a3a,#d0601a);box-shadow:inset 0 0 0 2px #ffc080,0 4px 0 #6a2a08;color:#1a0e08;font-size:13px}
+.cb[data-a=use]{background:linear-gradient(180deg,#3a8a4a,#24603a);box-shadow:inset 0 0 0 2px #6ac87a,0 4px 0 #07050c}
+.cb[data-a=throw]{background:linear-gradient(180deg,#2a6a9a,#1a4a72);box-shadow:inset 0 0 0 2px #6ab8e8,0 4px 0 #07050c}
+.app[data-mode=drive] .cb[data-a=throw],.app[data-mode=drive] .cb[data-a=use]{display:none}
+.app[data-mode=drive] .cb[data-a=jump]{background:linear-gradient(180deg,#ffd23a,#c89a10);box-shadow:inset 0 0 0 2px #fff0a0,0 4px 0 #5a4008}
+.app.tl{padding:0;justify-content:center}
+.app.tl .hud{position:absolute;top:max(4px,env(safe-area-inset-top));left:0;right:0;margin:auto;padding:4px 10px;max-width:none;background:linear-gradient(180deg,rgba(14,10,22,.75),transparent);pointer-events:auto}
+.app.tl .dock{position:absolute;top:44px;left:0;right:0;margin:auto;min-height:0}
+.app.tl .stage{margin:0}
+.app.tl .deck{position:absolute;inset:0;max-width:none;padding:0;pointer-events:none;display:block}
+.app.tl .pad{position:absolute;bottom:max(10px,env(safe-area-inset-bottom));width:calc(var(--side) - 16px);pointer-events:auto}
+.app.tl .padL{left:max(8px,env(safe-area-inset-left));grid-template-columns:1fr 1fr}
+.app.tl .padR{right:max(8px,env(safe-area-inset-right));grid-template-columns:1fr 1fr}
+.app.tl .cb{min-height:64px}
+.app.tl .cb[data-a=jump]{min-height:72px}
+.app.tl .padL .cb{min-height:110px}
+.app.tl .hud .hop span{display:none}
+.app.tp .deck{flex:none;height:var(--deck)}
+.app.tp .stage{margin-top:2px}
+.app.dk .stage{margin:auto 0 0}.app.dk .dock{margin-bottom:auto}
+/* screens */
+.screen{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;z-index:20;overflow-y:auto;
+  padding:max(18px,env(safe-area-inset-top)) 16px max(18px,env(safe-area-inset-bottom));justify-content:safe center;background:radial-gradient(ellipse 80% 60% at 50% 40%,#2a1838,#0e0a16 75%)}
+#sReport{background:radial-gradient(ellipse 80% 60% at 50% 40%,rgba(42,24,56,.94),rgba(14,10,22,.97) 75%)}
+.screen[hidden]{display:none}
+.title{margin:0;font-family:var(--display);font-weight:700;font-size:clamp(58px,17vw,112px);line-height:.82;color:#fff;letter-spacing:.01em;text-shadow:.05em .05em 0 var(--vis),.1em .1em 0 #2a1838}
+.title small{display:block;font-family:var(--label);font-size:11px;letter-spacing:.22em;color:var(--lime);text-shadow:none;margin-bottom:.9em}
+.title span{color:var(--lime)}
+.tag{margin:0;max-width:32ch;color:var(--muted);font-size:17px;text-wrap:balance}
+.how{display:grid;grid-template-columns:repeat(3,auto);gap:10px 18px;font-family:var(--label);font-size:10px;letter-spacing:.05em;color:var(--muted)}
+.how b{display:block;color:var(--ink);font-weight:400;margin-bottom:2px}
+.btn{font-family:var(--label);font-size:14px;letter-spacing:.14em;color:#1a0e08;background:var(--vis);border:none;padding:16px 34px;min-height:52px;cursor:pointer;
+  clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px);background-image:repeating-linear-gradient(90deg,transparent 0 22px,rgba(255,255,255,.35) 22px 26px)}
+.btn:hover,.btn:focus-visible{background-color:#fff;outline:none}
+.btn:disabled{opacity:.5}
+.btns{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;align-items:center}
+.home{font-family:var(--label);font-size:10px;letter-spacing:.14em;color:var(--muted);text-decoration:none;padding:8px}
+.home:hover{color:var(--vis)}
+.best{font-family:var(--label);font-size:10px;letter-spacing:.08em;color:var(--lime);margin:0;min-height:1em}
+.desk-only{display:grid}.touch .desk-only{display:none}.touch-only{display:none}.touch .touch-only{display:block}
+/* the report: a crumpled clipboard form */
+.report{width:min(100%,430px);background:#efe6cf;color:#2a2230;padding:20px 20px 18px;text-align:left;font-family:var(--label);font-size:11px;letter-spacing:.02em;line-height:1.45;
+  box-shadow:0 0 0 3px #2a2230,10px 12px 0 rgba(0,0,0,.45);transform:rotate(-1deg);position:relative}
+.report::before{content:"";position:absolute;top:-14px;left:50%;width:110px;height:24px;margin-left:-55px;background:#8a8a96;box-shadow:inset 0 -4px 0 #5a5a66,0 0 0 2px #2a2230;border-radius:4px}
+.report h2{margin:0 0 2px;font-family:var(--display);font-weight:700;font-size:30px;letter-spacing:.02em;color:#2a2230}
+.report .meta{display:flex;justify-content:space-between;border-bottom:2px dashed #2a2230;padding-bottom:8px;margin-bottom:8px;color:#5a5060}
+.report .big{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:4px 0 10px}
+.report .big b{font-family:var(--display);font-size:42px;line-height:1;color:#c8401a}
+.report .rank{font-family:var(--display);font-size:17px;color:#2a2230;text-align:right}
+.report .row{display:flex;justify-content:space-between;gap:10px;border-bottom:1px solid rgba(42,34,48,.18);padding:3px 0}
+.report h3{margin:12px 0 4px;font-family:var(--label);font-size:11px;letter-spacing:.12em;color:#c8401a}
+.report ul{margin:0;padding-left:16px}.report li{margin:1px 0}
+.report .nil{margin:0;color:#5a5060}
+.report .note{margin:12px 0 0;padding:8px;background:rgba(200,64,26,.1);border-left:3px solid #c8401a;font-size:11px}
+.stamp{position:absolute;right:16px;top:20px;transform:rotate(12deg);font-family:var(--display);font-weight:700;font-size:18px;color:#c8401a;border:3px solid #c8401a;padding:2px 8px;opacity:.85;animation:stampIn .35s cubic-bezier(.2,2,.4,1) both .3s}
+@keyframes stampIn{from{transform:rotate(12deg) scale(3);opacity:0}}
+</style>
+</head>
+<body>
+<div class="app" id="app" data-mode="stop">
+  <div class="hud" id="hud" hidden>
+    <div class="sc" id="hScore">0</div>
+    <div class="st" id="hStop"></div>
+    <div class="hop" id="hHop"></div>
+    <div class="tm" id="hTime">0:00</div>
+    <button class="tb" id="restartBtn" type="button" aria-label="Restart this stop (R)">Retry</button>
+  </div>
+  <div class="stage" id="stage"></div>
+  <div class="dock"><div class="tip" id="tip"></div></div>
+  <div class="deck" id="deck">
+    <div class="pad padL">
+      <button class="cb" data-a="left" data-i="0" type="button" aria-label="Left"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="square"><path d="M15 5l-7 7 7 7"/></svg><em></em></button>
+      <button class="cb" data-a="right" data-i="1" type="button" aria-label="Right"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="square"><path d="M9 5l7 7-7 7"/></svg><em></em></button>
+    </div>
+    <div class="pad padR">
+      <button class="cb" data-a="throw" data-i="4" type="button"><em>THROW</em></button>
+      <button class="cb" data-a="use" data-i="3" type="button"><em>USE</em></button>
+      <button class="cb" data-a="jump" data-i="2" type="button"><em>JUMP</em></button>
+    </div>
+  </div>
+</div>
+
+<div class="screen" id="sTitle">
+  <h1 class="title"><small>Stormie Games presents</small>Trash<br><span>Shift</span></h1>
+  <p class="tag">The night shift. Five stops, one truck, and a city that throws things back.</p>
+  <div class="how desk-only"><span><b>A D / arrows</b>move</span><span><b>Space</b>jump</span><span><b>E</b>grab, dump, use</span><span><b>K</b>throw</span><span><b>R</b>retry stop</span><span><b>M</b>music</span></div>
+  <p class="tag touch-only" style="font-size:14px">Big buttons below the street. Works upright or sideways.</p>
+  <div class="btns"><button class="btn" id="play" type="button" disabled>Clock in</button><button class="tb musicBtn" type="button">Music on</button></div>
+  <p class="best" id="tBest"></p>
+  <a class="home" href="/">More Stormie Games</a>
+</div>
+
+<div class="screen" id="sReport" hidden>
+  <div class="report">
+    <h2>Shift Report</h2>
+    <div class="meta"><span>City Waste, Night Crew, Form 7B</span></div>
+    <div class="stamp">FILED</div>
+    <div class="big"><b id="rScore">0</b><span class="rank" id="rRank"></span></div>
+    <div id="rBody"></div>
+  </div>
+  <p class="best" id="rBest"></p>
+  <div class="btns"><button class="btn" id="again" type="button">Work another shift</button><a class="home" href="/">More games</a></div>
+</div>
+
+<script src="vendor/phaser-3.80.1-arcade.min.js"></script>
+<script>
+(function(){
+document.documentElement.classList.toggle('touch', matchMedia('(pointer:coarse)').matches);
+/* ================= TRASH SHIFT: art (all sprites drawn in code, original) ================= */
+const OUTL = '#120a14';
+function cnv(w, h) { const c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d'); x.imageSmoothingEnabled = false; return [c, x]; }
+function outline(x, w, h) {
+  const d = x.getImageData(0, 0, w, h), a = d.data, src = new Uint8ClampedArray(a);
+  const o = [18, 10, 20];
+  for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) {
+    const k = (j * w + i) * 4; if (src[k + 3] > 0) continue;
+    const n = (ii, jj) => ii >= 0 && jj >= 0 && ii < w && jj < h && src[(jj * w + ii) * 4 + 3] > 0;
+    if (n(i - 1, j) || n(i + 1, j) || n(i, j - 1) || n(i, j + 1)) { a[k] = o[0]; a[k + 1] = o[1]; a[k + 2] = o[2]; a[k + 3] = 255; }
+  }
+  x.putImageData(d, 0, 0);
+}
+/* build a sprite sheet: n frames of fw x fh, each drawn by fn(ctx, i), auto-outlined */
+const SHEETS = {};
+function sheet(key, fw, fh, n, fn, noOutline) {
+  const [c, x] = cnv(fw * n, fh);
+  for (let i = 0; i < n; i++) {
+    const [fc, fx] = cnv(fw, fh); fn(fx, i);
+    if (!noOutline) outline(fx, fw, fh);
+    x.drawImage(fc, i * fw, 0);
+  }
+  SHEETS[key] = { c, fw, fh, n };
+}
+const R_ = (x, X, Y, W, H, col) => { x.fillStyle = col; x.fillRect(Math.round(X), Math.round(Y), W, H); };
+const PX = (x, X, Y, col) => { x.fillStyle = col; x.fillRect(Math.round(X), Math.round(Y), 1, 1); };
+
+/* ---------- tiny 3x5 pixel font ---------- */
+const FONT = {
+  A: '.#.#.#####.##.#',
+  B: '##.#.###.#.###.',
+  C: '.###..#..#...##',
+  D: '##.#.##.##.###.',
+  E: '####..##.#..###',
+  F: '####..##.#..#..',
+  G: '.###..#.##.#.##',
+  H: '#.##.#####.##.#',
+  I: '###.#..#..#.###',
+  J: '..#..#..##.#.#.',
+  K: '#.##.###.#.##.#',
+  L: '#..#..#..#..###',
+  M: '#.########.##.#',
+  N: '##.#.##.##.##.#',
+  O: '.#.#.##.##.#.#.',
+  P: '##.#.###.#..#..',
+  Q: '.#.#.##.###..##',
+  R: '##.#.###.#.##.#',
+  S: '.###...#...###.',
+  T: '###.#..#..#..#.',
+  U: '#.##.##.##.####',
+  V: '#.##.##.##.#.#.',
+  W: '#.##.########.#',
+  X: '#.##.#.#.#.##.#',
+  Y: '#.##.#.#..#..#.',
+  Z: '###..#.#.#..###',
+  '0': '####.##.##.####',
+  '1': '.#.##..#..#.###',
+  '2': '##...#.#.#..###',
+  '3': '##...#.#...###.',
+  '4': '#.##.####..#..#',
+  '5': '####..##...###.',
+  '6': '.###..####.####',
+  '7': '###..#.#..#..#.',
+  '8': '####.#####.####',
+  '9': '####.####..###.',
+  '!': '.#..#..#.....#.',
+  '?': '##...#.#.....#.',
+  '.': '.............#.',
+  ',': '..........#.#..',
+  "'": '.#..#..........',
+  '-': '......###......',
+  '+': '....#.###.#....',
+  '/': '..#..#.#.#..#..',
+  ':': '....#.....#....',
+  '%': '#.#..#.#.#..#.#',
+  '*': '#.#.#.#.#......',
+  '#': '#.#####.#####.#',
+  ' ': '...............'
+};
+function glyphs(s) { return [...s.toUpperCase()].map(ch => FONT[ch] || FONT[' ']); }
+function drawText(x, s, X, Y, col, scale = 1) {
+  glyphs(s).forEach((g, i) => { for (let j = 0; j < 15; j++) if (g[j] === '#') { x.fillStyle = col; x.fillRect(X + (i * 4 + (j % 3)) * scale, Y + Math.floor(j / 3) * scale, scale, scale); } });
+}
+const textW = (s, scale = 1) => (s.length * 4 - 1) * scale;
+
+/* ---------- the worker (and the rival, same body, different uniform) ---------- */
+function workerFrame(x, o, pal) {
+  const leg = o.leg || 0, bob = o.bob || 0, arm = o.arm || 'down', y0 = bob;
+  const P = pal;
+  /* legs and boots */
+  R_(x, 7 + leg, 17 + y0, 3, 6 - y0, P.pants); R_(x, 10 - leg, 17 + y0, 3, 6 - y0, P.pantsD);
+  R_(x, 6 + leg * 1.5, 23, 4, 2, P.boot); R_(x, 10 - leg * 1.5, 23, 4, 2, P.boot);
+  /* torso with the hi-vis vest */
+  R_(x, 6, 9 + y0, 9, 8, P.vest); R_(x, 13, 11 + y0, 3, 5, P.vest);
+  R_(x, 6, 12 + y0, 10, 1, P.stripe); R_(x, 6, 15 + y0, 10, 1, P.stripe);
+  R_(x, 6, 9 + y0, 2, 8, P.vestD);
+  R_(x, 8, 9 + y0, 3, 2, P.shirt);
+  /* head */
+  R_(x, 8, 2 + y0, 7, 7, P.skin); R_(x, 14, 4 + y0, 2, 2, P.skin);
+  R_(x, 7, 1 + y0, 8, 3, P.cap); R_(x, 13, 3 + y0, 4, 1, P.capD); R_(x, 7, 3 + y0, 2, 3, P.hair);
+  if (o.stun) { PX(x, 11, 5 + y0, OUTL); PX(x, 13, 5 + y0, OUTL); PX(x, 12, 4 + y0, OUTL); PX(x, 12, 6 + y0, OUTL); }
+  else if (o.cheer) { R_(x, 11, 5 + y0, 2, 1, OUTL); }
+  else { PX(x, 12, 5 + y0, OUTL); PX(x, 12, 4 + y0, P.skin); }
+  R_(x, 11, 7 + y0, 5, 1, P.stache); PX(x, 15, 8 + y0, P.stache);
+  if (o.cheer) R_(x, 12, 8 + y0, 3, 1, '#7a2a2a');
+  /* arms */
+  if (arm === 'down') { R_(x, 5, 10 + y0, 2, 5, P.vestD); R_(x, 5, 15 + y0, 2, 2, P.glove); R_(x, 14, 10 + y0, 2, 5, P.vest); R_(x, 14, 15 + y0, 2, 2, P.glove); }
+  else if (arm === 'up') { R_(x, 5, 2 + y0, 2, 8, P.vestD); R_(x, 5, 0, 2, 2, P.glove); R_(x, 14, 2 + y0, 2, 8, P.vest); R_(x, 14, 0, 2, 2, P.glove); }
+  else if (arm === 'fwd') { R_(x, 13, 11 + y0, 6, 2, P.vest); R_(x, 18, 10 + y0, 2, 3, P.glove); R_(x, 12, 13 + y0, 6, 2, P.vestD); R_(x, 17, 13 + y0, 2, 2, P.glove); }
+  else if (arm === 'throw') { R_(x, 14, 4 + y0, 2, 7, P.vest); R_(x, 15, 1 + y0, 3, 3, P.glove); R_(x, 4, 11 + y0, 3, 2, P.vestD); R_(x, 2, 11 + y0, 2, 2, P.glove); }
+  else if (arm === 'cheer') { R_(x, 4, 3 + y0, 2, 7, P.vestD); R_(x, 3, 1 + y0, 3, 3, P.glove); R_(x, 15, 3 + y0, 2, 7, P.vest); R_(x, 16, 1 + y0, 3, 3, P.glove); }
+  else if (arm === 'flail') { R_(x, 3, 6 + y0, 3, 2, P.vestD); R_(x, 1, 5 + y0, 2, 2, P.glove); R_(x, 15, 6 + y0, 3, 2, P.vest); R_(x, 18, 5 + y0, 2, 2, P.glove); }
+}
+const WORKER_PAL = { pants: '#2a3456', pantsD: '#1e2640', boot: '#2a1a14', vest: '#ff8a1e', vestD: '#d0601a', stripe: '#e8f4f0', shirt: '#4a5a7a', skin: '#e8a878', cap: '#2e7a3a', capD: '#1e5a2a', hair: '#5a3a22', stache: '#4a2a18', glove: '#e8c840' };
+const RIVAL_PAL = { pants: '#3a1a1a', pantsD: '#2a1212', boot: '#1a1a1a', vest: '#d8283a', vestD: '#a01a2a', stripe: '#f0e060', shirt: '#2a2a2a', skin: '#d89060', cap: '#1a1a1a', capD: '#000000', hair: '#1a1a1a', stache: '#1a1a1a', glove: '#8a8a9a' };
+function workerSheet(key, pal) {
+  const F = [
+    { bob: 0 }, { bob: 1 },
+    { leg: 1 }, { leg: 0, bob: 1 }, { leg: -1 }, { leg: 0, bob: 1 },
+    { arm: 'up' }, { arm: 'up', bob: 1 },
+    { arm: 'up', leg: 1, bob: 1 }, { arm: 'up', leg: 0 }, { arm: 'up', leg: -1, bob: 1 }, { arm: 'up', leg: 0 },
+    { arm: 'fwd', leg: 1 }, { arm: 'fwd', leg: 0, bob: 1 }, { arm: 'fwd', leg: -1 }, { arm: 'fwd', leg: 0, bob: 1 },
+    { leg: 1, arm: 'flail' }, { leg: 1, arm: 'up' }, { arm: 'throw' },
+    { stun: 1, arm: 'flail', bob: 1 }, { stun: 1, arm: 'down' },
+    { cheer: 1, arm: 'cheer' }, { cheer: 1, arm: 'cheer', bob: 1 }
+  ];
+  sheet(key, 20, 26, F.length, (x, i) => workerFrame(x, F[i], pal));
+}
+
+/* ---------- rubbish ---------- */
+function bagFrame(x, i) {
+  const col = ['#2a2a38', '#2e5a2e', '#2a3a72', '#e8b830', '#2a2a38'][i], hi = ['#5a5a74', '#5a9a4a', '#5a74b8', '#fff0a0', '#5a5a74'][i];
+  if (i === 4) { /* split bag, flat */ R_(x, 1, 9, 12, 3, col); R_(x, 3, 8, 7, 1, col); PX(x, 4, 8, hi); R_(x, 10, 10, 3, 2, '#c8a060'); return; }
+  R_(x, 2, 4, 10, 8, col); R_(x, 1, 6, 12, 5, col); R_(x, 5, 1, 4, 3, col); R_(x, 4, 0, 2, 2, col); R_(x, 8, 0, 2, 2, col);
+  PX(x, 3, 5, hi); PX(x, 4, 5, hi); PX(x, 3, 6, hi); PX(x, 6, 2, hi); R_(x, 4, 11, 7, 1, '#000000');
+  if (i === 3) { PX(x, 9, 4, '#ffffff'); PX(x, 6, 8, '#ffffff'); PX(x, 10, 7, '#ffffff'); }
+}
+const LITTER = [['#d82a2a', '#ffffff'], ['#f0d040', '#8a7a20'], ['#e8e8e8', '#a8a8a8'], ['#4ab84a', '#2a7a2a'], ['#c87a3a', '#ffd080']];
+function litterFrame(x, i) {
+  const [a, b] = LITTER[i];
+  if (i === 0) { R_(x, 1, 1, 3, 5, a); R_(x, 1, 2, 3, 1, b); }
+  else if (i === 1) { R_(x, 0, 3, 2, 2, a); R_(x, 1, 2, 2, 2, a); R_(x, 3, 1, 2, 2, a); PX(x, 5, 0, b); }
+  else if (i === 2) { R_(x, 0, 1, 5, 4, a); PX(x, 1, 2, b); PX(x, 3, 3, b); }
+  else if (i === 3) { R_(x, 2, 0, 1, 2, a); R_(x, 1, 2, 3, 4, a); PX(x, 1, 3, b); }
+  else { R_(x, 0, 2, 5, 2, a); PX(x, 1, 1, b); PX(x, 3, 1, b); }
+}
+function foodFrame(x, i) {
+  if (i === 0) { /* pizza slice */ for (let r = 0; r < 7; r++) R_(x, r, r, 10 - r * 1.3, 1, r === 0 ? '#c87a2a' : '#f0c040'); PX(x, 3, 2, '#c8302a'); PX(x, 6, 2, '#c8302a'); PX(x, 4, 4, '#c8302a'); }
+  else { /* kebab */ R_(x, 1, 3, 9, 4, '#e8c890'); R_(x, 2, 2, 7, 1, '#a85a2a'); R_(x, 3, 1, 5, 1, '#4ab84a'); PX(x, 4, 2, '#d8302a'); PX(x, 7, 2, '#d8302a'); }
+}
+function binFrame(x, i) {
+  const body = '#2e7a3a', dk = '#1e5a28', lid = '#256a30';
+  if (i >= 3 && i <= 4) { /* tiny legs */ const s = i === 3 ? 1 : -1; R_(x, 4 + s, 20, 1, 3, '#e8a878'); R_(x, 10 - s, 20, 1, 3, '#e8a878'); R_(x, 3 + s, 22, 2, 1, '#2a1a14'); R_(x, 10 - s, 22, 2, 1, '#2a1a14'); }
+  const dy = i >= 3 && i <= 4 ? -2 : 0;
+  R_(x, 2, 5 + dy, 12, 15, body); R_(x, 2, 5 + dy, 2, 15, dk); R_(x, 4, 8 + dy, 8, 1, dk); R_(x, 4, 14 + dy, 8, 1, dk);
+  if (i === 1) { R_(x, 1, 0, 3, 6, lid); } else R_(x, 1, 3 + dy, 14, 3, lid);
+  R_(x, 12, 2 + dy, 3, 2, '#3a3a3a');
+  if (i < 3 || i === 5) { R_(x, 2, 20, 3, 3, '#1a1a1a'); PX(x, 3, 21, '#6a6a6a'); }
+  if (i === 3 || i === 4) { PX(x, 5, 7 + dy, '#ffffff'); PX(x, 10, 7 + dy, '#ffffff'); PX(x, 6, 7 + dy, OUTL); PX(x, 11, 7 + dy, OUTL); }
+  if (i === 2) { PX(x, 6, 4, '#ffe060'); PX(x, 9, 4, '#ffe060'); }
+}
+/* ---------- the truck ---------- */
+function truckFrame(x, i) {
+  const G = '#3a8a4a', GD = '#24603a', GL = '#5ab86a';
+  /* body box (rear, on the right) */
+  R_(x, 34, 8, 74, 34, G); R_(x, 34, 8, 74, 3, GL); R_(x, 34, 38, 74, 4, GD);
+  for (let k = 40; k < 104; k += 9) R_(x, k, 12, 1, 26, GD);
+  R_(x, 40, 22, 54, 7, '#e8e0c0'); drawText(x, 'CITY WASTE', 44, 23, '#2a3a2a');
+  /* grime */
+  for (const [gx, gy] of [[38, 33], [60, 35], [88, 30], [97, 14], [50, 15], [76, 36]]) R_(x, gx, gy, 3, 2, '#2a5a30');
+  /* hopper at the very back */
+  R_(x, 104, 14, 8, 30, GD); R_(x, 96, 20, 12, 18, '#1a1a1a');
+  const blade = [0, 6, 12][i % 3]; R_(x, 96, 20 + blade, 12, 4, '#8a9aaa'); R_(x, 96, 20 + blade, 12, 1, '#c8d4e0');
+  /* cab on the left */
+  R_(x, 4, 16, 32, 26, G); R_(x, 6, 18, 18, 10, '#8ad0e8'); R_(x, 6, 18, 18, 2, '#c8f0ff'); R_(x, 26, 18, 8, 22, GD); R_(x, 4, 16, 32, 2, GL);
+  R_(x, 0, 32, 6, 8, '#c8c8c8'); R_(x, 1, 33, 3, 3, '#ffe890');
+  R_(x, 4, 38, 104, 6, '#2a2a2a'); R_(x, 2, 40, 10, 3, '#8a8a8a');
+  /* beacon */
+  R_(x, 16, 12, 6, 4, i === 3 ? '#ffd23a' : '#8a5a10'); if (i === 3) R_(x, 17, 11, 4, 1, '#fff6b0');
+}
+function wheelFrame(x, i) { for (let a = 0; a < 6.28; a += .05) { const r = 6.5; PX(x, 7 + Math.cos(a) * r, 7 + Math.sin(a) * r, '#1a1a1a'); } R_(x, 2, 2, 11, 11, '#1a1a1a'); R_(x, 4, 4, 7, 7, '#5a5a5a'); R_(x, 6, 6, 3, 3, '#a8a8a8'); const s = i ? 1 : 0; PX(x, 7 + (s ? 2 : 0), 5 - (s ? 0 : 0), '#d8d8d8'); PX(x, 5, 7 + (s ? 2 : 0), '#d8d8d8'); }
+
+/* ---------- critters and characters ---------- */
+function raccoonFrame(x, i) {
+  const fur = '#7a7a8a', dk = '#4a4a58', lt = '#c8c8d0';
+  if (i === 7) { /* on its back, dizzy */ R_(x, 4, 7, 12, 5, fur); R_(x, 14, 6, 6, 5, fur); R_(x, 15, 7, 4, 2, OUTL); R_(x, 0, 8, 5, 3, dk); for (const lx of [6, 9, 12]) R_(x, lx, 4, 1, 3, dk); return; }
+  const run = i < 4, ph = i % 4, y = (run && ph % 2) ? -1 : 0;
+  /* tail with rings */
+  for (let k = 0; k < 6; k++) R_(x, k, 5 + y - (run ? (k % 2) : 0), 1, 3, k % 2 ? dk : lt);
+  R_(x, 5, 5 + y, 11, 6, fur); R_(x, 6, 10 + y, 9, 1, dk);
+  R_(x, 15, 4 + y, 6, 6, fur); R_(x, 15, 5 + y, 6, 2, OUTL); PX(x, 17, 5 + y, '#ffffff'); PX(x, 20, 5 + y, '#ffffff'); R_(x, 20, 7 + y, 2, 2, lt); PX(x, 21, 8 + y, OUTL);
+  R_(x, 15, 3 + y, 2, 2, dk); R_(x, 19, 3 + y, 2, 2, dk);
+  const l1 = run ? [0, 1, 0, -1][ph] : 0;
+  R_(x, 6 + l1, 11, 2, 2, dk); R_(x, 13 - l1, 11, 2, 2, dk);
+  if (i === 5 || i === 6) { R_(x, 18, 8 + (i === 6 ? 1 : 0), 4, 3, '#f0c040'); }
+  if (i === 8) { R_(x, 6, 1, 8, 5, '#2a2a38'); R_(x, 8, 0, 3, 2, '#2a2a38'); }
+}
+function vestCoonFrame(x, i) {
+  /* an upright raccoon in a stolen reflective vest. the tail is the tell. */
+  const fur = '#7a7a8a', dk = '#4a4a58';
+  for (let k = 0; k < 5; k++) R_(x, 1 + k % 2, 14 + k * 2, 3, 2, k % 2 ? dk : '#c8c8d0');
+  R_(x, 5, 12, 9, 10, fur); R_(x, 5, 22, 3, 3, dk); R_(x, 11, 22, 3, 3, dk);
+  if (i < 2) { R_(x, 5, 12, 9, 8, '#ff8a1e'); R_(x, 5, 15, 9, 1, '#e8f4f0'); R_(x, 5, 18, 9, 1, '#e8f4f0'); }
+  R_(x, 6, 4, 8, 8, fur); R_(x, 6, 6, 8, 2, OUTL); PX(x, 8, 6, '#ffffff'); PX(x, 12, 6, '#ffffff'); R_(x, 13, 8, 2, 2, '#c8c8d0'); PX(x, 14, 9, OUTL);
+  R_(x, 6, 2, 2, 3, dk); R_(x, 12, 2, 2, 3, dk);
+  if (i < 2) { R_(x, 5, 1, 10, 3, '#2e7a3a'); R_(x, 12, 3, 4, 1, '#1e5a2a'); }
+  if (i === 1) { R_(x, 14, 9, 4, 2, fur); R_(x, 17, 6, 2, 3, dk); } else R_(x, 14, 13, 2, 5, fur);
+}
+function ratFrame(x, i) { R_(x, 2, 2, 6, 3, '#6a5a50'); R_(x, 7, 2, 3, 2, '#6a5a50'); PX(x, 9, 2, OUTL); R_(x, 0, 3 + (i ? 1 : 0), 3, 1, '#c89080'); R_(x, 3 + i, 5, 1, 1, '#4a3a30'); R_(x, 6 - i, 5, 1, 1, '#4a3a30'); }
+function residentFrame(x, i) {
+  /* window frame with an angry resident (curlers, pink robe) */
+  R_(x, 0, 0, 26, 24, '#2a1e2a'); R_(x, 2, 2, 22, 18, i === 0 ? '#1a1a2a' : '#e8c070');
+  if (i >= 2) {
+    R_(x, 7, 7, 12, 13, '#e88aa8'); R_(x, 9, 2, 8, 7, '#e8b090'); for (const cx of [9, 12, 15]) R_(x, cx, 1, 2, 2, '#5ab8e8');
+    R_(x, 10, 4, 2, 1, OUTL); R_(x, 14, 4, 2, 1, OUTL); R_(x, 11, 6, 4, 1, '#8a2a2a');
+    if (i === 3) { R_(x, 18, 1, 3, 8, '#e88aa8'); R_(x, 19, 0, 3, 2, '#e8b090'); } else R_(x, 4, 10, 3, 8, '#e88aa8');
+  }
+  R_(x, 0, 20, 26, 4, '#4a3a4a'); R_(x, 0, 20, 26, 1, '#6a5a6a');
+}
+function sewerFrame(x, i) { /* drain grate (0-1 normal/rattle) + glowing eyes frame (2) */
+  R_(x, 0, 0, 18, 5, '#1a1a1e'); for (let k = 1; k < 18; k += 3) R_(x, k, 1, 2, 3, '#3a3a44');
+  if (i === 1) R_(x, 0, 0, 18, 1, '#6a6a7a');
+  if (i === 2) { PX(x, 6, 2, '#b8ff4a'); PX(x, 11, 2, '#b8ff4a'); }
+}
+function armFrame(x, i) { /* sewer tentacle-hand, 10x44 */ for (let k = 0; k < 40; k++) { const w = 4 + Math.sin(k * .4 + i) * 1; R_(x, 5 + Math.sin(k * .25 + i * 1.5) * 2 - w / 2, 44 - k, w, 1, k % 6 < 3 ? '#4ab84a' : '#3a9a3a'); } R_(x, 1, 0, 8, 6, '#5ac85a'); R_(x, 0, 1, 2, 3, '#5ac85a'); R_(x, 8, 1, 2, 3, '#5ac85a'); PX(x, 3, 2, '#b8ff4a'); }
+function conspFrame(x, i) {
+  /* bathrobe, tinfoil hat, protest sign */
+  if (i === 2) { R_(x, 2, 18, 18, 7, '#8a6a9a'); R_(x, 18, 17, 6, 6, '#e8b090'); R_(x, 18, 14, 7, 4, '#c8d0d8'); R_(x, 0, 21, 3, 3, '#5ab8e8'); return; }
+  R_(x, 6, 10, 10, 13, '#8a6a9a'); for (let k = 11; k < 23; k += 3) R_(x, 6, k, 10, 1, '#a88ab8'); R_(x, 10, 10, 2, 13, '#6a4a7a');
+  R_(x, 7, 23, 3, 3, '#e8b090'); R_(x, 12, 23, 3, 3, '#e8b090'); R_(x, 6, 25, 4, 1, '#5ab8e8'); R_(x, 12, 25, 4, 1, '#5ab8e8');
+  R_(x, 7, 3, 8, 7, '#e8b090'); R_(x, 6, 0, 10, 3, '#c8d0d8'); R_(x, 8, -1, 6, 2, '#e8f0f8'); PX(x, 9, 0, '#ffffff');
+  R_(x, 9, 5, 1, 1, OUTL); R_(x, 13, 5, 1, 1, OUTL); R_(x, 9, 4, 2, 1, '#6a4a2a'); R_(x, 12, 4, 2, 1, '#6a4a2a'); R_(x, 9, 8, 5, 1, '#5a3a2a');
+  const up = i === 1 ? -3 : 0;
+  R_(x, 17, 2 + up, 1, 18, '#8a5a32'); R_(x, 15, 0 + up, 10, 8, '#f0e8d0'); drawText(x, 'NO', 16, 2 + up, '#c8302a');
+  R_(x, 15, 12, 3, 2, '#e8b090');
+  if (i === 3) { R_(x, 2, 6, 4, 2, '#e8b090'); PX(x, 2, 4, '#e8b090'); PX(x, 2, 5, '#e8b090'); }
+}
+function trolleyFrame(x, i) { R_(x, 2, 2, 16, 1, '#c8d0d8'); for (let k = 2; k < 18; k += 3) R_(x, k, 2, 1, 8, '#a8b0b8'); R_(x, 2, 9, 16, 1, '#c8d0d8'); R_(x, 0, 0, 3, 1, '#d8302a'); R_(x, 1, 0, 1, 4, '#a8b0b8'); R_(x, 4, 12, 3, 3, '#1a1a1a'); R_(x, 14, 12, 3, 3, '#1a1a1a'); PX(x, 5 + i, 13, '#8a8a8a'); PX(x, 15 + i, 13, '#8a8a8a'); R_(x, 5, 10, 1, 2, '#a8b0b8'); R_(x, 15, 10, 1, 2, '#a8b0b8'); }
+function chefFrame(x, i) {
+  const l = [1, 0, -1, 0][i % 4];
+  R_(x, 6 + l, 20, 3, 5, '#2a2a3a'); R_(x, 10 - l, 20, 3, 5, '#2a2a3a');
+  R_(x, 5, 10, 10, 11, '#f4f4f4'); R_(x, 8, 12, 1, 1, '#a8a8a8'); R_(x, 8, 15, 1, 1, '#a8a8a8'); R_(x, 5, 17, 10, 4, '#e8e8e8');
+  R_(x, 6, 3, 8, 7, '#e88a70'); R_(x, 5, -2, 10, 6, '#ffffff'); R_(x, 6, -3, 8, 2, '#ffffff');
+  R_(x, 9, 5, 1, 1, OUTL); R_(x, 12, 5, 1, 1, OUTL); R_(x, 8, 4, 2, 1, '#2a1a10'); R_(x, 12, 4, 2, 1, '#2a1a10'); R_(x, 9, 8, 4, 1, '#6a1a1a');
+  R_(x, 15, 9 + (i % 2) * 2, 4, 2, '#f4f4f4'); R_(x, 18, 4 + (i % 2) * 2, 2, 6, '#a8a8b8'); R_(x, 17, 2 + (i % 2) * 2, 4, 3, '#c8c8d8');
+}
+function dumpsterFrame(x, i) { R_(x, 1, 4, 32, 15, '#2a5aa8'); R_(x, 1, 4, 32, 2, '#4a7ac8'); R_(x, 0, 2, 34, 3, '#1e4a8a'); for (let k = 4; k < 32; k += 7) R_(x, k, 7, 1, 11, '#1e4a8a'); R_(x, 4, 9, 10, 4, '#e8e0c0'); drawText(x, 'BIN', 5, 9, '#1e3a6a'); for (const wx of [5, 25]) { R_(x, wx, 19, 5, 5, '#1a1a1a'); PX(x, wx + 2 - i, 21, '#8a8a8a'); } R_(x, 22, 0, 6, 3, '#e8d040'); }
+
+/* ---------- small fx bits ---------- */
+function fxFrame(x, i) {
+  if (i === 0) { R_(x, 1, 1, 4, 4, '#ffffff'); }               // puff
+  else if (i === 1) { R_(x, 2, 0, 1, 5, '#ffe060'); R_(x, 0, 2, 5, 1, '#ffe060'); PX(x, 2, 2, '#ffffff'); } // star
+  else if (i === 2) { R_(x, 1, 1, 3, 3, '#b8ff4a'); }          // slime
+  else if (i === 3) { R_(x, 0, 0, 6, 6, '#ffffff'); }          // glow core
+}
+function bangFrame(x, i) { /* warning "!" */ R_(x, 1, 0, 8, 14, i ? '#ffd23a' : '#ff5a2a'); R_(x, 0, 1, 10, 12, i ? '#ffd23a' : '#ff5a2a'); R_(x, 4, 2, 2, 6, OUTL); R_(x, 4, 10, 2, 2, OUTL); }
+
+
+function junkFrame(x, i) {
+  if (i === 0) { R_(x, 0, 2, 12, 9, '#6a5a4a'); R_(x, 1, 3, 8, 7, '#3a4a5a'); PX(x, 2, 4, '#8aa8c8'); PX(x, 3, 4, '#8aa8c8'); R_(x, 10, 4, 1, 1, '#c8c8c8'); R_(x, 10, 7, 1, 1, '#c8c8c8'); R_(x, 3, 0, 1, 2, '#8a8a8a'); R_(x, 7, 0, 1, 2, '#8a8a8a'); R_(x, 2, 11, 2, 1, '#3a2a2a'); R_(x, 8, 11, 2, 1, '#3a2a2a'); }
+  else if (i === 1) { R_(x, 3, 0, 5, 7, '#7a4a2a'); R_(x, 3, 7, 9, 3, '#7a4a2a'); R_(x, 3, 10, 9, 2, '#2a1a10'); R_(x, 4, 2, 3, 1, '#c8a060'); R_(x, 4, 4, 3, 1, '#c8a060'); }
+  else { R_(x, 0, 2, 12, 9, '#d8d8d0'); R_(x, 1, 3, 7, 7, '#2a2a2a'); PX(x, 2, 4, '#ffd060'); R_(x, 9, 4, 2, 1, '#5a5a5a'); R_(x, 9, 6, 2, 1, '#5a5a5a'); R_(x, 9, 8, 2, 1, '#c8302a'); }
+}
+function coneFrame(x) { R_(x, 3, 0, 2, 2, '#ff7a1a'); R_(x, 2, 2, 4, 3, '#ff7a1a'); R_(x, 2, 4, 4, 1, '#ffffff'); R_(x, 1, 5, 6, 3, '#ff7a1a'); R_(x, 0, 8, 8, 2, '#3a2a2a'); }
+function crateFrame(x) { R_(x, 0, 0, 16, 16, '#8a5a2a'); R_(x, 0, 0, 16, 2, '#b07a3a'); R_(x, 0, 7, 16, 2, '#6a4220'); R_(x, 0, 14, 16, 2, '#6a4220'); R_(x, 1, 2, 2, 12, '#6a4220'); R_(x, 13, 2, 2, 12, '#6a4220'); PX(x, 5, 4, '#b07a3a'); PX(x, 10, 11, '#b07a3a'); }
+function psignFrame(x) { R_(x, 4, 10, 2, 22, '#8a8a8a'); R_(x, 0, 0, 10, 11, '#2a5ac8'); R_(x, 1, 1, 8, 9, '#3a7ae8'); drawText(x, 'P', 4, 3, '#ffffff'); }
+function barrierFrame(x) { R_(x, 1, 6, 2, 18, '#8a8a8a'); R_(x, 17, 6, 2, 18, '#8a8a8a'); for (let i = 0; i < 20; i += 4) { R_(x, i, 4, 2, 6, '#e8302a'); R_(x, i + 2, 4, 2, 6, '#ffffff'); } R_(x, 0, 0, 3, 3, '#ffb020'); R_(x, 17, 0, 3, 3, '#ffb020'); }
+function shadowFrame(x) { x.fillStyle = 'rgba(0,0,0,.55)'; x.beginPath(); x.ellipse(8, 3, 8, 3, 0, 0, 6.29); x.fill(); x.fillStyle = 'rgba(255,60,40,.6)'; x.fillRect(7, 2, 2, 2); }
+function vestFrame(x) { R_(x, 0, 0, 9, 8, '#ff8a1e'); R_(x, 0, 3, 9, 1, '#e8f4f0'); R_(x, 0, 6, 9, 1, '#e8f4f0'); }
+function awningTex(w, col) { const [c, x] = cnv(w, 13); for (let i = 0; i < w; i += 6) { R_(x, i, 1, 3, 8, col); R_(x, i + 3, 1, 3, 8, '#f0e8d8'); R_(x, i + 1, 9, 4, 2, (i / 6) % 2 ? '#f0e8d8' : col); } R_(x, 0, 0, w, 1, '#fff6e8'); R_(x, 0, 11, w, 2, 'rgba(0,0,0,.35)'); return c; }
+function escapeTex(w) { const [c, x] = cnv(w, 40); R_(x, 0, 8, w, 3, '#3a3a44'); for (let i = 0; i < w; i += 3) R_(x, i, 8, 1, 3, '#22222a'); R_(x, 0, 0, w, 1, '#5a5a66'); for (let i = 0; i < w; i += 8) R_(x, i, 0, 1, 8, '#4a4a56'); R_(x, w - 1, 0, 1, 8, '#4a4a56'); R_(x, 0, 11, w, 1, '#1a1a20'); for (let i = 6; i < w; i += 30) { x.fillStyle = '#2a2a32'; for (let k = 0; k < 26; k++) x.fillRect(i + k * .6, 12 + k, 2, 1); } for (let y = 14; y < 40; y += 5) R_(x, w - 10, y, 8, 1, '#3a3a44'); R_(x, w - 10, 12, 1, 28, '#3a3a44'); R_(x, w - 3, 12, 1, 28, '#3a3a44'); return c; }
+const FCH = " !'+,-./0123456789:?ABCDEFGHIJKLMNOPQRSTUVWXYZ%*#";
+function fontCanvas() {
+  const n = FCH.length, [c, x] = cnv(n * 5, 7);
+  for (let i = 0; i < n; i++) { const [fc, fx] = cnv(5, 7), g = FONT[FCH[i]]; for (let j = 0; j < 15; j++) if (g[j] === '#') { fx.fillStyle = '#ffffff'; fx.fillRect(1 + (j % 3), 1 + Math.floor(j / 3), 1, 1); } if (FCH[i] !== ' ') outline(fx, 5, 7); x.drawImage(fc, i * 5, 0); }
+  return c;
+}
+
+function buildArt() {
+  workerSheet('worker', WORKER_PAL);
+  workerSheet('rival', RIVAL_PAL);
+  sheet('bag', 14, 13, 5, bagFrame);
+  sheet('litter', 6, 7, 5, litterFrame);
+  sheet('food', 12, 9, 2, foodFrame);
+  sheet('bin', 16, 24, 6, binFrame);
+  sheet('truck', 112, 46, 4, truckFrame);
+  sheet('truckR', 112, 46, 4, (x, i) => { x.save(); x.translate(112, 0); x.scale(-1, 1); truckFrame(x, i); x.restore(); R_(x, 18, 22, 54, 7, '#e8e0c0'); drawText(x, 'CITY WASTE', 22, 23, '#2a3a2a'); });
+  sheet('wheel', 15, 15, 2, wheelFrame);
+  sheet('raccoon', 23, 14, 9, raccoonFrame);
+  sheet('vestcoon', 19, 27, 3, vestCoonFrame);
+  sheet('rat', 11, 7, 2, ratFrame);
+  sheet('resident', 26, 24, 4, residentFrame);
+  sheet('sewer', 18, 5, 3, sewerFrame);
+  sheet('arm', 10, 46, 2, armFrame);
+  sheet('consp', 26, 27, 4, conspFrame);
+  sheet('trolley', 20, 16, 2, trolleyFrame);
+  sheet('chef', 22, 27, 4, chefFrame);
+  sheet('dumpster', 34, 25, 2, dumpsterFrame);
+  sheet('fx', 6, 6, 4, fxFrame, true);
+  sheet('bang', 10, 14, 2, bangFrame);
+  sheet('junk', 12, 12, 3, junkFrame);
+  sheet('cone', 8, 10, 1, coneFrame);
+  sheet('crate', 16, 16, 1, crateFrame);
+  sheet('psign', 10, 32, 1, psignFrame);
+  sheet('barrier', 20, 24, 1, barrierFrame);
+  sheet('shadow', 16, 6, 1, shadowFrame, true);
+  sheet('vest', 9, 8, 1, vestFrame);
+}
+
+/* ---------- backdrops ---------- */
+function rngS(seed) { return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function skyline(seed, w) {
+  const [c, x] = cnv(w, 216), r = rngS(seed);
+  const g = x.createLinearGradient(0, 0, 0, 216); g.addColorStop(0, '#0a0818'); g.addColorStop(.55, '#24183a'); g.addColorStop(1, '#4a2a3a'); x.fillStyle = g; x.fillRect(0, 0, w, 216);
+  for (let i = 0; i < 70; i++) { x.fillStyle = r() < .2 ? '#ffffff' : '#7a6aa8'; x.fillRect(Math.floor(r() * w), Math.floor(r() * 90), 1, 1); }
+  x.fillStyle = '#e8e0c0'; x.beginPath(); x.arc(w * .7, 34, 11, 0, 6.28); x.fill(); x.fillStyle = '#c8c0a0'; x.fillRect(Math.floor(w * .7) - 4, 30, 3, 2);
+  let bx = 0; while (bx < w) { const bw = 18 + r() * 40, bh = 50 + r() * 90; x.fillStyle = '#16102a'; x.fillRect(bx, 196 - bh - 20, bw, bh + 40); for (let wy = 196 - bh - 14; wy < 180; wy += 7) for (let wx = bx + 3; wx < bx + bw - 3; wx += 5) if (r() < .25) { x.fillStyle = r() < .5 ? '#e8c060' : '#8a7ab0'; x.fillRect(wx, wy, 2, 3); } bx += bw + 2; }
+  x.fillStyle = 'rgba(255,140,120,.08)'; x.fillRect(0, 120, w, 96);
+  return c;
+}
+const SIGNS = ['KEBAB KING', 'NOODLES', 'PAWN', 'LAUNDRY', '24/7', 'DONUTS', 'TATTOO', 'PIZZA', 'FISH BAR', 'OPEN'];
+function facade(seed, w, opts = {}) {
+  /* street-level buildings, shopfronts, alleys and the pavement */
+  const [c, x] = cnv(w, 216), r = rngS(seed), signs = [];
+  let bx = 0, k = 0;
+  while (bx < w) {
+    const bw = 70 + Math.floor(r() * 60), alley = r() < .22 && bx > 160;
+    if (alley) { x.fillStyle = '#0c0812'; x.fillRect(bx, 70, 40, 126); x.fillStyle = '#16101c'; for (let y = 80; y < 196; y += 6) x.fillRect(bx + 2, y, 36, 1); bx += 40; continue; }
+    const col = ['#4a2a2a', '#3a3040', '#2e3a3a', '#4a3a2a', '#3a2a3a'][Math.floor(r() * 5)], top = 40 + Math.floor(r() * 50);
+    x.fillStyle = col; x.fillRect(bx, top, bw, 196 - top);
+    /* bricks */
+    x.fillStyle = 'rgba(0,0,0,.18)'; for (let y = top; y < 196; y += 4) for (let xx = bx + ((y / 4) % 2 ? 0 : 4); xx < bx + bw; xx += 8) x.fillRect(xx, y, 1, 4);
+    for (let y = top; y < 196; y += 4) x.fillRect(bx, y, bw, 1);
+    x.fillStyle = '#1a121c'; x.fillRect(bx, top, bw, 3);
+    /* upper windows */
+    for (let wy = top + 10; wy < 130; wy += 26) for (let wx = bx + 8; wx < bx + bw - 14; wx += 22) { x.fillStyle = '#120c18'; x.fillRect(wx - 1, wy - 1, 14, 16); x.fillStyle = r() < .35 ? '#e8b860' : '#2a2440'; x.fillRect(wx, wy, 12, 14); x.fillStyle = '#120c18'; x.fillRect(wx + 6, wy, 1, 14); }
+    /* shop front */
+    x.fillStyle = '#16101c'; x.fillRect(bx + 4, 150, bw - 8, 46);
+    x.fillStyle = r() < .5 ? '#3a5a6a' : '#5a4a3a'; x.fillRect(bx + 8, 160, bw - 30, 30); x.fillStyle = 'rgba(255,220,150,.18)'; x.fillRect(bx + 8, 160, bw - 30, 30);
+    x.fillStyle = '#2a1e14'; x.fillRect(bx + bw - 20, 160, 12, 36);
+    const s = SIGNS[(seed + k) % SIGNS.length]; signs.push({ x: bx + Math.floor(bw / 2), y: 141, text: s, col: ['#ff4a8a', '#4ae8ff', '#ffd23a', '#7aff6a'][k % 4] });
+    /* drainpipe and a poster */
+    x.fillStyle = '#2a2a30'; x.fillRect(bx + bw - 4, top + 4, 2, 192 - top);
+    if (r() < .5) { x.fillStyle = '#c8b890'; x.fillRect(bx + 6, 120, 12, 16); x.fillStyle = '#8a2a2a'; x.fillRect(bx + 8, 122, 8, 3); }
+    bx += bw; k++;
+  }
+  /* pavement and kerb */
+  x.fillStyle = '#4a4650'; x.fillRect(0, 196, w, 20); x.fillStyle = '#6a6670'; x.fillRect(0, 196, w, 1);
+  x.fillStyle = '#3a3640'; for (let xx = 0; xx < w; xx += 24) x.fillRect(xx, 197, 1, 9); x.fillRect(0, 206, w, 1);
+  x.fillStyle = '#2a2830'; x.fillRect(0, 207, w, 9); x.fillStyle = '#5a5a40'; for (let xx = 8; xx < w; xx += 30) x.fillRect(xx, 211, 14, 1);
+  for (let i = 0; i < w / 20; i++) { x.fillStyle = r() < .5 ? '#3a3640' : '#5a5660'; x.fillRect(Math.floor(r() * w), 198 + Math.floor(r() * 8), 2, 1); }
+  return { c, signs };
+}
+function signTex(text, col) { const w = textW(text) + 6, [c, x] = cnv(w, 9); x.fillStyle = '#120a14'; x.fillRect(0, 0, w, 9); x.strokeStyle = col; x.strokeRect(.5, .5, w - 1, 8); drawText(x, text, 3, 2, col); return c; }
+function textTex(text, col, bg) { const w = textW(text) + (bg ? 6 : 2), h = bg ? 9 : 7, [c, x] = cnv(w, h); if (bg) { x.fillStyle = bg; x.fillRect(0, 0, w, h); x.fillStyle = OUTL; x.fillRect(0, h - 1, w, 1); } else { drawText(x, text, 2, 2, OUTL); drawText(x, text, 1, 1, OUTL); } drawText(x, text, bg ? 3 : 1, bg ? 2 : 1, col); return c; }
+
+/* ================= TRASH SHIFT: audio (WebAudio chip engine, noir-funk score) ================= */
+const AU = { ctx: null, master: null, mus: null, sfx: null, wet: null, music: true, sound: true, noise: null, waves: {}, song: null, timer: null, step: 0, nextT: 0, eng: null, pending: null };
+try { AU.music = localStorage.getItem('ts_music') !== '0'; } catch (_) {}
+function initAudio() {
+  if (AU.ctx) { if (AU.ctx.state === 'suspended') AU.ctx.resume(); return; }
+  const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
+  const c = AU.ctx = new AC();
+  AU.master = c.createGain(); AU.master.gain.value = .8;
+  const comp = c.createDynamicsCompressor(); comp.threshold.value = -14; comp.ratio.value = 4;
+  AU.master.connect(comp); comp.connect(c.destination);
+  AU.mus = c.createGain(); AU.mus.gain.value = AU.music ? .55 : 0; AU.mus.connect(AU.master);
+  AU.sfx = c.createGain(); AU.sfx.gain.value = .9; AU.sfx.connect(AU.master);
+  const dl = c.createDelay(); dl.delayTime.value = .21; const fb = c.createGain(); fb.gain.value = .25; const lp = c.createBiquadFilter(); lp.frequency.value = 1700;
+  AU.wet = c.createGain(); AU.wet.gain.value = .32; AU.wet.connect(dl); dl.connect(lp); lp.connect(fb); fb.connect(dl); lp.connect(AU.mus);
+  const nb = c.createBuffer(1, c.sampleRate, c.sampleRate), d = nb.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; AU.noise = nb;
+  for (const duty of [.125, .25, .5]) { const n = 40, re = new Float32Array(n), im = new Float32Array(n); for (let k = 1; k < n; k++) re[k] = (2 / (k * Math.PI)) * Math.sin(k * Math.PI * duty); AU.waves[duty] = c.createPeriodicWave(re, im); }
+  if (AU.pending) { const p = AU.pending; AU.pending = null; playSong(p); }
+}
+function setMusic(on) { AU.music = on; try { localStorage.setItem('ts_music', on ? '1' : '0'); } catch (_) {} if (AU.mus) AU.mus.gain.setTargetAtTime(on ? .55 : 0, AU.ctx.currentTime, .05); }
+function voice(bus, wave, f, t, dur, vol, o = {}) {
+  const c = AU.ctx; if (!c) return;
+  const os = c.createOscillator(), g = c.createGain();
+  if (typeof wave === 'number') os.setPeriodicWave(AU.waves[wave]); else os.type = wave;
+  os.frequency.setValueAtTime(f, t);
+  if (o.f2) os.frequency.exponentialRampToValueAtTime(Math.max(20, o.f2), t + (o.slide || dur));
+  if (o.vib) { const l = c.createOscillator(), lg = c.createGain(); l.frequency.value = o.vib; lg.gain.setValueAtTime(0, t); lg.gain.linearRampToValueAtTime(o.vibD || f * .018, t + (o.vibDelay || 0) + .05); l.connect(lg); lg.connect(os.frequency); l.start(t); l.stop(t + dur + .05); }
+  let node = os;
+  if (o.lp) { const fl = c.createBiquadFilter(); fl.type = 'lowpass'; fl.frequency.value = o.lp; fl.Q.value = o.q || .7; node.connect(fl); node = fl; }
+  node.connect(g);
+  const a = o.att || .004;
+  g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t + a);
+  if (o.env === 'pluck') g.gain.exponentialRampToValueAtTime(.0006, t + dur);
+  else { g.gain.setValueAtTime(vol, t + Math.max(a, dur - (o.rel || .04))); g.gain.linearRampToValueAtTime(0, t + dur); }
+  g.connect(bus); if (o.wet) { const ws = c.createGain(); ws.gain.value = o.wet; g.connect(ws); ws.connect(AU.wet); }
+  os.start(t); os.stop(t + dur + .06);
+}
+function nz(bus, t, dur, vol, o = {}) {
+  const c = AU.ctx; if (!c) return;
+  const s = c.createBufferSource(); s.buffer = AU.noise; s.loop = true;
+  const f = c.createBiquadFilter(); f.type = o.type || 'bandpass'; f.frequency.setValueAtTime(o.f || 1000, t); if (o.f2) f.frequency.exponentialRampToValueAtTime(o.f2, t + dur); f.Q.value = o.q || 1;
+  const g = c.createGain(); g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t + (o.att || .002)); g.gain.exponentialRampToValueAtTime(.0006, t + dur);
+  s.connect(f); f.connect(g); g.connect(bus); if (o.wet) { const ws = c.createGain(); ws.gain.value = o.wet; g.connect(ws); ws.connect(AU.wet); }
+  s.start(t, Math.random() * .5); s.stop(t + dur + .03);
+}
+const mtof = m => 440 * Math.pow(2, (m - 69) / 12);
+
+/* ---------- sound effects ---------- */
+const S = () => (AU.ctx && AU.sound) ? AU.ctx.currentTime + .005 : -1;
+const sfx = {
+  pick() { const t = S(); if (t < 0) return; nz(AU.sfx, t, .13, .32, { f: 900, f2: 240, q: 3 }); voice(AU.sfx, 'sine', 260, t, .1, .2, { f2: 110, env: 'pluck' }); },
+  drop() { const t = S(); if (t < 0) return; voice(AU.sfx, 'sine', 150, t, .12, .3, { f2: 55, env: 'pluck' }); nz(AU.sfx, t, .07, .15, { type: 'lowpass', f: 500 }); },
+  thud() { const t = S(); if (t < 0) return; voice(AU.sfx, 'sine', 120, t, .1, .22, { f2: 50, env: 'pluck' }); nz(AU.sfx, t, .05, .12, { type: 'lowpass', f: 400 }); },
+  jump() { const t = S(); if (t < 0) return; voice(AU.sfx, .25, 280, t, .09, .07, { f2: 540, env: 'pluck' }); },
+  land() { const t = S(); if (t < 0) return; nz(AU.sfx, t, .06, .14, { type: 'lowpass', f: 320 }); },
+  throw() { const t = S(); if (t < 0) return; nz(AU.sfx, t, .2, .18, { f: 400, f2: 2200, q: 2 }); },
+  deposit() { const t = S(); if (t < 0) return; voice(AU.sfx, .5, 196, t, .08, .1, { env: 'pluck', lp: 900 }); voice(AU.sfx, 'triangle', 620, t + .02, .25, .1, { env: 'pluck' }); voice(AU.sfx, 'triangle', 947, t + .02, .2, .06, { env: 'pluck' }); nz(AU.sfx, t, .06, .12, { type: 'highpass', f: 3000 }); },
+  swish() { const t = S(); if (t < 0) return; nz(AU.sfx, t, .25, .2, { f: 600, f2: 4000, q: 2 }); this.deposit(); [784, 988, 1319].forEach((f, i) => voice(AU.sfx, .25, f, t + .06 + i * .06, .12, .08, { env: 'pluck', wet: .5 })); },
+  clank() { const t = S(); if (t < 0) return; voice(AU.sfx, 'triangle', 523, t, .3, .14, { env: 'pluck' }); voice(AU.sfx, 'triangle', 811, t, .22, .1, { env: 'pluck' }); voice(AU.sfx, 'square', 1210, t, .08, .03, { env: 'pluck' }); nz(AU.sfx, t, .05, .12, { type: 'highpass', f: 2500 }); },
+  crunch() { const t = S(); if (t < 0) return; voice(AU.sfx, 'sawtooth', 70, t, .8, .14, { f2: 45, lp: 400 }); voice(AU.sfx, .5, 190, t, .6, .05, { f2: 120, lp: 1200 }); for (let i = 0; i < 7; i++) nz(AU.sfx, t + i * .1 + Math.random() * .03, .09, .3, { type: 'lowpass', f: 900 - i * 80, q: 2 }); },
+  split() { const t = S(); if (t < 0) return; nz(AU.sfx, t, .26, .45, { type: 'lowpass', f: 1400, f2: 180, q: 2 }); voice(AU.sfx, 'sine', 95, t, .18, .3, { f2: 40, env: 'pluck' }); for (let i = 0; i < 4; i++) voice(AU.sfx, 'triangle', 1400 + Math.random() * 900, t + .05 + i * .05, .05, .04, { env: 'pluck' }); },
+  litter() { const t = S(); if (t < 0) return; voice(AU.sfx, 'triangle', 1250, t, .05, .07, { f2: 1700, env: 'pluck' }); },
+  stun() { const t = S(); if (t < 0) return; nz(AU.sfx, t, .1, .35, { type: 'lowpass', f: 700 }); voice(AU.sfx, 'sine', 950, t, .45, .1, { f2: 180 }); for (let i = 0; i < 3; i++) voice(AU.sfx, 'triangle', 1800 + i * 300, t + .2 + i * .09, .06, .05, { env: 'pluck' }); },
+  bonk() { const t = S(); if (t < 0) return; voice(AU.sfx, 'square', 330, t, .12, .1, { f2: 160, env: 'pluck', lp: 1600 }); nz(AU.sfx, t, .06, .2, { f: 1500 }); for (let i = 0; i < 3; i++) voice(AU.sfx, 'triangle', 1600 + i * 260, t + .1 + i * .07, .05, .05, { env: 'pluck' }); },
+  chitter() { const t = S(); if (t < 0) return; for (let i = 0; i < 7; i++) voice(AU.sfx, .125, 1300 + Math.random() * 700, t + i * .045, .035, .06, { env: 'pluck' }); },
+  pop() { const t = S(); if (t < 0) return; voice(AU.sfx, 'square', 180, t, .1, .12, { f2: 700, env: 'pluck', lp: 2000 }); nz(AU.sfx, t, .12, .2, { f: 1200 }); this.clank(); },
+  gurgle() { const t = S(); if (t < 0) return; for (let i = 0; i < 8; i++) voice(AU.sfx, 'sine', 90 + Math.random() * 120, t + i * .08, .1, .16, { f2: 260 + Math.random() * 200, env: 'pluck' }); },
+  slurp() { const t = S(); if (t < 0) return; voice(AU.sfx, 'sine', 400, t, .35, .2, { f2: 70 }); nz(AU.sfx, t, .3, .15, { type: 'lowpass', f: 600, f2: 150 }); },
+  yell() { const t = S(); if (t < 0) return; for (let i = 0; i < 6; i++) voice(AU.sfx, .25, 300 + Math.random() * 260, t + i * .07, .06, .06, { env: 'pluck', lp: 1400 }); },
+  squeak() { const t = S(); if (t < 0) return; voice(AU.sfx, 'square', 1500, t, .08, .05, { f2: 2300, env: 'pluck' }); voice(AU.sfx, 'square', 1800, t + .09, .08, .05, { f2: 2600, env: 'pluck' }); },
+  window() { const t = S(); if (t < 0) return; nz(AU.sfx, t, .14, .2, { f: 500, q: 4 }); voice(AU.sfx, 'triangle', 300, t, .1, .08, { env: 'pluck' }); },
+  whistle() { const t = S(); if (t < 0) return; voice(AU.sfx, 'sine', 1400, t, .14, .08, { f2: 2100 }); voice(AU.sfx, 'sine', 2100, t + .16, .2, .08, { f2: 1300 }); },
+  honk() { const t = S(); if (t < 0) return; for (const f of [311, 392]) voice(AU.sfx, 'sawtooth', f, t, .42, .07, { lp: 1600, vib: 7, vibD: 3 }); },
+  screech() { const t = S(); if (t < 0) return; voice(AU.sfx, 'sawtooth', 1700, t, .45, .05, { f2: 1300, lp: 3000 }); nz(AU.sfx, t, .45, .15, { f: 2400, q: 6 }); },
+  crash() { const t = S(); if (t < 0) return; nz(AU.sfx, t, .45, .55, { type: 'lowpass', f: 2200, f2: 200 }); voice(AU.sfx, 'sine', 80, t, .3, .35, { f2: 35, env: 'pluck' }); this.clank(); },
+  rattle() { const t = S(); if (t < 0) return; for (let i = 0; i < 10; i++) nz(AU.sfx, t + i * .05, .03, .1, { type: 'highpass', f: 3500 }); },
+  beep() { const t = S(); if (t < 0) return; voice(AU.sfx, .5, 1040, t, .18, .05); },
+  coin() { const t = S(); if (t < 0) return; [988, 1319, 1568].forEach((f, i) => voice(AU.sfx, .25, f, t + i * .07, .14, .07, { env: 'pluck', wet: .5 })); },
+  err() { const t = S(); if (t < 0) return; voice(AU.sfx, .5, 150, t, .16, .08, { lp: 900 }); voice(AU.sfx, .5, 110, t + .1, .2, .08, { lp: 900 }); },
+  door() { const t = S(); if (t < 0) return; nz(AU.sfx, t, .08, .25, { type: 'lowpass', f: 600 }); voice(AU.sfx, 'square', 90, t, .07, .1, { env: 'pluck', lp: 500 }); },
+  ui() { const t = S(); if (t < 0) return; voice(AU.sfx, .25, 880, t, .06, .06, { env: 'pluck' }); },
+  stamp() { const t = S(); if (t < 0) return; nz(AU.sfx, t, .12, .5, { type: 'lowpass', f: 800 }); voice(AU.sfx, 'sine', 110, t, .15, .3, { f2: 50, env: 'pluck' }); }
+};
+function engineOn() {
+  if (!AU.ctx || AU.eng) return; const c = AU.ctx;
+  const o1 = c.createOscillator(); o1.type = 'sawtooth'; const o2 = c.createOscillator(); o2.setPeriodicWave(AU.waves[.25]);
+  const f = c.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 300; const g = c.createGain(); g.gain.value = 0;
+  o1.connect(f); o2.connect(f); f.connect(g); g.connect(AU.sfx); o1.frequency.value = 40; o2.frequency.value = 20;
+  const l = c.createOscillator(); l.frequency.value = 8; const lg = c.createGain(); lg.gain.value = .025; l.connect(lg); lg.connect(g.gain);
+  o1.start(); o2.start(); l.start(); AU.eng = { o1, o2, f, g, l };
+}
+function engineSet(spd, thr) {
+  const e = AU.eng; if (!e) return; const t = AU.ctx.currentTime, fq = 36 + spd * .3 + thr * 8;
+  e.o1.frequency.setTargetAtTime(fq, t, .1); e.o2.frequency.setTargetAtTime(fq / 2, t, .1);
+  e.f.frequency.setTargetAtTime(240 + spd * 3 + thr * 320, t, .1); e.g.gain.setTargetAtTime(AU.sound ? .06 + thr * .05 + spd * .0002 : 0, t, .1); e.l.frequency.setTargetAtTime(6 + spd * .08, t, .1);
+}
+function engineOff() { const e = AU.eng; if (!e) return; AU.eng = null; e.g.gain.setTargetAtTime(0, AU.ctx.currentTime, .06); setTimeout(() => { try { e.o1.stop(); e.o2.stop(); e.l.stop(); } catch (_) {} }, 400); }
+
+/* ---------- music: a noir-funk combo (walking bass, muted trumpet, brushes) ---------- */
+const NOTE = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
+function chordOf(name) {
+  const m = /^([A-G])([#b]?)(.*)$/.exec(name); const r = NOTE[m[1]] + (m[2] === '#' ? 1 : m[2] === 'b' ? -1 : 0), q = m[3];
+  const iv = q === 'm7' ? [0, 3, 7, 10] : q === 'maj7' ? [0, 4, 7, 11] : q === '7' ? [0, 4, 7, 10] : q === 'm6' ? [0, 3, 7, 9] : q === 'm' ? [0, 3, 7] : q === '7#9' ? [0, 4, 7, 10, 15] : [0, 4, 7];
+  return { r, iv };
+}
+/* lead lines: [bar, step, midi, lenSteps] */
+const SONGS = {
+  night: { bpm: 100, swing: .2, bars: ['Em7', 'Em7', 'Am7', 'Em7', 'Cmaj7', 'B7', 'Em7', 'B7#9'], bass: 'walk', stab: 'muted', drums: 'brush',
+    lead: [[0, 0, 64, 2], [0, 3, 67, 1], [0, 4, 69, 2], [0, 6, 70, 1], [0, 7, 71, 6], [1, 6, 74, 2], [1, 8, 71, 2], [1, 10, 69, 2], [1, 12, 67, 2], [1, 14, 64, 2],
+      [2, 0, 69, 2], [2, 3, 72, 2], [2, 6, 76, 4], [2, 12, 74, 1], [2, 14, 72, 2], [3, 0, 71, 6], [3, 8, 67, 2], [3, 12, 64, 4],
+      [4, 0, 67, 2], [4, 2, 71, 2], [4, 4, 76, 4], [4, 10, 75, 6], [5, 0, 66, 2], [5, 2, 69, 2], [5, 4, 71, 2], [5, 8, 75, 4], [5, 12, 72, 2], [5, 14, 71, 2],
+      [6, 0, 76, 4], [6, 4, 71, 2], [6, 6, 67, 2], [6, 8, 64, 6], [7, 10, 63, 2], [7, 12, 66, 2], [7, 14, 70, 2]] },
+  road: { bpm: 128, swing: .05, bars: ['Am7', 'Am7', 'Dm7', 'Am7', 'F7', 'E7#9', 'Am7', 'E7#9'], bass: 'drive', stab: 'hits', drums: 'funk',
+    lead: [[0, 0, 69, 3], [0, 3, 72, 3], [0, 6, 74, 2], [0, 10, 76, 4], [1, 2, 74, 2], [1, 4, 72, 2], [1, 6, 69, 6], [2, 0, 74, 3], [2, 3, 77, 3], [2, 6, 81, 4], [2, 12, 79, 2], [2, 14, 77, 2], [3, 0, 76, 8],
+      [4, 0, 75, 2], [4, 2, 77, 2], [4, 6, 81, 6], [5, 0, 80, 4], [5, 6, 76, 2], [5, 8, 71, 4], [6, 0, 69, 2], [6, 4, 72, 2], [6, 8, 76, 4], [7, 4, 68, 2], [7, 8, 71, 2], [7, 12, 74, 4]] },
+  report: { bpm: 84, swing: .28, bars: ['Dm7', 'G7', 'Cmaj7', 'A7#9'], bass: 'walk', stab: 'pad', drums: 'brush',
+    lead: [[0, 0, 69, 4], [0, 6, 72, 2], [0, 8, 74, 6], [1, 0, 71, 2], [1, 2, 74, 2], [1, 4, 77, 8], [2, 0, 76, 6], [2, 8, 72, 4], [2, 12, 71, 2], [3, 0, 73, 4], [3, 6, 76, 2], [3, 8, 79, 6]] }
+};
+function playSong(name) {
+  if (!AU.ctx) { AU.pending = name; return; }
+  if (AU.song && AU.song.name === name) return;
+  AU.song = Object.assign({ name }, SONGS[name]); AU.step = 0; AU.nextT = AU.ctx.currentTime + .1;
+  if (!AU.timer) AU.timer = setInterval(tickMusic, 25);
+}
+function stopSong() { AU.song = null; }
+function tickMusic() {
+  const c = AU.ctx, s = AU.song; if (!c || !s) return;
+  const sd = 60 / s.bpm / 4;
+  if (AU.nextT < c.currentTime - .3) AU.nextT = c.currentTime + .05;
+  while (AU.nextT < c.currentTime + .15) {
+    const st = AU.step, nb = s.bars.length, bar = Math.floor(st / 16) % nb, k = st % 16, loop = Math.floor(st / (16 * nb));
+    const t = AU.nextT + (k % 2 ? s.swing * sd * 2 : 0);
+    if (AU.music) musicStep(s, bar, k, loop, t, sd);
+    AU.step++; AU.nextT += sd;
+  }
+}
+function musicStep(s, bar, k, loop, t, sd) {
+  const B = AU.mus, ch = chordOf(s.bars[bar]), nx = chordOf(s.bars[(bar + 1) % s.bars.length]);
+  let root = 36 + ch.r; if (root < 38) root += 12; let nroot = 36 + nx.r; if (nroot < 38) nroot += 12;
+  /* bass */
+  const bass = (m, len, v = .2) => { voice(B, 'triangle', mtof(m), t, len * sd * .92, v, { env: 'pluck' }); voice(B, .5, mtof(m), t, len * sd * .5, v * .22, { env: 'pluck', lp: 700 }); };
+  if (s.bass === 'walk') {
+    const third = root + ch.iv[1];
+    if (k === 0) bass(root, 4, .24); else if (k === 4) bass(loop % 2 ? root + 7 : third, 4); else if (k === 8) bass(root + 7, 4); else if (k === 12) bass(nroot + (bar % 2 ? -1 : 1), 3);
+    else if (k === 14 && bar % 2 === 1) bass(nroot + 1 - 12 > 30 ? nroot - 2 : nroot + 2, 2, .12);
+  } else {
+    const pat = { 0: 0, 3: 12, 6: 0, 7: 7, 8: 0, 10: 10, 11: 12, 14: 7 };
+    if (k in pat) bass(root + pat[k], k === 0 ? 2 : 1.4, k === 0 ? .25 : .18);
+  }
+  /* stabs */
+  const tones = ch.iv.slice(1).map(i => 60 + ch.r + i).map(m => m > 72 ? m - 12 : m);
+  if (s.stab === 'muted') {
+    if (k === 6 || (k === 14 && bar % 2 === 0)) tones.slice(0, 3).forEach(m => voice(B, .125, mtof(m), t, sd * 1.3, .035, { lp: 1500, env: 'pluck', wet: .3 }));
+    if (k === 10 && bar === 7) tones.slice(0, 3).forEach(m => voice(B, .125, mtof(m + 12), t, sd * 4, .03, { lp: 1800, f2: mtof(m + 5), slide: sd * 4, wet: .4 }));
+  } else if (s.stab === 'hits') {
+    if (k === 3 || k === 6 || (k === 10 && bar % 2)) tones.slice(0, 3).forEach(m => voice(B, .25, mtof(m), t, sd * .9, .035, { lp: 2200, env: 'pluck' }));
+  } else if (s.stab === 'pad') {
+    if (k === 0) tones.forEach(m => voice(B, 'triangle', mtof(m), t, sd * 15, .03, { att: .15, rel: .3, vib: 4, vibD: 1.5, wet: .6 }));
+  }
+  /* lead (muted trumpet) plays every other pass, skeleton stabs the rest */
+  if (loop % 2 === 0 || s.name === 'report') for (const n of s.lead) if (n[0] === bar && n[1] === k) voice(B, .25, mtof(n[2]), t, n[3] * sd * .95, .06, { lp: 1900, att: .02, vib: 5.5, vibD: mtof(n[2]) * .012, vibDelay: .12, wet: .45 });
+  if (loop % 2 === 1 && s.name !== 'report' && k === 0 && bar % 2 === 0) voice(B, .25, mtof(60 + ch.r + ch.iv[ch.iv.length - 1] + (ch.r > 5 ? -12 : 0)), t, sd * 6, .04, { lp: 1600, att: .03, vib: 5, wet: .5 });
+  /* drums */
+  if (s.drums === 'brush') {
+    if (k % 2 === 0) nz(B, t, .05, k % 4 === 0 ? .05 : .03, { type: 'highpass', f: 7000 });
+    if (k === 4 || k === 12) nz(B, t, .22, .09, { f: 2600, q: .7, att: .03 });
+    if (k === 0 || (k === 10 && bar % 2)) voice(B, 'sine', 95, t, .14, .28, { f2: 45, env: 'pluck' });
+    if (k === 14 && loop % 2) nz(B, t, .04, .05, { f: 1800, q: 4 });
+  } else {
+    nz(B, t, k === 14 ? .14 : .035, k % 4 === 2 ? .06 : .035, { type: 'highpass', f: 7500 });
+    if (k === 4 || k === 12) { nz(B, t, .12, .17, { f: 1900, q: .8 }); voice(B, 'triangle', 190, t, .07, .1, { env: 'pluck' }); }
+    if (k === 0 || k === 7 || k === 10) voice(B, 'sine', 105, t, .13, .34, { f2: 42, env: 'pluck' });
+    if (k === 15 && bar === 7) nz(B, t, .1, .1, { f: 1200 });
+  }
+}
+
+/* ================= TRASH SHIFT: the route ================= */
+/* plats: [kind, x, yTop, w]   items: [kind, x, yTop?]   ground top is y 196 */
+const STOPS = [
+  { name: 'Kebab Row', w: 900, seed: 11, par: 55,
+    plats: [['crate', 336, 180], ['awn', 352, 154, 56, '#c8302a'], ['dump', 640, 174]],
+    items: [['bag', 190], ['bag', 236], ['bag', 290], ['bag', 380, 154], ['food', 455], ['bin', 520], ['bag', 600], ['bag', 657, 174], ['bag', 780]],
+    rats: true, steam: [470, 820] },
+  { name: 'Noodle Alley', w: 1000, seed: 23, par: 65,
+    plats: [['awn', 252, 154, 52, '#2a8a5a'], ['crate', 556, 180], ['awn', 572, 152, 60, '#d8a020'], ['dump', 820, 174]],
+    coonbins: [360, 720],
+    items: [['bag', 180], ['bag', 222], ['bag', 278, 154], ['bag', 420], ['bag', 470], ['food', 515, null, 1], ['bag', 610, 152], ['bag', 660], ['food', 770], ['bag', 837, 174], ['bag', 900], ['bin', 950]],
+    rats: true, steam: [300, 640] },
+  { name: 'Balcony Heights', w: 1100, seed: 37, par: 70,
+    plats: [['awn', 636, 154, 46, '#3a5ac8'], ['esc', 690, 112, 80], ['crate', 900, 180]],
+    residents: [[400, 96], [840, 96]], drains: [560, 985],
+    items: [['bag', 200], ['bag', 262], ['bag', 470], ['bag', 548], ['bag', 600], ['bag', 718, 112], ['bag', 742, 112], ['bin', 785], ['food', 880], ['bag', 945], ['bag', 1000], ['bin', 1060]],
+    rats: false, steam: [250] },
+  { name: 'Pawn Street', w: 1200, seed: 41, par: 75,
+    plats: [['crate', 500, 180], ['awn', 516, 154, 56, '#8a2ac8'], ['crate', 860, 180], ['crate', 860, 164], ['dump', 1090, 174]],
+    coonbins: [330], legbins: [720], rival: { trigger: 440 },
+    items: [['bag', 180], ['bag', 250], ['food', 420], ['bag', 540, 154], ['bag', 600], ['bag', 655], ['bag', 800], ['bag', 960], ['bag', 1020], ['gold', 1107, 174]],
+    rats: true, steam: [400, 1000] },
+  { name: 'Chippy Corner', w: 1300, seed: 53, par: 85,
+    plats: [['crate', 430, 180], ['awn', 446, 154, 50, '#c8302a'], ['esc', 470, 112, 70], ['crate', 900, 180], ['dump', 1236, 174]],
+    vest: { x: 330, trigger: 150 }, residents: [[660, 96]], drains: [830], coonbins: [1000], legbins: [1150],
+    items: [['bag', 200], ['bag', 252], ['bag', 470, 154], ['gold', 510, 112], ['bag', 590], ['bag', 712], ['food', 760], ['bag', 846], ['food', 908, 180], ['bag', 960], ['bag', 1065], ['bag', 1110]],
+    rats: true, steam: [300, 780, 1180] }
+];
+/* drives happen after stop i, heading to stop i+1 */
+const DRIVES = [
+  { name: 'To Noodle Alley', w: 1400, seed: 61, haz: [{ t: 'consp', x: 700 }], tip: 'drive' },
+  { name: 'To Balcony Heights', w: 1500, seed: 67, haz: [{ t: 'trolley', x: 700 }, { t: 'trolley', x: 960 }, { t: 'trolley', x: 1060 }], tip: 'trolley' },
+  { name: 'To Pawn Street', w: 1500, seed: 71, haz: [{ t: 'chef', x: 900 }], tip: 'chef' },
+  { name: 'To Chippy Corner', w: 1800, seed: 79, haz: [{ t: 'consp', x: 560 }, { t: 'trolley', x: 920 }, { t: 'chef', x: 1260 }], tip: 'mixed' }
+];
+const TIPS = {
+  start: 'Walk to a bag and press {USE} to grab it.',
+  carry: 'Carry up to 3. Each bag slows you down. Take them to the hopper at the back of the truck.',
+  hopper: 'Press {USE} at the hopper to dump. Or press {THROW} from a distance for a SWISH bonus.',
+  compact: 'The hopper holds 5 loads. Press {USE} at the hopper to compact it.',
+  bin: 'Wheelie bins take both hands. Push it to the hopper and press {USE}. {THROW} shoves it.',
+  high: 'Climb up empty-handed. Bags thrown down from up high will burst.',
+  split: 'Burst bag! Walk over the litter and grab the leftovers. It still counts.',
+  clear: 'Stop clear! Compact, then press {USE} at the cab to drive on.',
+  coon: 'Shaking bin! Raccoons steal bags. Throw food to distract them, or throw anything to stun them.',
+  resident: 'Watch the shadows! She throws junk from up there. Dodge it, then bin it for points.',
+  drain: 'Never leave bags near a drain. Something down there is hungry.',
+  rival: 'Rival crew! Beat him to the golden bag, or trip him with a throw.',
+  legbin: 'That bin has legs. Trip it with a throw, or corner it against something.',
+  vest: 'New coworker tonight? Take a good look at that tail. Never hand him a bag.',
+  drive: 'Hold {GAS} to drive and {BRAKE} to slow down. The truck is heavy. Stop inside the P bay to park.',
+  consp: 'Man in the road! Tap {HONK} to send him diving.',
+  trolley: 'Runaway trolleys! Slow right down and they bounce off harmlessly.',
+  chef: 'Runaway dumpster! Stop the truck and let it bump you.',
+  mixed: 'Last drive. Honk, slow down, stop. You know the drill.'
+};
+const LECTURES = ['THAT TRUCK IS COLLECTING EVIDENCE!', 'WHERE DO THE BAGS REALLY GO?', 'WAKE UP, BIN MAN!', 'RECYCLING IS A COVER STORY!'];
+const RESIDENT_LINES = ['YOU MISSED MY BIN!', 'OI! BIN MAN!', 'AND THIS ONE!', 'I PAY MY RATES!', 'TAKE IT ALL!'];
+const OUCH = ['OOF!', 'MY BACK!', 'UNION REP!', 'NOT AGAIN!', 'WORTH IT.'];
+const QUIPS = ['LOVELY.', 'BEAUTIFUL.', 'NOTHING BUT BIN.', 'TEXTBOOK.', 'CHEF KISS.'];
+
+/* ================= TRASH SHIFT: game ================= */
+const GH = 216, GROUND = 196, GRAV = 520;
+const DEBUG = /[?&]debug/.test(location.search);
+let IS_TOUCH = matchMedia('(pointer:coarse)').matches;
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+const rnd = (a, b) => a + Math.random() * (b - a);
+const pick = a => a[Math.floor(Math.random() * a.length)];
+const hex = c => parseInt(c.slice(1), 16);
+const KL = () => IS_TOUCH ? { USE: 'USE', THROW: 'THROW', JUMP: 'JUMP', GAS: 'GAS', BRAKE: 'BRAKE', HONK: 'HONK' } : { USE: 'E', THROW: 'K', JUMP: 'SPACE', GAS: 'RIGHT', BRAKE: 'LEFT', HONK: 'SPACE' };
+const K = s => s.replace(/\{(\w+)\}/g, (_, k) => KL()[k] || k);
+
+/* ---------- input: keyboard and touch feed one table ---------- */
+const IN = { h: {}, p: {} };
+function inDown(a) { if (!IN.h[a]) IN.p[a] = true; IN.h[a] = true; initAudio(); }
+function inUp(a) { IN.h[a] = false; }
+const held = a => !!IN.h[a], hit = a => !!IN.p[a];
+function inClear() { IN.p = {}; }
+const KEYMAP = { ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right', Space: 'jump', KeyW: 'jump', ArrowUp: 'jump', KeyE: 'use', Enter: 'use', KeyK: 'throw', KeyJ: 'throw', KeyX: 'throw', KeyF: 'throw' };
+addEventListener('keydown', e => {
+  if (e.code in KEYMAP) { e.preventDefault(); if (!e.repeat) inDown(KEYMAP[e.code]); if (IS_TOUCH) { IS_TOUCH = false; layout(); } }
+  else if (e.code === 'KeyR' && G && G.mode && !G.over) restartHere();
+  else if (e.code === 'KeyM') toggleMusic();
+});
+addEventListener('keyup', e => { if (e.code in KEYMAP) inUp(KEYMAP[e.code]); });
+addEventListener('blur', () => { IN.h = {}; });
+
+/* ---------- shift state ---------- */
+const KINDS = {
+  bag: { tex: 'bag', val: 100, cap: 1, split: true, rub: true, name: 'bag' },
+  gold: { tex: 'bag', frame: 3, val: 1000, cap: 1, split: true, rub: true, name: 'golden bag' },
+  scrap: { tex: 'bag', frame: 4, val: 50, cap: 1, rub: true, name: 'burst bag' },
+  junk: { tex: 'junk', val: 150, cap: 1, rub: true, name: 'flying junk' },
+  bin: { tex: 'bin', frame: 0, val: 250, cap: 2, rub: true, name: 'wheelie bin' },
+  food: { tex: 'food', val: 0, cap: 1, name: 'takeaway' }
+};
+let G = null, game = null;
+function newShift() {
+  G = { stop: 0, score: 0, mode: null, over: false, food: 0, tipSeen: {}, missed: [],
+    stats: { total: 0, got: 0, swish: 0, near: 0, litter: 0, splits: 0, stolen: 0, eaten: 0, stuns: 0, fed: 0, bonk: 0, unmask: 0, rivalTrips: 0, binTrips: 0, honks: 0, lectures: 0, trolleyHits: 0, gentle: 0, chefFriend: 0, chefCrash: 0, compacts: 0, parks: [], times: [], quick: 0 } };
+}
+function go(key) {
+  G.mode = key;
+  G.snap = JSON.stringify({ stop: G.stop, score: G.score, stats: G.stats, missed: G.missed, food: G.food, tipSeen: G.tipSeen });
+  for (const s of game.scene.getScenes(false)) if (s.scene.key !== 'boot' && s.scene.key !== key && (s.sys.isActive() || s.sys.isPaused())) s.scene.stop();
+  const cur = game.scene.getScene(key); if (cur.sys.isActive() || cur.sys.isPaused()) { cur.scene.restart(); return; }
+  IN.p = {};
+  game.scene.start(key);
+}
+function restartHere() { if (!G || !G.snap) return; Object.assign(G, JSON.parse(G.snap)); engineOff(); go(G.mode); }
+
+/* ---------- runtime textures ---------- */
+const FAC = {};
+function texCanvas(sc, key, make) { if (!sc.textures.exists(key)) sc.textures.addCanvas(key, make()); return key; }
+function facadeFor(sc, seed, w) {
+  const key = 'fac' + seed + '_' + w;
+  if (!FAC[key]) { FAC[key] = facade(seed, w); sc.textures.addCanvas(key, FAC[key].c); }
+  return { key, signs: FAC[key].signs };
+}
+function mkAnim(sc, key, tex, frames, fps, rep = -1) { if (!sc.anims.exists(key)) sc.anims.create({ key, frames: frames.map(f => ({ key: tex, frame: f })), frameRate: fps, repeat: rep }); }
+
+class Boot extends Phaser.Scene {
+  constructor() { super('boot'); }
+  create() {
+    buildArt();
+    for (const k in SHEETS) { const s = SHEETS[k], t = this.textures.addCanvas(k, s.c); for (let i = 0; i < s.n; i++) t.add(i, 0, i * s.fw, 0, s.fw, s.fh); }
+    this.textures.addCanvas('pxfont', fontCanvas());
+    this.cache.bitmapFont.add('px', Phaser.GameObjects.RetroFont.Parse(this, { image: 'pxfont', width: 5, height: 7, chars: FCH, charsPerRow: FCH.length, spacing: { x: 0, y: 0 } }));
+    for (const w of ['worker', 'rival']) {
+      const p = w[0];
+      mkAnim(this, p + '_idle', w, [0, 0, 0, 1, 1, 1], 4); mkAnim(this, p + '_walk', w, [2, 3, 4, 5], 10); mkAnim(this, p + '_cidle', w, [6, 7], 3);
+      mkAnim(this, p + '_cwalk', w, [8, 9, 10, 11], 9); mkAnim(this, p + '_push', w, [12, 13, 14, 15], 8); mkAnim(this, p + '_stun', w, [19, 20], 6); mkAnim(this, p + '_cheer', w, [21, 22], 8);
+    }
+    mkAnim(this, 'coon_run', 'raccoon', [0, 1, 2, 3], 14); mkAnim(this, 'coon_eat', 'raccoon', [5, 6], 6);
+    mkAnim(this, 'vest_wave', 'vestcoon', [0, 0, 1, 0, 1, 0], 3); mkAnim(this, 'rat_run', 'rat', [0, 1], 12); mkAnim(this, 'arm_wig', 'arm', [0, 1], 6);
+    mkAnim(this, 'consp_rant', 'consp', [0, 1, 0, 3], 4); mkAnim(this, 'trolley_roll', 'trolley', [0, 1], 10); mkAnim(this, 'chef_run', 'chef', [0, 1, 2, 3], 10);
+    mkAnim(this, 'dump_roll', 'dumpster', [0, 1], 8); mkAnim(this, 'bin_run', 'bin', [3, 4], 12); mkAnim(this, 'grate_rattle', 'sewer', [0, 1, 2, 1], 14); mkAnim(this, 'bang_blink', 'bang', [0, 1], 8);
+    window.BOOTED = true; if (window.onBooted) window.onBooted();
+  }
+}
+
+/* ---------- shared scene helpers ---------- */
+const Fx = {
+  pop(sc, x, y, text, col = '#ffd23a', big) {
+    const t = sc.add.bitmapText(Math.round(x), Math.round(y), 'px', text.toUpperCase()).setLetterSpacing(-1).setOrigin(.5).setDepth(20).setTint(hex(col));
+    if (big) t.setScale(2);
+    sc.tweens.add({ targets: t, y: y - 16, duration: 750, ease: 'Quad.out' });
+    sc.tweens.add({ targets: t, alpha: 0, delay: 550, duration: 300, onComplete: () => t.destroy() });
+  },
+  banner(sc, text, col = '#ffd23a', ms = 1400) {
+    const cam = sc.cameras.main;
+    const t = sc.add.bitmapText(cam.width / 2, 58, 'px', text.toUpperCase()).setLetterSpacing(-1).setOrigin(.5).setScrollFactor(0).setDepth(30).setTint(hex(col)).setScale(.5);
+    sc.tweens.add({ targets: t, scale: 2, duration: 220, ease: 'Back.out' });
+    sc.tweens.add({ targets: t, alpha: 0, delay: ms, duration: 300, onComplete: () => t.destroy() });
+  },
+  say(sc, obj, text, ms = 1600, col = '#fff6e8') {
+    for (const bb of sc.bubbles) if (bb.obj === obj) bb.kill = true;
+    const t = sc.add.bitmapText(0, 0, 'px', text.toUpperCase()).setLetterSpacing(-1).setOrigin(.5, 1).setDepth(25).setTint(hex(col));
+    const w = Math.round(t.width) + 6, g = sc.add.graphics().setDepth(24.9);
+    g.fillStyle(0x120a14, .92); g.fillRoundedRect(-w / 2, -10, w, 10, 2); g.fillTriangle(-2, 0, 3, 0, 0, 3);
+    sc.bubbles.push({ obj, t, g, w, until: sc.time.now + ms, dy: (obj.displayHeight || 20) / 2 + 4 });
+  },
+  updBubbles(sc) {
+    const cam = sc.cameras.main;
+    for (const bb of sc.bubbles) {
+      if (bb.kill || sc.time.now > bb.until || !bb.obj.active) { bb.t.destroy(); bb.g.destroy(); bb.dead = true; continue; }
+      const x = Math.round(clamp(bb.obj.x, cam.scrollX + bb.w / 2 + 2, cam.scrollX + cam.width - bb.w / 2 - 2)), y = Math.round(Math.max(13, bb.obj.y - bb.dy - 3));
+      bb.t.setPosition(x, y - 1); bb.g.setPosition(x, y);
+    }
+    sc.bubbles = sc.bubbles.filter(b => !b.dead);
+  },
+  bang(sc, x, y, s = 1, follow) {
+    const b = sc.add.sprite(x, y, 'bang', 0).setDepth(22); b.play('bang_blink');
+    sc.tweens.add({ targets: b, y: y - 3, duration: 160, yoyo: true, repeat: -1 });
+    sc.time.delayedCall(s * 1000, () => b.destroy());
+    if (follow) b.follow = follow;
+    return b;
+  },
+  puff(sc, x, y, n = 5, tint = 0xd8d0e0) {
+    for (let i = 0; i < n; i++) {
+      const p = sc.add.image(x + rnd(-4, 4), y + rnd(-2, 2), 'fx', 0).setDepth(19).setTint(tint).setAlpha(.8);
+      sc.tweens.add({ targets: p, x: p.x + rnd(-14, 14), y: p.y - rnd(4, 14), scale: rnd(1.4, 2.4), alpha: 0, duration: rnd(350, 600), onComplete: () => p.destroy() });
+    }
+  },
+  stars(sc, obj, ms) {
+    const st = []; for (let i = 0; i < 3; i++) st.push(sc.add.image(obj.x, obj.y, 'fx', 1).setDepth(21));
+    const ev = sc.time.addEvent({ delay: 16, loop: true, callback: () => { const a = sc.time.now / 160; st.forEach((s, i) => s.setPosition(Math.round(obj.x + Math.cos(a + i * 2.1) * 8), Math.round(obj.y - (obj.displayHeight / 2) - 2 + Math.sin(a + i * 2.1) * 2))); } });
+    sc.time.delayedCall(ms, () => { ev.remove(); st.forEach(s => s.destroy()); });
+  },
+  backdrop(sc, seed, w) {
+    sc.add.image(0, 0, texCanvas(sc, 'sky' + seed, () => skyline(seed, Math.ceil(w * .3 + 440)))).setOrigin(0).setScrollFactor(.3).setDepth(0);
+    const fac = facadeFor(sc, seed, w); sc.add.image(0, 0, fac.key).setOrigin(0).setDepth(1);
+    for (const s of fac.signs) {
+      const im = sc.add.image(s.x, s.y, texCanvas(sc, 'sign' + s.text + s.col, () => signTex(s.text, s.col))).setOrigin(.5, 0).setDepth(2);
+      const glow = sc.add.rectangle(s.x, s.y + 4, im.width + 10, 14, hex(s.col), .12).setDepth(1.9);
+      if (Math.random() < .45) sc.time.addEvent({ delay: rnd(90, 160), loop: true, callback: () => { const on = Math.random() > .12; im.setAlpha(on ? 1 : .25); glow.setVisible(on); } });
+    }
+  },
+  steam(sc, x, y = GROUND) {
+    return sc.add.particles(x, y, 'fx', { frame: 0, lifespan: 1800, speedY: { min: -18, max: -9 }, speedX: { min: -5, max: 5 }, scale: { start: .7, end: 2.6 }, alpha: { start: .22, end: 0 }, frequency: 170, tint: 0xc8c0d8 }).setDepth(3.5);
+  }
+};
+
+/* =====================================================================
+   STOP SCENE: collect, carry, throw, escape
+   ===================================================================== */
+const HOP = { x0: 94, x1: 126, y0: 164, y1: 204, cx: 109, cy: 190 };
+class StopScene extends Phaser.Scene {
+  constructor() { super('stop'); }
+  create() {
+    const L = this.L = STOPS[G.stop], W = this.W = L.w;
+    G.mode = 'stop'; setMode('stop'); playSong('night');
+    this.tm = 0; this.live = false; this.done = false; this.items = []; this.litter = []; this.threats = []; this.bubbles = []; this.binsDone = 0;
+    this.hopper = { load: 0, cap: 5, busy: 0 }; this.leaveConfirm = 0; this.total0 = 0; this.clearShown = false;
+    this.physics.world.setBounds(0, -60, W, GH + 60);
+    const cam = this.cameras.main; cam.setBounds(0, 0, W, GH); cam.setRoundPixels(true);
+    Fx.backdrop(this, L.seed, W);
+    for (const x of (L.steam || [])) Fx.steam(this, x);
+    /* solids */
+    this.solidG = this.physics.add.staticGroup();
+    this.solid(-200, GROUND, W + 400, 20);
+    for (const p of L.plats) this.addPlat(p);
+    /* truck */
+    this.truck = this.add.sprite(6, 162, 'truck', 0).setOrigin(0).setDepth(5);
+    this.wheels = [this.add.sprite(26, 206, 'wheel', 0).setDepth(5.2), this.add.sprite(92, 206, 'wheel', 0).setDepth(5.2)];
+    this.hopG = this.add.graphics().setDepth(5.1); this.aimG = this.add.graphics().setDepth(10);
+    this.time.addEvent({ delay: 350, loop: true, callback: () => { if (!this.hopper.busy) this.truck.setFrame(this.truck.frame.name == 3 ? 0 : 3); } });
+    /* groups */
+    this.itemG = this.physics.add.group(); this.litG = this.physics.add.group(); this.mobG = this.physics.add.group();
+    /* player */
+    const P = this.player = this.physics.add.sprite(34, GROUND - 13, 'worker', 0).setDepth(8);
+    P.body.setSize(10, 22).setOffset(5, 3); P.setCollideWorldBounds(true); P.body.setMaxVelocityY(520);
+    Object.assign(P, { dir: 1, carry: [], bin: null, stun: 0, inv: 0, throwT: 0, cheerT: 0, coy: 0, prevVy: 0, wasG: true, jh: false });
+    P.setVisible(false); P.body.setEnable(false);
+    this.physics.add.collider(P, this.solidG);
+    this.physics.add.collider(this.itemG, this.solidG);
+    this.physics.add.collider(this.litG, this.solidG);
+    this.physics.add.collider(this.mobG, this.solidG);
+    /* rubbish */
+    for (const [k, x, y, f] of L.items) { const it = this.spawnItem(k, x, y == null ? GROUND : y, { f }); if (KINDS[k].rub) this.total0++; }
+    for (let i = 0; i < G.food; i++) this.spawnItem('food', 150 + i * 14, GROUND, { f: 1 });
+    G.food = 0;
+    for (const x of (L.coonbins || [])) { const b = this.spawnItem('bin', x, GROUND); this.total0++; this.threats.push(new Coon(this, b)); }
+    for (const x of (L.legbins || [])) { const b = this.spawnItem('bin', x, GROUND); this.total0++; b.legs = { st: 'sleep', t: 0 }; }
+    for (const [x, y] of (L.residents || [])) this.threats.push(new Resident(this, x, y));
+    for (const x of (L.drains || [])) this.threats.push(new Drain(this, x));
+    if (L.rival) this.threats.push(new Rival(this, L.rival));
+    if (L.vest) this.threats.push(new VestCoon(this, L.vest));
+    if (L.rats) this.time.addEvent({ delay: 4200, loop: true, callback: () => this.rat() });
+    G.stats.total += this.total0;
+    /* prompt above the player */
+    this.prompt = this.add.bitmapText(0, 0, 'px', '').setLetterSpacing(-1).setOrigin(.5, 1).setDepth(26).setTint(0x8ff7ff);
+    /* arrival: the truck reverses in, beeping, then the collector hops out */
+    this.truck.x = -150; this.wheels.forEach(w => w.x -= 156);
+    cam.scrollX = 0;
+    const beeps = this.time.addEvent({ delay: 420, repeat: 2, callback: () => sfx.beep() });
+    engineOn(); engineSet(40, .4);
+    this.tweens.add({ targets: [this.truck, ...this.wheels], x: '+=156', duration: 1100, ease: 'Cubic.out', onUpdate: () => this.wheels.forEach(w => w.setFrame(Math.floor(w.x / 5) % 2)),
+      onComplete: () => { engineOff(); beeps.remove(); sfx.door(); this.cameras.main.shake(120, .004); this.hopOut(); } });
+    hudStop(this);
+    if (DEBUG) window.SC = this;
+    this.events.once('shutdown', () => { engineOff(); });
+  }
+  hopOut() {
+    const P = this.player; P.setVisible(true); P.body.setEnable(true); P.body.reset(34, GROUND - 26); P.body.setVelocity(70, -170); this.live = true;
+    this.cameras.main.startFollow(P, true, .14, .14, -20, 0);
+    Fx.say(this, P, pick(['RIGHT THEN.', 'ANOTHER NIGHT.', 'SMELLS LIKE WORK.']), 1300);
+    tipKey(['start', 'coon', 'resident', 'rival', 'vest'][G.stop] || 'start', true);
+  }
+  solid(x, y, w, h, oneWay) {
+    const z = this.add.zone(x + w / 2, y + h / 2, w, h); this.solidG.add(z);
+    if (oneWay) { z.body.checkCollision.down = false; z.body.checkCollision.left = false; z.body.checkCollision.right = false; }
+    return z;
+  }
+  addPlat([k, x, y, w, col]) {
+    if (k === 'awn') { this.add.image(x, y, texCanvas(this, 'awn' + w + col, () => awningTex(w, col))).setOrigin(0).setDepth(4); this.solid(x, y, w, 5, true); }
+    else if (k === 'esc') { this.add.image(x, y - 8, texCanvas(this, 'esc' + w, () => escapeTex(w))).setOrigin(0).setDepth(2.5); this.solid(x, y, w, 4, true); }
+    else if (k === 'crate') { this.add.image(x, y, 'crate', 0).setOrigin(0).setDepth(4); this.solid(x, y, 16, 16); }
+    else if (k === 'dump') { this.add.image(x, y - 2, 'dumpster', 0).setOrigin(0).setDepth(4); this.solid(x, y, 34, GROUND - y); }
+  }
+  spawnItem(kind, x, surf, o = {}) {
+    const KD = KINDS[kind];
+    const fr = KD.frame != null ? KD.frame : kind === 'bag' ? Phaser.Math.Between(0, 2) : kind === 'junk' ? Phaser.Math.Between(0, 2) : kind === 'food' ? (o.f || 0) : 0;
+    const fh = SHEETS[KD.tex].fh;
+    const s = this.physics.add.sprite(x, surf - fh / 2 - 1, KD.tex, fr).setDepth(6);
+    this.itemG.add(s);
+    if (kind === 'bin') s.body.setSize(12, 21).setOffset(2, 3);
+    else if (kind === 'food') s.body.setSize(10, 7).setOffset(1, 2);
+    else if (kind === 'junk') s.body.setSize(11, 10).setOffset(0, 2);
+    else s.body.setSize(12, 11).setOffset(1, 2);
+    s.body.setBounce(.15); s.body.setMaxVelocity(420, 520); s.setCollideWorldBounds(true);
+    Object.assign(s, { kind, val: KD.val, st: 'free', thrown: false, prevVy: 0, noPick: 0 });
+    this.items.push(s);
+    return s;
+  }
+  release(it, vx, vy) {
+    it.body.setEnable(true); it.body.reset(it.x, it.y); it.body.setVelocity(vx, vy); it.st = 'free'; it.setDepth(it.kind === 'bin' ? 6 : 6.5); it.prevVy = vy; it.setVisible(true); it.setAngle(0);
+  }
+  /* ---------- update ---------- */
+  update(time, delta) {
+    const dt = Math.min(delta / 1000, 1 / 20);
+    if (this.live && !this.done) this.tm += dt;
+    if (this.hopper.busy > 0) this.hopper.busy -= dt;
+    if (this.leaveConfirm > 0) this.leaveConfirm -= dt;
+    this.updPlayer(dt); this.updItems(dt); this.updLitter(dt);
+    for (const th of this.threats) th.update(dt);
+    this.threats = this.threats.filter(t => !t.dead);
+    Fx.updBubbles(this); this.updPrompt(); this.drawHopper();
+    hudTick(this);
+    inClear();
+  }
+  updPlayer(dt) {
+    const P = this.player; if (!P.visible) return;
+    const b = P.body, onG = b.blocked.down || b.touching.down;
+    P.coy = onG ? .1 : P.coy - dt;
+    if (onG && !P.wasG && P.prevVy > 150) { sfx.land(); Fx.puff(this, P.x, P.y + 11, 3, 0x8a8494); this.squash(P, .82); }
+    P.wasG = onG;
+    P.inv = Math.max(0, P.inv - dt); P.throwT -= dt; P.cheerT -= dt;
+    P.setAlpha(P.inv > 0 && P.stun <= 0 ? (Math.floor(P.inv * 14) % 2 ? .4 : 1) : 1);
+    const n = P.carry.length;
+    if (P.stun > 0) { P.stun -= dt; b.setVelocityX(b.velocity.x * Math.pow(.05, dt)); }
+    else if (this.live && !this.done) {
+      const mv = (held('right') ? 1 : 0) - (held('left') ? 1 : 0);
+      if (mv) P.dir = mv;
+      const sp = P.bin ? 64 : 124 * Math.pow(.82, n), k = onG ? 14 : 7;
+      b.setVelocityX(b.velocity.x + (mv * sp - b.velocity.x) * Math.min(1, dt * k));
+      if (hit('jump') && P.coy > 0) { b.setVelocityY(-218 * (P.bin ? .62 : 1 - .075 * n)); P.coy = 0; P.jh = true; sfx.jump(); this.squash(P, 1.15); }
+      if (P.jh && !held('jump') && b.velocity.y < -70) { b.setVelocityY(b.velocity.y * .5); P.jh = false; }
+      if (b.velocity.y >= 0) P.jh = false;
+      if (hit('use')) this.doUse();
+      if (hit('throw')) this.doThrow();
+    } else b.setVelocityX(b.velocity.x * .8);
+    P.prevVy = b.velocity.y;
+    P.setFlipX(P.dir < 0);
+    /* the stack on his head wobbles more the more he carries */
+    let cy = P.y - 11;
+    P.carry.forEach((it, i) => {
+      const sway = Math.sin(this.time.now / 130 + i * .9) * (n - 1) * .45 * (i + 1) * (Math.abs(b.velocity.x) > 10 ? 1 : .4);
+      const h = it.height - 3; it.setPosition(Math.round(P.x + sway), Math.round(cy - h / 2 - 1)); cy -= h;
+    });
+    if (P.bin) { P.bin.setPosition(Math.round(P.x + P.dir * 13), Math.round(P.y)); P.bin.setFlipX(P.dir < 0); }
+    if (n === 3 && Math.random() < dt * 2) { const d = this.add.image(P.x + P.dir * 5, P.y - 6, 'fx', 3).setTint(0x8ff7ff).setScale(.3).setDepth(9); this.tweens.add({ targets: d, y: d.y + 10, alpha: 0, duration: 500, onComplete: () => d.destroy() }); }
+    this.drawAim();
+    /* animation */
+    let a;
+    if (P.stun > 0) a = 'w_stun';
+    else if (P.throwT > 0) a = 18;
+    else if (P.cheerT > 0 && !n && !P.bin) a = 'w_cheer';
+    else if (!onG) a = P.bin ? 12 : n ? 17 : 16;
+    else if (Math.abs(b.velocity.x) > 12) a = P.bin ? 'w_push' : n ? 'w_cwalk' : 'w_walk';
+    else a = P.bin ? 12 : n ? 'w_cidle' : 'w_idle';
+    if (typeof a === 'number') { P.anims.stop(); P.setFrame(a); } else { P.play(a, true); P.anims.timeScale = a.endsWith('walk') ? clamp(Math.abs(b.velocity.x) / 100, .6, 1.4) : 1; }
+  }
+  drawAim() {
+    const P = this.player, g = this.aimG; g.clear();
+    if (!this.live || this.done || P.stun > 0 || !P.carry.length || P.dir > 0 || P.x < 150 || P.x > 330) return;
+    let x = P.x + P.dir * 6, y = P.y - 16, vx = P.dir * 158 + P.body.velocity.x * .35, vy = -182 + Math.min(0, P.body.velocity.y * .25), good = false;
+    const pts = [];
+    for (let i = 0; i < 80; i++) {
+      vy += GRAV / 60; x += vx / 60; y += vy / 60;
+      if (vy > 0 && x > HOP.x0 && x < HOP.x1 && y > HOP.y0 && y < HOP.y1) { good = true; break; }
+      if (y > GROUND) break;
+      if (i % 3 === 2) pts.push([x, y]);
+    }
+    const a = .35 + .25 * Math.sin(this.time.now / 120);
+    g.fillStyle(good ? 0xb8ff4a : 0xffffff, good ? .9 : a);
+    for (const [px, py] of pts) g.fillRect(Math.round(px), Math.round(py), 1, 1);
+    if (good) { g.lineStyle(1, 0xb8ff4a, .9); g.strokeRect(HOP.x0 + 6, 180, HOP.x1 - HOP.x0 - 12, 2); }
+  }
+  squash(o, sy) { this.tweens.killTweensOf(o, 'scaleY'); o.setScale(1 / Math.sqrt(sy), sy); this.tweens.add({ targets: o, scaleX: 1, scaleY: 1, duration: 180, ease: 'Back.out' }); }
+  /* ---------- verbs ---------- */
+  atHopper() { const P = this.player; return P.x > 96 && P.x < 150 && P.y > GROUND - 40; }
+  atCab() { return this.player.x < 54 && this.player.y > GROUND - 40; }
+  nearestPick() {
+    const P = this.player; let best = null, bd = 1e9;
+    for (const it of this.items) {
+      if (it.st !== 'free' || it.noPick > 0) continue;
+      if (it.kind === 'bin') {
+        if (P.carry.length || P.bin) continue;
+        if (it.coon && (it.coon.st === 'hide' || it.coon.st === 'warn')) continue;
+        if (it.legs && (it.legs.st === 'sleep' || it.legs.st === 'run')) continue;
+      } else if (P.bin || P.carry.length >= 3) continue;
+      const dx = Math.abs(it.x - P.x), dy = Math.abs(it.y - P.y);
+      if (dx < 18 && dy < 24) { const d = dx + dy * .5; if (d < bd) { bd = d; best = it; } }
+    }
+    return best;
+  }
+  doUse() {
+    const P = this.player;
+    if (this.atCab() && !P.bin) return this.tryLeave();
+    if (this.atHopper() && (P.bin || P.carry.some(i => i.kind !== 'food'))) return this.depositCarried();
+    const it = this.nearestPick();
+    if (it) return this.pickUp(it);
+    if (this.atHopper()) { if (this.hopper.load > 0) return this.compact(); return Fx.pop(this, P.x, P.y - 22, 'EMPTY', '#c8b8d8'); }
+    if (P.bin) return this.releaseBin(false);
+    if (P.carry.length) return this.dropTop();
+  }
+  pickUp(it) {
+    const P = this.player;
+    it.body.setEnable(false); it.st = 'carried'; it.thrown = false; it.danger = false;
+    if (it.kind === 'bin') {
+      P.bin = it; it.setDepth(8.5); it.setAngle(0); it.anims.stop(); it.setFrame(0);
+      if (it.legs) { if (it.legs.st !== 'tame') Fx.say(this, P, 'GOTCHA.', 1000); it.legs.st = 'tame'; }
+      sfx.clank(); tipKey('bin');
+    } else { P.carry.push(it); it.setDepth(9); sfx.pick(); tipKey(P.carry.length === 1 && !G.tipSeen.carry ? 'carry' : 'hopper'); }
+    this.squash(P, .88);
+  }
+  dropTop() { const P = this.player, it = P.carry.pop(); it.setPosition(P.x + P.dir * 8, P.y - 4); this.release(it, P.dir * 30, -60); it.noPick = .25; sfx.drop(); }
+  releaseBin(shove) {
+    const P = this.player, bin = P.bin; P.bin = null;
+    this.release(bin, P.dir * (shove ? 190 : 20), shove ? -40 : -10); bin.noPick = .3; bin.thrown = shove; if (shove) sfx.throw(); else sfx.drop();
+  }
+  doThrow() {
+    const P = this.player;
+    if (P.bin) return this.releaseBin(true);
+    if (!P.carry.length) return;
+    const it = P.carry.pop();
+    it.setPosition(P.x + P.dir * 6, P.y - 16);
+    this.release(it, P.dir * 158 + P.body.velocity.x * .35, -182 + Math.min(0, P.body.velocity.y * .25));
+    it.thrown = true; it.noPick = .2; P.throwT = .2; sfx.throw();
+  }
+  depositCarried() {
+    const P = this.player, H = this.hopper;
+    if (H.busy > 0) return Fx.pop(this, HOP.cx, HOP.y0 - 6, 'WAIT!', '#ff7a5a');
+    if (P.bin) {
+      if (H.load + 2 > H.cap) return this.compact();
+      const bin = P.bin; P.bin = null; H.load += 2; this.tipBin(bin); return;
+    }
+    const q = P.carry.filter(i => i.kind !== 'food'); let n = 0;
+    if (H.load + 1 > H.cap) return this.compact();
+    for (const it of q) {
+      if (H.load + 1 > H.cap) { Fx.pop(this, HOP.cx, HOP.y0 - 14, 'FULL! COMPACT', '#ff7a5a'); tipKey('compact', true); break; }
+      P.carry.splice(P.carry.indexOf(it), 1); H.load++;
+      it.st = 'flying';
+      this.tweens.add({ targets: it, x: HOP.cx, y: HOP.cy, angle: P.dir * 90, duration: 200, delay: n++ * 110, ease: 'Quad.in', onComplete: () => this.consume(it, false) });
+    }
+  }
+  tipBin(bin) {
+    bin.st = 'flying'; bin.setFlipX(false); bin.setDepth(5.05);
+    this.tweens.chain({ targets: bin, tweens: [
+      { x: 126, y: GROUND - 12, duration: 160 },
+      { x: 118, y: 176, angle: -125, duration: 260, ease: 'Quad.out', onComplete: () => { sfx.clank(); this.consume(bin, false, true); } },
+      { x: 132 + (this.binsDone % 3) * 4, y: GROUND - 12, angle: 0, duration: 260, delay: 160, ease: 'Bounce.out', onComplete: () => { bin.setDepth(4.9).setAlpha(.85); } }
+    ] });
+    this.binsDone++;
+  }
+  consume(it, swish, keep) {
+    const KD = KINDS[it.kind], v = it.val;
+    if (it.kind === 'food') { Fx.pop(this, HOP.cx, HOP.y0 - 8, 'THAT WAS DINNER', '#c8b8d8'); }
+    else {
+      G.score += v; if (KD.rub) G.stats.got++;
+      if (swish) {
+        G.score += 50; G.stats.swish++; this.player.cheerT = .7; sfx.swish();
+        Fx.pop(this, HOP.cx, HOP.y0 - 10, 'SWISH! +' + (v + 50), '#8ff7ff', true);
+        if (Math.random() < .5) Fx.say(this, this.player, pick(QUIPS), 1100);
+      } else { sfx.deposit(); Fx.pop(this, HOP.cx, HOP.y0 - 10, '+' + v); }
+    }
+    this.tweens.add({ targets: this.truck, y: 163, duration: 60, yoyo: true });
+    if (!keep) { it.st = 'gone'; it.destroy(); } else it.st = 'done';
+    if (this.hopper.load >= this.hopper.cap) tipKey('compact');
+    this.checkClear();
+  }
+  compact() {
+    const H = this.hopper; if (H.busy > 0 || H.load <= 0) return;
+    H.busy = .85; sfx.crunch(); G.stats.compacts++;
+    const seq = [1, 2, 1, 2, 1, 0]; seq.forEach((f, i) => this.time.delayedCall(i * 140, () => this.truck.setFrame(f)));
+    this.cameras.main.shake(260, .004);
+    const pts = H.load * 10;
+    this.time.delayedCall(700, () => { H.load = 0; G.score += pts; Fx.pop(this, HOP.cx, HOP.y0 - 10, 'CRUNCH +' + pts, '#b8ff4a'); Fx.puff(this, HOP.cx, HOP.y0, 5, 0x8a9a7a); this.checkClear(); });
+  }
+  remaining() { return this.items.filter(i => KINDS[i.kind].rub && i.st !== 'gone' && i.st !== 'done' && i.st !== 'flying'); }
+  checkClear() {
+    if (this.clearShown) return;
+    if (this.remaining().length === 0 && !this.threats.some(t => t.pendingRub)) { this.clearShown = true; Fx.banner(this, 'STOP CLEAR!', '#b8ff4a'); sfx.coin(); tipKey('clear', true); }
+  }
+  tryLeave() {
+    const P = this.player, H = this.hopper;
+    if (P.carry.some(i => i.kind !== 'food')) return Fx.pop(this, P.x, P.y - 24, 'BIN WHAT YOU CARRY', '#ff7a5a');
+    if (H.load > 0 || H.busy > 0) { Fx.pop(this, P.x + 30, P.y - 24, 'COMPACT FIRST!', '#ff7a5a'); sfx.err(); return tipKey('clear', true); }
+    const rem = this.remaining();
+    if (rem.length && this.leaveConfirm <= 0) { this.leaveConfirm = 3; sfx.err(); return setTip(rem.length + ' left behind. Press ' + KL().USE + ' again to leave anyway.'); }
+    this.leave(rem);
+  }
+  leave(rem) {
+    this.done = true; this.live = false;
+    for (const it of rem) G.missed.push({ what: KINDS[it.kind].name, why: 'left on the kerb' });
+    const par = this.L.par, t = this.tm, bonus = t < par ? Math.round((par - t) * 15) : 0;
+    G.score += bonus; G.stats.times.push(Math.round(t)); if (bonus) G.stats.quick++;
+    Fx.banner(this, bonus ? 'QUICK STOP +' + bonus : 'STOP DONE', bonus ? '#8ff7ff' : '#ffd23a', 1200);
+    const P = this.player; P.body.setEnable(false); sfx.door();
+    for (const it of P.carry) { if (it.kind === 'food') G.food++; it.destroy(); } P.carry = [];
+    this.tweens.add({ targets: P, x: 22, y: GROUND - 20, alpha: 0, duration: 260 });
+    this.cameras.main.stopFollow();
+    this.time.delayedCall(450, () => {
+      engineOn(); engineSet(60, 1);
+      this.tweens.add({ targets: [this.truck, ...this.wheels], x: '-=230', duration: 1200, ease: 'Cubic.in', onUpdate: () => this.wheels.forEach(w => w.setFrame(Math.floor(w.x / 5) % 2)) });
+      this.time.delayedCall(1300, () => { engineOff(); if (G.stop >= STOPS.length - 1) endShift(); else go('drive'); });
+    });
+  }
+  /* ---------- items, physics outcomes ---------- */
+  updItems(dt) {
+    const H = this.hopper, P = this.player;
+    for (const it of this.items) {
+      if (it.legs) this.updLegs(it, dt);
+      if (it.st !== 'free') continue;
+      const b = it.body, onG = b.blocked.down || b.touching.down;
+      if (!(it.legs && it.legs.st === 'run')) b.setDragX(onG ? (it.kind === 'bin' ? 280 : 700) : 0);
+      if (it.noPick > 0) it.noPick -= dt;
+      if (!onG && it.kind !== 'bin') it.angle += b.velocity.x * dt * 3; else if (onG && it.kind !== 'bin') it.angle = 0;
+      /* falls into the hopper */
+      if (it.kind !== 'bin' && b.velocity.y > 0 && it.x > HOP.x0 && it.x < HOP.x1 && it.y > HOP.y0 && it.y < HOP.y1) {
+        const cap = KINDS[it.kind].cap;
+        if (H.busy > 0 || H.load + cap > H.cap) { b.setVelocity(80, -150); it.thrown = false; Fx.pop(this, HOP.cx, HOP.y0 - 8, H.busy > 0 ? 'WAIT!' : 'FULL!', '#ff7a5a'); sfx.err(); }
+        else { H.load += it.kind === 'food' ? 0 : cap; it.st = 'gone'; this.consume(it, it.thrown); continue; }
+      }
+      /* thrown things bonk threats */
+      if (it.thrown) {
+        for (const th of this.threats) if (th.hittable && th.hittable() && this.overlap(it, th.rect())) { th.onHit(it); it.thrown = false; if (it.st === 'free') b.setVelocity(-b.velocity.x * .3, -110); break; }
+        if (it.thrown) for (const o of this.items) if (o.legs && (o.legs.st === 'run' || o.legs.st === 'corner') && o !== it && Math.abs(o.x - it.x) < 12 && Math.abs(o.y - it.y) < 16) { this.tripBin(o); it.thrown = false; b.setVelocity(-b.velocity.x * .3, -100); break; }
+      }
+      /* flying junk from a balcony */
+      if (it.danger && P.inv <= 0 && P.stun <= 0 && P.visible && Math.abs(it.x - P.x) < 10 && Math.abs(it.y - (P.y - 4)) < 15) {
+        it.danger = false; it.hitP = true; b.setVelocity(-b.velocity.x * .3 + (it.x < P.x ? -40 : 40), -80); this.hurt(it.x < P.x ? 1 : -1);
+        if (it.shadow) { it.shadow.destroy(); it.shadow = null; }
+      }
+      if (onG && it.prevVy > 40) {
+        if (it.prevVy > 232 && KINDS[it.kind].split) this.split(it);
+        else if (it.prevVy > 110) { sfx.thud(); if (it.kind === 'bin') sfx.clank(); }
+        it.thrown = false;
+        if (it.danger || it.shadow) this.junkLanded(it);
+      }
+      it.prevVy = b.velocity.y;
+    }
+    this.items = this.items.filter(i => i.st !== 'gone');
+  }
+  overlap(it, r) { return r && it.x + 5 > r.x && it.x - 5 < r.right && it.y + 5 > r.y && it.y - 5 < r.bottom; }
+  junkLanded(it) {
+    const P = this.player;
+    if (it.shadow) { it.shadow.destroy(); it.shadow = null; }
+    if (it.danger && !it.hitP && Math.abs(P.x - it.x) < 26 && P.y > GROUND - 50) { G.score += 50; G.stats.near++; Fx.pop(this, P.x, P.y - 26, 'NEAR MISS +50', '#8ff7ff'); }
+    it.danger = false; sfx.clank();
+  }
+  split(it) {
+    const gold = it.kind === 'gold';
+    it.kind = 'scrap'; it.val = gold ? 400 : 50; it.setFrame(4); it.angle = 0; it.body.setSize(12, 4).setOffset(1, 8);
+    for (let i = 0; i < (gold ? 7 : 4); i++) this.spawnLitter(it.x, it.y - 4, gold);
+    G.stats.splits++; sfx.split(); Fx.pop(this, it.x, it.y - 12, gold ? 'GOLD BURST!' : 'SPLAT!', '#ff8a5a'); Fx.puff(this, it.x, it.y, 6, 0x7a8a5a);
+    tipKey('split');
+  }
+  spawnLitter(x, y, gold) {
+    const s = this.physics.add.sprite(x, y, 'litter', gold ? 1 : Phaser.Math.Between(0, 4)).setDepth(6.2); this.litG.add(s);
+    s.body.setBounce(.35); s.body.setDragX(120); s.body.setVelocity(rnd(-95, 95), rnd(-210, -110)); s.setCollideWorldBounds(true);
+    s.val = gold ? 50 : 20; s.age = 0; this.litter.push(s);
+  }
+  updLitter(dt) {
+    const P = this.player;
+    for (const s of this.litter) {
+      s.age += dt;
+      if (s.age > .35 && P.visible && Math.abs(s.x - P.x) < 11 && Math.abs(s.y - P.y) < 17) {
+        G.score += s.val; G.stats.litter++; sfx.litter(); Fx.pop(this, s.x, s.y - 6, '+' + s.val, '#e8e0c0'); s.destroy(); s.gone = true;
+      }
+    }
+    this.litter = this.litter.filter(s => !s.gone);
+  }
+  hurt(dir) {
+    const P = this.player; if (P.stun > 0 || P.inv > 0) return;
+    P.stun = 1; P.inv = 2.2; G.stats.stuns++;
+    P.body.setVelocity(dir * 70, -130);
+    const n = P.carry.length;
+    P.carry.forEach((it, i) => { this.release(it, rnd(-70, 70) + dir * 20, -235 - i * 15); it.noPick = .5; });
+    P.carry = [];
+    if (P.bin) this.releaseBin(false);
+    sfx.stun(); Fx.stars(this, P, 1000); this.cameras.main.shake(160, .006);
+    Fx.say(this, P, pick(OUCH), 1200, '#ff8a5a');
+    if (n) this.time.delayedCall(800, () => tipKey('split'));
+  }
+  updPrompt() {
+    const P = this.player, pr = this.prompt;
+    if (!P.visible || this.done || P.stun > 0) return pr.setVisible(false);
+    let t = '';
+    if (this.atCab() && !P.bin) t = 'DRIVE ON';
+    else if (this.atHopper() && (P.bin || P.carry.some(i => i.kind !== 'food'))) t = this.hopper.load + (P.bin ? 2 : 1) > this.hopper.cap ? 'COMPACT' : 'DUMP';
+    else { const it = this.nearestPick(); if (it) t = it.kind === 'bin' ? 'PUSH' : 'GRAB'; else if (this.atHopper() && this.hopper.load > 0) t = 'COMPACT'; }
+    if (!t) return pr.setVisible(false);
+    pr.setVisible(true).setText((IS_TOUCH ? 'USE: ' : 'E: ') + t);
+    const top = P.carry.length ? P.carry[P.carry.length - 1].y - 8 : P.y - 16;
+    pr.setPosition(Math.round(P.x), Math.round(top));
+  }
+  drawHopper() {
+    const g = this.hopG, H = this.hopper, tx = this.truck.x; g.clear();
+    const cols = [0x2a2a38, 0x2e5a2e, 0x2a3a72];
+    for (let i = 0; i < H.load; i++) { g.fillStyle(cols[i % 3], 1); g.fillRect(tx + 97 + (i % 2), 162 + 37 - (i + 1) * 3.4, 10, 3); }
+  }
+  tripBin(o) {
+    const L = o.legs; L.st = 'trip'; L.t = 1.4; o.anims.stop(); o.setFrame(0); o.setAngle(o.x > this.player.x ? 80 : -80); o.body.setVelocityX(0);
+    G.score += 100; G.stats.binTrips++; sfx.bonk(); Fx.pop(this, o.x, o.y - 18, 'TRIPPED! +100', '#8ff7ff'); Fx.stars(this, o, 1300);
+  }
+  updLegs(it, dt) {
+    const L = it.legs, P = this.player, b = it.body;
+    if (it.st !== 'free') return;
+    const dx = it.x - P.x, onG = b.blocked.down;
+    if (L.st === 'sleep') {
+      if (this.live && Math.abs(dx) < 62 && Math.abs(P.y - it.y) < 40) { L.st = 'run'; it.play('bin_run'); sfx.squeak(); Fx.bang(this, it.x, it.y - 22, .6); Fx.say(this, it, 'EEP!', 800); tipKey('legbin'); }
+    } else if (L.st === 'run') {
+      const dir = Math.sign(dx) || 1;
+      if ((dir > 0 && (b.blocked.right || it.x > this.W - 12)) || (dir < 0 && (b.blocked.left || it.x < 140))) { L.st = 'corner'; L.side = dir; b.setVelocityX(0); }
+      else { b.setVelocityX(dir * 132); b.setDragX(0); if (onG && Math.random() < dt * .6) b.setVelocityY(-120); }
+      if (Math.abs(dx) > 230) { L.st = 'sleep'; it.anims.stop(); it.setFrame(0); b.setVelocityX(0); }
+    } else if (L.st === 'corner') {
+      it.setAngle(Math.sin(this.time.now / 25) * 5);
+      if (Math.sign(dx) !== L.side) { L.st = 'run'; it.setAngle(0); }
+    } else if (L.st === 'trip') {
+      L.t -= dt; if (L.t <= 0) { L.st = 'tame'; it.setAngle(0); }
+    }
+  }
+  rat() {
+    if (this.done || Math.random() < .3) return;
+    const cam = this.cameras.main, fromL = Math.random() < .5, x0 = fromL ? cam.scrollX - 10 : cam.scrollX + cam.width + 10;
+    const r = this.add.sprite(x0, GROUND - 3, 'rat', 0).setDepth(7.5).setFlipX(!fromL); r.play('rat_run');
+    this.tweens.add({ targets: r, x: fromL ? x0 + cam.width + 30 : x0 - cam.width - 30, duration: rnd(2200, 3200), onUpdate: () => { if (!r.sq && Math.abs(r.x - this.player.x) < 20) { r.sq = 1; sfx.squeak(); } }, onComplete: () => r.destroy() });
+  }
+}
+
+/* ---------- stop threats ---------- */
+class Coon {
+  constructor(sc, bin) { this.sc = sc; this.bin = bin; bin.coon = this; this.st = 'hide'; this.t = 0; this.carry = null; this.s = null; this.rt = 0; }
+  rect() { const s = this.s; return new Phaser.Geom.Rectangle(s.x - 11, s.y - 8, 22, 16); }
+  hittable() { return this.s && ['seek', 'flee'].includes(this.st); }
+  get pendingRub() { return !!this.carry; }
+  update(dt) {
+    const sc = this.sc, P = sc.player, bin = this.bin;
+    if (this.st === 'hide') { if (bin.st === 'free' && sc.live && Math.abs(P.x - bin.x) < 96) { this.st = 'warn'; this.t = .95; Fx.bang(sc, bin.x, bin.y - 24, .95); sfx.chitter(); tipKey('coon'); } return; }
+    if (this.st === 'warn') { this.t -= dt; bin.setAngle(Math.sin(this.t * 55) * 7); if (Math.random() < dt * 4) sfx.rattle(); if (this.t <= 0 || bin.st !== 'free') this.burst(); return; }
+    if (this.st === 'done') return;
+    const s = this.s, b = s.body, onG = b.blocked.down, W = sc.W;
+    if (this.carry) this.carry.setPosition(Math.round(s.x - (s.flipX ? -3 : 3)), Math.round(s.y - 10));
+    if (this.st === 'seek') {
+      this.rt -= dt; if (this.rt <= 0) { this.rt = .25; this.tgt = this.choose(); }
+      const tg = this.tgt;
+      if (!tg) { b.setVelocityX(0); s.anims.stop(); s.setFrame(4); return; }
+      const tx = tg.x, ty = tg.y, dx = tx - s.x;
+      b.setVelocityX(Math.abs(dx) > 4 ? Math.sign(dx) * 98 : 0);
+      if (onG && ((ty < s.y - 18 && Math.abs(dx) < 46) || b.blocked.left || b.blocked.right)) b.setVelocityY(-260);
+      s.play('coon_run', true); s.setFlipX(b.velocity.x < 0);
+      if (Math.abs(dx) < 10 && Math.abs(ty - s.y) < 18) {
+        if (tg === P) { if (P.stun <= 0 && P.carry.length) { const it = P.carry.pop(); Fx.say(sc, P, 'HEY!', 900, '#ff8a5a'); if (it.kind === 'food') this.eat(it); else this.grab(it); } }
+        else if (tg.st === 'free') { if (tg.kind === 'food') this.eat(tg); else this.grab(tg); }
+      }
+    } else if (this.st === 'flee') {
+      const fd = this.sc.items.find(i => i.kind === 'food' && i.st === 'free' && Math.abs(i.x - s.x) < 110 && Math.abs(i.y - s.y) < 40);
+      if (fd) { this.dropCarry(-60); this.st = 'seek'; this.tgt = fd; this.rt = .4; return; }
+      b.setVelocityX(this.fdir * 92); s.setFlipX(this.fdir < 0); s.play('coon_run', true);
+      if (onG && (b.blocked.left || b.blocked.right)) b.setVelocityY(-260);
+      if (s.x < -14 || s.x > W + 14) {
+        const it = this.carry; this.carry = null;
+        if (it) { G.missed.push({ what: KINDS[it.kind].name, why: 'stolen by a raccoon' }); G.stats.stolen++; it.st = 'gone'; it.destroy(); Fx.pop(sc, clamp(s.x, sc.cameras.main.scrollX + 30, sc.cameras.main.scrollX + sc.cameras.main.width - 30), s.y - 20, 'STOLEN!', '#ff5a5a'); }
+        this.kill();
+      }
+    } else if (this.st === 'eat') {
+      b.setVelocityX(0); this.t -= dt;
+      if (this.t <= 0) { if (this.food) { this.food.st = 'gone'; this.food.destroy(); this.food = null; } G.stats.fed++; G.score += 50; Fx.pop(sc, s.x, s.y - 14, 'FED +50', '#b8ff4a'); Fx.say(sc, s, 'ZZZ', 1500); this.leave(55); sc.checkClear(); }
+    } else if (this.st === 'dizzy') {
+      b.setVelocityX(0); this.t -= dt; if (this.t <= 0) { s.setAngle(0); this.leave(140); }
+    } else if (this.st === 'leave') {
+      b.setVelocityX(this.fdir * this.spd); s.setFlipX(this.fdir < 0); s.play('coon_run', true);
+      if (onG && (b.blocked.left || b.blocked.right)) b.setVelocityY(-260);
+      if (s.x < -14 || s.x > W + 14) this.kill();
+    }
+  }
+  choose() {
+    const sc = this.sc, s = this.s, P = sc.player; let best = null, bd = 1e9;
+    for (const it of sc.items) {
+      if (it.st !== 'free' || it.kind === 'bin') continue;
+      const d = Math.abs(it.x - s.x) + Math.abs(it.y - s.y) * 2 - (it.kind === 'food' ? 260 : 0);
+      if (d < bd && d < 380) { bd = d; best = it; }
+    }
+    if (best) return best;
+    return P.carry.length ? P : null;
+  }
+  burst() {
+    const sc = this.sc, bin = this.bin; bin.setAngle(0); bin.coon = null;
+    const s = this.s = sc.physics.add.sprite(bin.x, bin.y - 14, 'raccoon', 0).setDepth(7); sc.mobG.add(s);
+    s.body.setSize(16, 10).setOffset(4, 4); s.body.setVelocity(Phaser.Math.Between(-50, 50), -230); s.body.setMaxVelocity(300, 520);
+    sfx.pop(); Fx.puff(sc, bin.x, bin.y - 12, 6);
+    const lid = sc.add.rectangle(bin.x, bin.y - 10, 14, 3, 0x256a30).setDepth(7);
+    sc.tweens.add({ targets: lid, x: lid.x + rnd(-30, 30), y: lid.y - 30, angle: 360, duration: 380, yoyo: true, ease: 'Quad.out', onComplete: () => lid.destroy() });
+    Fx.say(sc, s, pick(['MINE!', 'SNACKS!', 'HISSS!']), 1000, '#ffd23a');
+    this.st = 'seek';
+  }
+  grab(it) {
+    const s = this.s, P = this.sc.player;
+    it.st = 'held'; if (it.body) it.body.setEnable(false); it.setDepth(7.2); it.angle = 0;
+    this.carry = it; this.st = 'flee'; this.fdir = s.x >= P.x ? 1 : -1; sfx.chitter();
+  }
+  eat(food) {
+    food.st = 'held'; if (food.body) food.body.setEnable(false); food.setVisible(false); this.food = food;
+    this.st = 'eat'; this.t = 3.2; this.s.play('coon_eat'); Fx.say(this.sc, this.s, 'NOM NOM', 1400, '#b8ff4a'); sfx.slurp();
+  }
+  dropCarry(vy = -100) { const it = this.carry; if (!it) return; this.carry = null; this.sc.release(it, rnd(-30, 30), vy); it.noPick = .2; }
+  leave(spd) { const s = this.s, P = this.sc.player; this.st = 'leave'; this.spd = spd; this.fdir = s.x >= P.x ? 1 : -1; if (s.x < 200) this.fdir = 1; }
+  onHit(it) {
+    const sc = this.sc, s = this.s;
+    if (it.kind === 'food') { this.dropCarry(); this.eat(it); return; }
+    this.dropCarry(); this.st = 'dizzy'; this.t = 2; s.anims.stop(); s.setFrame(7);
+    G.stats.bonk++; G.score += 75; Fx.pop(sc, s.x, s.y - 16, 'BONK! +75', '#8ff7ff'); sfx.bonk(); Fx.stars(sc, s, 2000);
+  }
+  kill() { if (this.s) this.s.destroy(); this.st = 'done'; this.dead = true; this.sc.checkClear(); }
+}
+
+class Resident {
+  constructor(sc, x, y) { this.sc = sc; this.x = x; this.y = y; this.s = sc.add.sprite(x, y, 'resident', 0).setDepth(3); this.st = 'idle'; this.cd = 1.2; this.shots = 3; this.t = 0; }
+  update(dt) {
+    const sc = this.sc, P = sc.player, s = this.s;
+    if (!sc.live && this.st === 'idle') return;
+    this.t -= dt;
+    if (this.st === 'idle') {
+      this.cd -= dt;
+      if (this.cd <= 0 && this.shots > 0 && Math.abs(P.x - this.x) < 150) { this.st = 'open'; this.t = .5; s.setFrame(1); sfx.window(); tipKey('resident'); }
+    } else if (this.st === 'open') {
+      if (this.t <= 0) {
+        s.setFrame(2); Fx.say(sc, s, pick(RESIDENT_LINES), 1500, '#ff8aa8'); sfx.yell(); Fx.bang(sc, this.x + 16, this.y - 10, .9);
+        this.tx = clamp(P.x + P.body.velocity.x * .9, this.x - 130, this.x + 130); this.st = 'aim'; this.t = .85;
+        this.shadow = sc.add.image(this.tx, GROUND - 1, 'shadow', 0).setDepth(5.5).setScale(.5).setAlpha(.6);
+        sc.tweens.add({ targets: this.shadow, scale: 1.4, alpha: 1, duration: 1500 });
+      }
+    } else if (this.st === 'aim') {
+      if (this.t <= 0) {
+        s.setFrame(3);
+        const T = .72, y0 = this.y + 4, it = sc.spawnItem('junk', this.x, y0 + 12);
+        it.setPosition(this.x, y0);
+        sc.release(it, (this.tx - this.x) / T, (GROUND - 6 - y0 - .5 * GRAV * T * T) / T);
+        it.danger = true; it.shadow = this.shadow; this.shadow = null; it.noPick = .4; G.stats.total++;
+        sfx.throw(); this.st = 'after'; this.t = .6; this.shots--;
+      }
+    } else if (this.st === 'after') {
+      if (this.t <= 0) { s.setFrame(this.shots > 0 ? 1 : 0); this.st = 'idle'; this.cd = 2.6; if (this.shots <= 0) { Fx.say(sc, s, 'HMPH.', 1000, '#ff8aa8'); } }
+    }
+  }
+}
+
+class Drain {
+  constructor(sc, x) {
+    this.sc = sc; this.x = x; this.g = sc.add.sprite(x, GROUND + 2, 'sewer', 0).setDepth(5.6); this.st = 'idle'; this.t = 0; this.v = null;
+    Fx.steam(sc, x, GROUND + 1);
+  }
+  get pendingRub() { return this.st === 'pull'; }
+  rect() { return this.st === 'rattle' ? new Phaser.Geom.Rectangle(this.x - 10, GROUND - 12, 20, 14) : this.arm ? new Phaser.Geom.Rectangle(this.arm.x - 7, this.arm.y - 2, 14, 30) : null; }
+  hittable() { return this.st === 'rattle' || this.st === 'grab'; }
+  onHit() { this.retreat(true); }
+  retreat(bonk) {
+    const sc = this.sc;
+    if (this.arm) { const a = this.arm; this.arm = null; sc.tweens.add({ targets: a, y: GROUND + 4, duration: 180, onComplete: () => a.destroy() }); }
+    this.g.anims.stop(); this.g.setFrame(0); this.st = 'cool'; this.t = bonk ? 4 : 1.2;
+    if (this.v && this.v.st === 'held') { this.sc.release(this.v, 0, -120); }
+    this.v = null;
+    if (bonk) { G.score += 50; G.stats.bonk++; Fx.pop(sc, this.x, GROUND - 26, 'SEWER BONK +50', '#b8ff4a'); sfx.bonk(); }
+  }
+  update(dt) {
+    const sc = this.sc, P = sc.player;
+    if (this.st === 'cool') { this.t -= dt; if (this.t <= 0) this.st = 'idle'; return; }
+    if (this.st === 'idle') {
+      const it = sc.items.find(i => i.st === 'free' && i.kind !== 'bin' && Math.abs(i.x - this.x) < 24 && i.y > GROUND - 22 && i.body.blocked.down);
+      if (it && Math.abs(P.x - this.x) > 54) this.t += dt; else this.t = Math.max(0, this.t - dt * 2);
+      if (it && this.t > 1.3) { this.st = 'rattle'; this.t = 1.3; this.v = it; this.g.play('grate_rattle'); sfx.gurgle(); Fx.bang(sc, this.x, GROUND - 22, 1.3); tipKey('drain'); }
+      return;
+    }
+    if (this.st === 'rattle') {
+      this.t -= dt;
+      if (!this.v || this.v.st !== 'free' || Math.abs(this.v.x - this.x) > 30 || Math.abs(P.x - this.x) < 28) { this.retreat(false); return; }
+      if (this.t <= 0) {
+        this.st = 'grab'; this.t = .3; const v = this.v;
+        this.arm = sc.add.sprite(v.x, GROUND + 4, 'arm', 0).setOrigin(.5, 0).setDepth(5.7); this.arm.play('arm_wig');
+        sc.tweens.add({ targets: this.arm, y: v.y - 6, duration: 300, ease: 'Back.out' }); sfx.slurp();
+      }
+      return;
+    }
+    if (this.st === 'grab') {
+      this.t -= dt;
+      if (this.t <= 0) {
+        const v = this.v; if (!v || v.st !== 'free') { this.retreat(false); return; }
+        v.st = 'held'; v.body.setEnable(false); this.st = 'pull';
+        sc.tweens.add({ targets: [this.arm, v], y: '+=34', duration: 420, ease: 'Quad.in', onComplete: () => {
+          G.missed.push({ what: KINDS[v.kind].name, why: 'pulled into the sewer' }); G.stats.eaten++;
+          Fx.pop(sc, this.x, GROUND - 20, 'GULP!', '#b8ff4a'); v.st = 'gone'; v.destroy(); if (this.arm) this.arm.destroy(); this.arm = null; this.v = null;
+          this.g.anims.stop(); this.g.setFrame(0); this.st = 'cool'; this.t = 2; sc.checkClear();
+        } });
+      }
+    }
+  }
+}
+
+class Rival {
+  constructor(sc, cfg) { this.sc = sc; this.cfg = cfg; this.st = 'wait'; this.trips = 0; this.carry = null; }
+  get pendingRub() { return !!this.carry; }
+  rect() { const s = this.s; return new Phaser.Geom.Rectangle(s.x - 7, s.y - 12, 14, 26); }
+  hittable() { return this.s && (this.st === 'run' || this.st === 'flee'); }
+  update(dt) {
+    const sc = this.sc, P = sc.player;
+    if (this.st === 'wait') { if (sc.live && P.x > this.cfg.trigger) this.spawn(); return; }
+    if (this.st === 'done') return;
+    const s = this.s, b = s.body, onG = b.blocked.down;
+    if (this.carry) { this.carry.setPosition(Math.round(s.x), Math.round(s.y - 18)); }
+    const gold = this.gold;
+    if (this.st === 'run') {
+      if (!gold || gold.st === 'gone' || gold.st === 'flying' || gold.st === 'done') { this.sulk(); return; }
+      let tx, ty;
+      if (gold.st === 'carried') { tx = P.x; ty = P.y; } else if (gold.st === 'free') { tx = gold.x; ty = gold.y; } else { b.setVelocityX(0); s.play('r_idle', true); return; }
+      const dx = tx - s.x;
+      b.setVelocityX(Math.abs(dx) > 4 ? Math.sign(dx) * 84 : 0); s.setFlipX(dx < 0); s.play('r_walk', true);
+      if (onG && ((ty < s.y - 16 && Math.abs(dx) < 50) || b.blocked.left || b.blocked.right)) b.setVelocityY(-250);
+      if (Math.abs(dx) < 10 && Math.abs(ty - s.y) < 18) {
+        if (gold.st === 'carried' && P.stun <= 0) { P.carry.splice(P.carry.indexOf(gold), 1); Fx.say(sc, P, 'OI!', 900, '#ff8a5a'); this.take(gold); }
+        else if (gold.st === 'free') this.take(gold);
+      }
+    } else if (this.st === 'flee') {
+      b.setVelocityX(-80); s.setFlipX(true); s.play('r_cwalk', true);
+      if (onG && (b.blocked.left || b.blocked.right)) b.setVelocityY(-250);
+      if (s.x < -12) {
+        const it = this.carry; this.carry = null;
+        if (it) { G.missed.push({ what: KINDS[it.kind].name, why: 'poached by the rival crew' }); G.stats.stolen++; it.st = 'gone'; it.destroy(); }
+        this.kill();
+      }
+    } else if (this.st === 'trip') {
+      b.setVelocityX(0); this.t -= dt; if (this.t <= 0) { if (this.trips >= 2) this.sulk(); else { this.st = 'run'; Fx.say(sc, s, 'RIGHT, THAT IS IT.', 1200, '#ff5a5a'); } }
+    } else if (this.st === 'sulk') {
+      b.setVelocityX(-90); s.setFlipX(true); s.play('r_walk', true);
+      if (onG && (b.blocked.left || b.blocked.right)) b.setVelocityY(-250);
+      if (s.x < -12) this.kill();
+    }
+  }
+  spawn() {
+    const sc = this.sc;
+    this.gold = sc.items.find(i => i.kind === 'gold');
+    const s = this.s = sc.physics.add.sprite(14, GROUND - 13, 'rival', 0).setDepth(7.4); sc.mobG.add(s);
+    s.body.setSize(10, 22).setOffset(5, 3); s.body.setMaxVelocity(300, 520);
+    this.st = 'run'; sfx.whistle(); Fx.say(sc, s, 'THAT GOLD IS MINE, AMATEUR!', 2000, '#ff5a5a'); Fx.banner(sc, 'RIVAL CREW!', '#ff5a5a'); tipKey('rival', true);
+  }
+  take(it) { it.st = 'held'; if (it.body) it.body.setEnable(false); it.setDepth(7.5); it.angle = 0; this.carry = it; this.st = 'flee'; Fx.say(this.sc, this.s, 'HA! TOO SLOW!', 1300, '#ff5a5a'); sfx.chitter(); }
+  sulk() { if (this.st === 'sulk') return; this.st = 'sulk'; Fx.say(this.sc, this.s, 'THIS ROUTE IS CURSED.', 1600, '#ff5a5a'); }
+  onHit() {
+    const sc = this.sc, s = this.s;
+    if (this.carry) { const it = this.carry; this.carry = null; sc.release(it, rnd(-40, 40), -120); it.noPick = .2; }
+    this.st = 'trip'; this.t = 1.8; this.trips++; s.play('r_stun');
+    G.stats.rivalTrips++; G.score += 100; Fx.pop(sc, s.x, s.y - 22, 'TRIPPED! +100', '#8ff7ff'); sfx.bonk(); Fx.stars(sc, s, 1800);
+  }
+  kill() { if (this.s) this.s.destroy(); this.st = 'done'; this.dead = true; this.sc.checkClear(); }
+}
+
+class VestCoon {
+  constructor(sc, cfg) { this.sc = sc; this.cfg = cfg; this.st = 'wait'; this.carry = null; this.talk = 0; }
+  get pendingRub() { return !!this.carry; }
+  rect() { const s = this.s; return new Phaser.Geom.Rectangle(s.x - 8, s.y - 13, 16, 27); }
+  hittable() { return this.s && (this.st === 'approach' || this.st === 'flee'); }
+  update(dt) {
+    const sc = this.sc, P = sc.player;
+    if (this.st === 'wait') {
+      if (sc.live && P.x > this.cfg.trigger) {
+        const s = this.s = sc.physics.add.sprite(this.cfg.x, GROUND - 14, 'vestcoon', 0).setDepth(7.3); sc.mobG.add(s);
+        s.body.setSize(10, 24).setOffset(4, 3); this.st = 'approach'; s.play('vest_wave');
+        Fx.say(sc, s, 'ALRIGHT, COLLEAGUE?', 1800, '#ffd23a'); this.talk = 3; sc.time.delayedCall(2400, () => tipKey('vest', true));
+      }
+      return;
+    }
+    if (this.st === 'done') return;
+    const s = this.s, b = s.body, onG = b.blocked.down;
+    if (this.carry) this.carry.setPosition(Math.round(s.x), Math.round(s.y - 18));
+    if (this.st === 'approach') {
+      const dx = P.x - s.x;
+      b.setVelocityX(Math.abs(dx) > 14 ? Math.sign(dx) * 52 : 0); s.setFlipX(dx < 0);
+      if (onG && (b.blocked.left || b.blocked.right)) b.setVelocityY(-220);
+      this.talk -= dt;
+      if (this.talk <= 0) { this.talk = 3.4; Fx.say(sc, s, pick(['PASS US A BAG, MATE.', "I'LL BIN THAT FOR YOU.", 'TRUST ME. I WORK HERE.', 'NICE VEST. LIKE MINE.']), 1900, '#ffd23a'); }
+      if (Math.abs(dx) < 15 && Math.abs(P.y - s.y) < 18 && P.carry.length && P.stun <= 0) {
+        const it = P.carry.pop(); it.st = 'held'; it.setDepth(7.5); this.carry = it; this.st = 'flee';
+        Fx.say(sc, s, 'CHEERS! BYE!', 1200, '#ffd23a'); Fx.say(sc, P, 'WAIT...', 1200); sfx.chitter();
+      }
+    } else if (this.st === 'flee' || this.st === 'run') {
+      const dir = this.dir || (this.dir = s.x > P.x ? 1 : -1);
+      b.setVelocityX(dir * (this.st === 'run' ? 150 : 118)); s.setFlipX(dir < 0);
+      if (onG && (b.blocked.left || b.blocked.right)) b.setVelocityY(-250);
+      if (s.x < -14 || s.x > sc.W + 14) {
+        const it = this.carry; this.carry = null;
+        if (it) { G.missed.push({ what: KINDS[it.kind].name, why: 'handed to a raccoon in a vest' }); G.stats.stolen++; it.st = 'gone'; it.destroy(); }
+        this.st = 'done'; this.dead = true; s.destroy(); sc.checkClear();
+      }
+    }
+  }
+  onHit() {
+    const sc = this.sc, s = this.s;
+    if (this.carry) { const it = this.carry; this.carry = null; sc.release(it, rnd(-40, 40), -120); it.noPick = .2; }
+    s.anims.stop(); s.setFrame(2); this.st = 'run'; this.dir = s.x > sc.player.x ? 1 : -1;
+    const v = sc.add.image(s.x, s.y - 3, 'vest', 0).setDepth(8);
+    sc.tweens.add({ targets: v, x: v.x - this.dir * 30, y: v.y - 30, angle: 300, duration: 450, ease: 'Quad.out', onComplete: () => sc.tweens.add({ targets: v, y: GROUND - 4, duration: 300, ease: 'Bounce.out' }) });
+    G.stats.unmask++; G.score += 300; Fx.pop(sc, s.x, s.y - 24, 'UNMASKED! +300', '#8ff7ff', true); sfx.bonk(); sfx.chitter();
+    Fx.say(sc, s, '!!!', 900, '#ffd23a'); Fx.say(sc, sc.player, 'I KNEW IT.', 1300);
+  }
+}
+
+/* =====================================================================
+   DRIVE SCENE: a heavy truck, a short road, a parking bay
+   ===================================================================== */
+class DriveScene extends Phaser.Scene {
+  constructor() { super('drive'); }
+  create() {
+    const D = this.D = DRIVES[G.stop], W = this.W = D.w;
+    G.mode = 'drive'; setMode('drive'); playSong('road');
+    this.bubbles = []; this.live = false; this.parked = false; this.v = 0; this.tx = 70; this.pitch = 0; this.dist = 0; this.parkT = 0; this.honkCd = 0; this.beepT = 0; this.puffT = 0; this.acc = 0; this.bumpY = 0;
+    const cam = this.cameras.main; cam.setBounds(0, 0, W, GH); cam.setRoundPixels(true);
+    Fx.backdrop(this, D.seed, W);
+    const g = this.add.graphics().setDepth(2.2);
+    g.fillStyle(0xc8b860, .8); for (let x = 0; x < W; x += 28) g.fillRect(x, 212, 14, 1);
+    this.bumps = []; for (let x = 260; x < W - 300; x += rnd(160, 300)) { this.bumps.push(x); g.fillStyle(0x1a1820, 1); g.fillRect(x - 5, 208, 10, 2); g.fillStyle(0x4a4650, 1); g.fillRect(x - 4, 208, 8, 1); }
+    /* parking bay */
+    const bx = this.bx = W - 250;
+    g.fillStyle(0xf0f0e0, .9); g.fillRect(bx, 207, 2, 9); g.fillRect(bx + 150, 207, 2, 9); g.fillRect(bx, 215, 152, 1);
+    for (let x = bx + 10; x < bx + 145; x += 12) { g.fillStyle(0xffd23a, .35); g.fillRect(x, 209, 6, 4); }
+    this.add.image(bx - 3, 211, 'cone', 0).setDepth(7); this.add.image(bx + 155, 211, 'cone', 0).setDepth(7);
+    this.add.image(bx + 75, GROUND - 16, 'psign', 0).setDepth(3);
+    this.add.image(W - 30, 204, 'barrier', 0).setDepth(7);
+    /* truck */
+    this.truck = this.add.sprite(this.tx, 208, 'truckR', 0).setOrigin(.5, 1).setDepth(6);
+    this.wheels = [this.add.sprite(0, 206, 'wheel', 0).setDepth(6.2), this.add.sprite(0, 206, 'wheel', 0).setDepth(6.2)];
+    this.haz = D.haz.map(h => new ({ consp: DConsp, trolley: DTrolley, chef: DChef }[h.t])(this, h));
+    engineOn();
+    this.time.delayedCall(350, () => { this.live = true; });
+    tipKey(D.tip, true);
+    hudDrive(this);
+    if (DEBUG) window.SC = this;
+    this.events.once('shutdown', () => engineOff());
+  }
+  get front() { return this.tx + 56; }
+  honk() {
+    if (this.honkCd > 0) return; this.honkCd = .5; sfx.honk();
+    Fx.pop(this, this.front + 8, 168, 'HONK', '#ffd23a');
+    for (const h of this.haz) if (h.honk) h.honk(h.s ? h.s.x - this.front : 1e9);
+  }
+  update(time, delta) {
+    const dt = Math.min(delta / 1000, 1 / 20), cam = this.cameras.main;
+    const gas = this.live && !this.parked && held('right'), brk = this.live && !this.parked && held('left');
+    let acc;
+    if (gas) acc = this.v < 0 ? 260 : 92; else if (brk) acc = this.v > 0 ? -250 : -70; else acc = -Math.sign(this.v) * 34;
+    const nv = this.v + acc * dt;
+    this.v = (!gas && !brk && this.v !== 0 && Math.sign(nv) !== Math.sign(this.v)) ? 0 : clamp(nv, -48, 178);
+    if (!gas && Math.abs(this.v) < 9) this.v *= Math.pow(.01, dt);
+    if (!gas && !brk && Math.abs(this.v) < 1.5) this.v = 0;
+    if (brk && this.v > 60 && Math.random() < dt * 3) sfx.screech();
+    this.acc += (acc - this.acc) * Math.min(1, dt * 5);
+    this.tx += this.v * dt; this.dist += Math.abs(this.v) * dt;
+    this.honkCd -= dt;
+    if (this.live && !this.parked && (hit('jump') || hit('use'))) this.honk();
+    for (const h of this.haz) h.update(dt);
+    if (this.front > this.W - 40) { if (this.v > 50) { sfx.crash(); cam.shake(220, .01); Fx.pop(this, this.front, 170, 'OOPS', '#ff5a5a'); G.stats.trolleyHits++; } this.tx = this.W - 96; this.v = Math.min(0, this.v); }
+    if (this.tx < 60) { this.tx = 60; this.v = Math.max(0, this.v); }
+    /* body: pitch with acceleration, bounce over bumps */
+    for (const bx of this.bumps) if (Math.abs(this.tx - 30 - bx) < Math.abs(this.v) * dt + .5 || Math.abs(this.tx + 36 - bx) < Math.abs(this.v) * dt + .5) { if (Math.abs(this.v) > 30) { this.bumpY = -Math.min(3, Math.abs(this.v) / 50); sfx.thud(); } }
+    this.bumpY *= Math.pow(.002, dt);
+    const ang = clamp(-this.acc * .009, -2.4, 2.4);
+    this.truck.setPosition(Math.round(this.tx), Math.round(208 + this.bumpY + Math.sin(this.dist * .2) * .4 * Math.min(1, Math.abs(this.v) / 60))).setAngle(ang);
+    this.wheels[0].setPosition(Math.round(this.tx - 30), 206); this.wheels[1].setPosition(Math.round(this.tx + 36), 206);
+    this.wheels.forEach(w => w.setFrame(Math.floor(this.dist / 5) % 2));
+    this.puffT -= dt;
+    if (gas && this.puffT <= 0) { this.puffT = .12; const p = this.add.image(this.tx - 58, 200, 'fx', 0).setDepth(5.9).setTint(0x6a6470).setAlpha(.7); this.tweens.add({ targets: p, x: p.x - rnd(8, 18), y: p.y - rnd(6, 14), scale: 2.5, alpha: 0, duration: 600, onComplete: () => p.destroy() }); }
+    if (this.v < -2) { this.beepT -= dt; if (this.beepT <= 0) { this.beepT = .5; sfx.beep(); } }
+    engineSet(Math.abs(this.v), gas ? 1 : 0);
+    const want = this.tx - cam.width * .32 + this.v * .3;
+    cam.scrollX += (want - cam.scrollX) * Math.min(1, dt * 4);
+    /* parking */
+    const inBay = this.tx - 56 >= this.bx && this.front <= this.bx + 150;
+    if (!this.parked && inBay && Math.abs(this.v) < 6 && !gas) { this.parkT += dt; if (this.parkT > .45) this.park(); } else this.parkT = 0;
+    Fx.updBubbles(this);
+    hudTick(this);
+    inClear();
+  }
+  park() {
+    this.parked = true; this.v = 0;
+    const off = Math.abs(this.tx - (this.bx + 76)), bonus = clamp(Math.round(200 - 7 * off), 50, 200);
+    G.score += bonus; G.stats.parks.push(bonus); sfx.coin(); sfx.door();
+    Fx.banner(this, (bonus >= 180 ? 'PERFECT PARK +' : 'PARKED +') + bonus, bonus >= 180 ? '#8ff7ff' : '#ffd23a', 1100);
+    engineOff();
+    this.time.delayedCall(1300, () => { G.stop++; go('stop'); });
+  }
+}
+class DConsp {
+  constructor(sc, h) { this.sc = sc; this.s = sc.add.sprite(h.x, GROUND - 13, 'consp', 0).setDepth(5.5); this.st = 'wait'; this.t = 0; }
+  update(dt) {
+    const sc = this.sc, s = this.s, d = s.x - sc.front;
+    if (this.st === 'wait') { if (d < sc.cameras.main.width * .85) { this.st = 'step'; tipKey('consp', true); Fx.bang(sc, s.x, 158, 1.2); Fx.say(sc, s, 'HALT! EVIDENCE TRUCK!', 2200, '#c8a8ff'); sfx.yell(); s.play('consp_rant'); } return; }
+    if (this.st === 'step' || this.st === 'block') {
+      s.y = Math.min(s.y + 28 * dt, 200); s.setDepth(s.y > 192 ? 7 : 5.5);
+      if (s.y >= 200) this.st = 'block';
+      if (d < 14) {
+        if (sc.v > 30) { sfx.screech(); sc.cameras.main.shake(180, .008); }
+        sc.v = 0; sc.tx = s.x - 70; this.st = 'lecture'; this.t = 2.6; G.stats.lectures++; Fx.say(sc, s, pick(LECTURES), 2600, '#c8a8ff');
+      }
+    } else if (this.st === 'lecture') {
+      if (sc.front > s.x - 14) { sc.tx = s.x - 70; sc.v = Math.min(sc.v, 0); }
+      this.t -= dt; if (this.t <= 0) { this.st = 'leave'; Fx.say(sc, s, "THIS ISN'T OVER.", 1400, '#c8a8ff'); }
+    } else if (this.st === 'leave') {
+      s.y = Math.max(GROUND - 13, s.y - 30 * dt); s.x += 22 * dt; if (s.y <= GROUND - 12) s.setDepth(5.5);
+    }
+  }
+  honk(d) {
+    if ((this.st === 'step' || this.st === 'block' || this.st === 'wait') && d < 300 && d > -10) {
+      const sc = this.sc, s = this.s; this.st = 'dove'; s.anims.stop(); s.setFrame(2); s.setDepth(5.5);
+      sc.tweens.add({ targets: s, y: GROUND - 8, x: s.x + 18, duration: 300, ease: 'Quad.out' });
+      G.score += 75; G.stats.honks++; Fx.pop(sc, s.x, 168, 'HONK! +75', '#8ff7ff'); Fx.say(sc, s, 'THEY GOT TO THE HORN!', 1700, '#c8a8ff');
+    }
+  }
+}
+class DTrolley {
+  constructor(sc, h) { this.sc = sc; this.x0 = h.x; this.st = 'wait'; }
+  update(dt) {
+    const sc = this.sc, front = sc.front;
+    if (this.st === 'wait') {
+      if (this.x0 - front < sc.cameras.main.width * .8) { this.s = sc.add.sprite(this.x0, 206, 'trolley', 0).setDepth(7); this.s.play('trolley_roll'); this.vx = -rnd(70, 92); this.st = 'roll'; Fx.bang(sc, this.x0, 186, 1); sfx.rattle(); tipKey('trolley', true); }
+      return;
+    }
+    const s = this.s;
+    if (this.st === 'roll') {
+      s.x += this.vx * dt; s.y = 206 - (Math.random() < .15 ? 1 : 0); if (Math.random() < dt * 3) sfx.rattle();
+      if (s.x - 10 <= front && s.x > front - 60) {
+        if (sc.v < 72) { this.st = 'rest'; this.vx = 40; s.x = front + 11; G.score += 30; G.stats.gentle++; Fx.pop(sc, s.x, 184, 'GENTLE +30', '#8ff7ff'); sfx.clank(); sc.v = Math.max(0, sc.v - 15); }
+        else { this.st = 'fly'; G.stats.trolleyHits++; G.score = Math.max(0, G.score - 50); Fx.pop(sc, s.x, 180, 'CRASH! -50', '#ff5a5a'); sfx.crash(); sc.cameras.main.shake(240, .012); this.vy = -230; this.vx = 120 + sc.v; sc.v *= .45; }
+      }
+    } else if (this.st === 'rest') {
+      s.x += this.vx * dt; this.vx *= Math.pow(.15, dt); if (s.x < front + 11) s.x = front + 11; if (Math.abs(this.vx) < 3) s.anims.stop();
+    } else if (this.st === 'fly') {
+      s.x += this.vx * dt; this.vy += 600 * dt; s.y += this.vy * dt; s.angle += 700 * dt; if (s.y > 300) { s.destroy(); this.st = 'gone'; }
+    }
+  }
+}
+class DChef {
+  constructor(sc, h) { this.sc = sc; this.x0 = h.x; this.st = 'wait'; }
+  update(dt) {
+    const sc = this.sc, front = sc.front;
+    if (this.st === 'wait') {
+      if (this.x0 - front < sc.cameras.main.width * .9) {
+        this.d = sc.add.sprite(this.x0, 202, 'dumpster', 0).setDepth(7); this.d.play('dump_roll');
+        this.c = sc.add.sprite(this.x0 + 36, 200, 'chef', 0).setDepth(7).setFlipX(true); this.c.play('chef_run');
+        this.st = 'roll'; this.vx = -76; Fx.bang(sc, this.x0, 178, 1.1); Fx.say(sc, this.c, 'COME BACK HERE!', 1800, '#ffffff'); sfx.yell(); tipKey('chef', true);
+      }
+      return;
+    }
+    const d = this.d, c = this.c;
+    if (this.st === 'roll') {
+      d.x += this.vx * dt; c.x = d.x + 34 + Math.sin(sc.time.now / 90) * 2;
+      if (d.x - 17 <= front && d.x > front - 60) {
+        if (sc.v < 26) {
+          this.st = 'caught'; d.x = front + 18; d.anims.stop(); sc.v = 0; sfx.clank(); this.t = 1.8;
+          G.food++; G.score += 100; G.stats.chefFriend++; Fx.pop(sc, d.x, 176, 'FREE KEBAB +100', '#b8ff4a'); Fx.say(sc, c, 'CHEERS, LEGEND! HAVE A KEBAB.', 2000, '#ffffff'); sfx.coin();
+          c.anims.stop(); c.setFrame(0);
+          const k = sc.add.image(c.x, c.y - 10, 'food', 1).setDepth(9);
+          sc.tweens.add({ targets: k, x: sc.tx + 20, y: 170, duration: 500, ease: 'Quad.out', onComplete: () => k.destroy() });
+        } else {
+          this.st = 'crash'; this.vx = 90 + sc.v * .5; this.vy = -120; sc.v *= .5; sfx.crash(); sc.cameras.main.shake(240, .012);
+          G.score = Math.max(0, G.score - 50); G.stats.chefCrash++; Fx.pop(sc, d.x, 176, 'CRASH! -50', '#ff5a5a'); Fx.say(sc, c, 'MY DUMPSTER!!', 1800, '#ff5a5a');
+        }
+      }
+    } else if (this.st === 'caught') {
+      if (front > d.x - 18) { sc.tx = d.x - 18 - 56; sc.v = Math.min(sc.v, 0); }
+      this.t -= dt;
+      if (this.t <= 0) { this.st = 'away'; c.play('chef_run'); c.setFlipX(false); }
+    } else if (this.st === 'away') {
+      d.x += 60 * dt; c.x = d.x - 30; if (d.x > sc.cameras.main.scrollX + sc.cameras.main.width + 60) { d.destroy(); c.destroy(); this.st = 'gone'; }
+    } else if (this.st === 'crash') {
+      d.x += this.vx * dt; this.vy += 500 * dt; d.y = Math.min(202, d.y + this.vy * dt); if (d.y >= 202) this.vy = -this.vy * .3; d.angle += this.vx * dt * .5;
+      this.vx *= Math.pow(.4, dt); c.x += (d.x + 34 - c.x) * dt * 2;
+    }
+  }
+}
+
+/* ================= TRASH SHIFT: page shell, HUD, touch deck, report ================= */
+const $ = id => document.getElementById(id);
+let tipTimer = 0;
+function setTip(text, ms = 6500) {
+  const el = $('tip'); el.textContent = K(text); el.classList.add('show');
+  clearTimeout(tipTimer); if (ms) tipTimer = setTimeout(() => el.classList.remove('show'), ms);
+}
+function tipKey(key, force) {
+  if (!G || !TIPS[key]) return;
+  if (G.tipSeen[key] && !force) return;
+  if (G.tipSeen[key] && force && key !== 'clear') return;
+  G.tipSeen[key] = 1; setTip(TIPS[key]);
+}
+function setMode(m) {
+  const app = $('app'); app.dataset.mode = m;
+  const L = { stop: ['', '', 'JUMP', 'USE', 'THROW'], drive: ['BRAKE', 'GAS', 'HONK', 'HONK', ''] }[m];
+  document.querySelectorAll('.cb').forEach(b => { const i = +b.dataset.i; const l = b.querySelector('em'); if (l) l.textContent = L[i]; });
+}
+let hudT = 0;
+function hudStop(sc) { $('hStop').textContent = (G.stop + 1) + '/' + STOPS.length + ' ' + sc.L.name; $('hHop').hidden = false; }
+function hudDrive(sc) { $('hStop').textContent = sc.D.name; $('hHop').hidden = true; }
+function hudTick(sc) {
+  const now = performance.now(); if (now - hudT < 100) return; hudT = now;
+  $('hScore').textContent = G.score.toLocaleString('en-US');
+  if (sc.hopper) {
+    const H = sc.hopper; $('hHop').innerHTML = '<span>Hopper</span>' + Array.from({ length: H.cap }, (_, i) => '<i class="' + (i < H.load ? 'on' : '') + (H.load >= H.cap ? ' full' : '') + '"></i>').join('');
+    const t = Math.floor(sc.tm); $('hTime').textContent = Math.floor(t / 60) + ':' + String(t % 60).padStart(2, '0');
+    $('hTime').classList.toggle('over', sc.tm > sc.L.par);
+  } else $('hTime').textContent = Math.round(Math.abs(sc.v) * .4) + ' km/h';
+}
+function toggleMusic() { initAudio(); setMusic(!AU.music); syncMusic(); }
+function syncMusic() { document.querySelectorAll('.musicBtn').forEach(b => { b.textContent = AU.music ? 'Music on' : 'Music off'; b.classList.toggle('off', !AU.music); }); }
+
+/* ---------- layout: portrait puts the deck below, landscape overlays it ---------- */
+function layout() {
+  const app = $('app'), stage = $('stage'), vw = innerWidth, vh = innerHeight;
+  const land = vw > vh * 1.05, mode = IS_TOUCH ? (land ? 'tl' : 'tp') : 'dk';
+  app.classList.remove('tl', 'tp', 'dk'); app.classList.add(mode);
+  let sw, sh;
+  if (mode === 'tp') {
+    const deckH = clamp(vh * .3, 168, 236); app.style.setProperty('--deck', deckH + 'px');
+    sw = vw; sh = Math.min(vh - 44 - 58 - deckH - 16, vw * 216 / 240);
+  } else if (mode === 'tl') { const side = clamp(vw * .18, 128, 190); app.style.setProperty('--side', side + 'px'); sw = vw - side * 2; sh = vh; }
+  else { sw = Math.min(vw - 24, 1500); sh = Math.min(vh - 44 - 62 - 24, sw * 216 / 288); }
+  const gw = clamp(Math.round(216 * sw / sh), 240, 400);
+  if (sw / sh > gw / 216) sw = Math.round(sh * gw / 216); else sh = Math.round(sw * 216 / gw);
+  stage.style.width = sw + 'px'; stage.style.height = sh + 'px';
+  if (game && game.scale) { game.scale.setGameSize(gw, 216); game.scale.refresh(); }
+}
+addEventListener('resize', () => setTimeout(layout, 30));
+addEventListener('orientationchange', () => setTimeout(layout, 200));
+
+/* ---------- touch deck ---------- */
+function bindDeck() {
+  document.querySelectorAll('.cb').forEach(b => {
+    const a = b.dataset.a;
+    const down = e => { e.preventDefault(); if (!IS_TOUCH && e.pointerType === 'touch') { IS_TOUCH = true; layout(); } b.classList.add('on'); try { b.setPointerCapture(e.pointerId); } catch (_) {} inDown(a); if (navigator.vibrate && e.pointerType === 'touch') navigator.vibrate(8); };
+    const up = e => { b.classList.remove('on'); inUp(a); };
+    b.addEventListener('pointerdown', down); b.addEventListener('pointerup', up); b.addEventListener('pointercancel', up); b.addEventListener('lostpointercapture', up);
+    b.addEventListener('contextmenu', e => e.preventDefault());
+  });
+  addEventListener('touchstart', () => { if (!IS_TOUCH) { IS_TOUCH = true; layout(); } }, { passive: true });
+}
+
+/* ---------- shift report ---------- */
+function endShift() {
+  G.over = true; engineOff(); playSong('report');
+  for (const s of game.scene.getScenes(true)) if (s.scene.key !== 'boot') s.scene.pause();
+  const s = G.stats, pct = s.total ? Math.round(100 * s.got / s.total) : 0;
+  const ranks = [[0, 'Bin Apprentice'], [6000, 'Kerbside Contender'], [9500, 'Senior Rubbish Technician'], [13000, 'Night Shift Legend'], [16500, 'Lord of the Landfill']];
+  const rank = ranks.filter(r => G.score >= r[0]).pop()[1];
+  const inc = [];
+  const add = (n, txt) => { if (n) inc.push([n, txt]); };
+  add(s.stuns, 'Struck by flying household goods');
+  add(s.splits, 'Bags that exploded on impact');
+  add(s.fed, 'Raccoons fed takeaway (off the books)');
+  add(s.bonk, 'Wildlife bonked, non-fatally');
+  add(s.unmask, 'Coworkers revealed to be raccoons');
+  add(s.rivalTrips, 'Rival collectors tripped');
+  add(s.binTrips, 'Bins with legs tackled');
+  add(s.lectures, 'Lectures received about "the evidence"');
+  add(s.honks, 'Honks of justice');
+  add(s.trolleyHits, 'Shopping trolleys flattened');
+  add(s.gentle, 'Trolleys stopped with kindness');
+  add(s.chefFriend, 'Kebabs gifted by grateful chefs');
+  add(s.chefCrash, 'Dumpsters returned to sender at speed');
+  add(s.near, 'Near misses with airborne appliances');
+  const miss = {}; for (const m of G.missed) { const k = m.what + '|' + m.why; miss[k] = (miss[k] || 0) + 1; }
+  const missRows = Object.entries(miss).map(([k, n]) => { const [what, why] = k.split('|'); return '<li><b>' + n + 'x</b> ' + what + ', ' + why + '</li>'; });
+  const avgPark = s.parks.length ? Math.round(s.parks.reduce((a, b) => a + b, 0) / s.parks.length) : 0;
+  const notes = pct === 100 ? ['Every last bag. Frankly unsettling.', 'Not one crisp packet left behind. HR wants a word about your intensity.']
+    : pct >= 80 ? ['Solid work. The street smells marginally better.', 'Good shift. Please return the raccoon.']
+    : pct >= 50 ? ['Some of the rubbish was collected. Some of it collected you.', 'Adequate. The pigeons have filed a complaint.']
+    : ['We found more bins than bags in the truck. Explain.', 'The rubbish won tonight. Rematch tomorrow.'];
+  $('rScore').textContent = G.score.toLocaleString('en-US');
+  $('rRank').textContent = rank;
+  $('rBody').innerHTML =
+    '<div class="row"><span>Rubbish collected</span><b>' + s.got + ' / ' + s.total + ' (' + pct + '%)</b></div>' +
+    '<div class="row"><span>Clean throws into the truck</span><b>' + s.swish + '</b></div>' +
+    '<div class="row"><span>Quick stops</span><b>' + s.quick + ' / ' + STOPS.length + '</b></div>' +
+    '<div class="row"><span>Litter picked by hand</span><b>' + s.litter + '</b></div>' +
+    '<div class="row"><span>Average parking score</span><b>' + avgPark + ' / 200</b></div>' +
+    '<h3>Missed rubbish</h3>' + (missRows.length ? '<ul>' + missRows.join('') + '</ul>' : '<p class="nil">Nothing. Not a single teabag.</p>') +
+    '<h3>Workplace incidents</h3>' + (inc.length ? '<ul>' + inc.map(([n, t]) => '<li><b>' + n + 'x</b> ' + t + '</li>').join('') + '</ul>' : '<p class="nil">No incidents. Suspicious.</p>') +
+    '<p class="note">Supervisor\'s note: ' + pick(notes) + '</p>';
+  $('sReport').hidden = false; sfx.stamp();
+  try { const best = +localStorage.getItem('ts_best') || 0; if (G.score > best) { localStorage.setItem('ts_best', G.score); $('rBest').textContent = 'New personal best!'; } else $('rBest').textContent = 'Personal best: ' + best.toLocaleString('en-US'); } catch (_) {}
+}
+function startShift() {
+  initAudio(); sfx.ui();
+  $('sTitle').hidden = true; $('sReport').hidden = true; $('hud').hidden = false;
+  newShift(); go('stop');
+}
+
+/* ---------- boot ---------- */
+window.addEventListener('DOMContentLoaded', () => {
+  bindDeck(); layout();
+  game = new Phaser.Game({
+    type: Phaser.AUTO, parent: 'stage', width: 384, height: GH, pixelArt: true, roundPixels: true, backgroundColor: '#0a0818', banner: false,
+    physics: { default: 'arcade', arcade: { gravity: { y: GRAV }, debug: false } },
+    scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
+    audio: { noAudio: true }, input: { keyboard: false, mouse: false, touch: false, gamepad: false },
+    scene: [Boot, StopScene, DriveScene]
+  });
+  window.onBooted = () => { layout(); $('play').disabled = false; };
+  $('play').addEventListener('click', startShift);
+  $('again').addEventListener('click', startShift);
+  $('restartBtn').addEventListener('click', () => { initAudio(); restartHere(); });
+  document.querySelectorAll('.musicBtn').forEach(b => b.addEventListener('click', toggleMusic));
+  syncMusic();
+  try { const best = +localStorage.getItem('ts_best'); if (best) $('tBest').textContent = 'Personal best: ' + best.toLocaleString('en-US'); } catch (_) {}
+  if (DEBUG) window.TS = { get G() { return G; }, game, IN, inDown, inUp, startShift, go, endShift, STOPS };
+});
+
+})();
+</script>
+</body>
+</html>
