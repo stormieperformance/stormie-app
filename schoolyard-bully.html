@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#1e3a2e">
 <meta name="author" content="Storm Kolmodin">
 <title>Schoolyard Bully | Stormie Games</title>
-<meta name="description" content="Schoolyard Bully: recess is a battlefield. Talk to the weirdest kids in school, pick fights or make friends, dodge Ms. Grimsby and survive the week. Free in your browser.">
+<meta name="description" content="Schoolyard Bully: you're the new kid and Brick runs the yard. Talk to the weirdest kids in school, build a crew, dodge Ms. Grimsby and take him down by Friday. Free in your browser.">
 <meta property="og:title" content="Schoolyard Bully | Stormie Games">
 <meta property="og:image" content="https://stormie.app/schoolyard-bully-preview.jpg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -35,9 +35,17 @@ button{font:inherit;color:inherit;touch-action:manipulation}
 #hBustBox.hot span{color:var(--red)}
 @keyframes blink{50%{opacity:.45}}
 .hud .rep{font-family:var(--display);font-weight:700;font-size:19px;color:var(--yellow);text-shadow:2px 2px 0 #0b1a12;min-width:50px;text-align:right}
-.boss{position:absolute;left:50%;transform:translateX(-50%);top:-2px;width:min(70%,300px);z-index:7;font-family:var(--label);font-size:10px;color:#ffb0a8;text-align:center}
+.boss{position:absolute;left:50%;transform:translateX(-50%);top:30px;width:min(70%,300px);z-index:7;font-family:var(--label);font-size:10px;color:#ffb0a8;text-align:center}
 .boss[hidden]{display:none}.boss .bar{max-width:none;height:8px;margin-top:2px}.boss .bar i{background:var(--red)}
 .stage{position:relative;flex:none;box-shadow:0 0 0 3px #0b1a12,0 0 0 6px #8a6a3a,0 0 0 8px #5a4220,0 20px 40px -12px #000;background:#5ab8f0}
+.goal{position:absolute;left:6px;top:6px;z-index:5;max-width:60%;font-family:var(--label);font-size:clamp(9px,1.3vw,12px);line-height:1.3;color:#2a2238;background:rgba(255,253,244,.94);padding:4px 8px;border-radius:4px;box-shadow:0 0 0 2px #2a2238;pointer-events:none}
+.goal[hidden],.crew[hidden]{display:none}
+.goal b{color:#c8302a;margin-right:2px}.goal i{font-style:normal;color:#4a8ae8;margin-left:4px}
+.goal.done{background:#c8ffd0}.goal.done b{color:#1a8a3a}
+.crew{position:absolute;right:6px;top:6px;z-index:5;display:flex;align-items:center;gap:3px;background:rgba(11,26,18,.75);padding:3px 6px;border-radius:4px;pointer-events:none;font-family:var(--label);font-size:9px;color:var(--chalk)}
+.crew span{margin-right:3px}.crew img{width:24px;height:21px;image-rendering:pixelated;background:#8ac8e8;border-radius:3px}
+.path{font-family:var(--label);font-size:10px;padding:3px 6px;border-radius:3px;white-space:nowrap;background:rgba(0,0,0,.3);color:var(--muted)}
+.path.feared{background:#c8302a;color:#fff}.path.liked{background:#2a8a4a;color:#fff}
 .stage canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges}
 .bubs{position:absolute;inset:0;pointer-events:none;z-index:4;overflow:hidden}
 .bub{position:absolute;left:0;top:0;max-width:min(62%,240px);width:max-content;padding:5px 8px;background:#fffdf4;color:#2a2238;border-radius:8px;box-shadow:0 0 0 2px #2a2238,3px 3px 0 rgba(0,0,0,.3);
@@ -121,6 +129,7 @@ button{font:inherit;color:inherit;touch-action:manipulation}
 .slip .f b{text-align:right}
 .slip h4{margin:10px 0 2px;font-size:11px;color:#c8304a;letter-spacing:.1em}
 .slip ul{margin:0;padding-left:16px}
+.slip .goals{list-style:none;padding:0}.slip .goals li::before{content:'\2717  ';color:#c8304a}.slip .goals li.ok::before{content:'\2713  ';color:#1a8a3a}.slip .goals li.no{opacity:.6}
 .slip .reason{margin:6px 0 0;font-size:11px}
 .stamp{position:absolute;right:12px;top:10px;transform:rotate(-12deg);font-family:var(--display);font-weight:700;font-size:16px;color:#c8304a;border:3px solid #c8304a;padding:1px 6px;opacity:.85;animation:stampIn .35s cubic-bezier(.2,2,.4,1) both .4s}
 @keyframes stampIn{from{transform:rotate(-12deg) scale(3);opacity:0}}
@@ -133,9 +142,10 @@ button{font:inherit;color:inherit;touch-action:manipulation}
     <div class="tm" id="hTime">1:30</div>
     <div class="meter" id="hHpBox"><span>Dignity</span><div class="bar"><i id="hHp"></i></div></div>
     <div class="meter" id="hBustBox"><span>Busted</span><div class="bar"><i id="hBust" style="width:0"></i></div></div>
+    <div class="path new" id="hPath">New kid</div>
     <div class="rep" id="hRep">0</div>
   </div>
-  <div class="stage" id="stage"><div class="bubs" id="bubs"></div><div class="boss" id="hBoss" hidden>BRICK<div class="bar"><i id="hBossHp"></i></div></div></div>
+  <div class="stage" id="stage"><div class="bubs" id="bubs"></div><div class="goal" id="hGoal" hidden></div><div class="crew" id="hCrew" hidden></div><div class="boss" id="hBoss" hidden>BRICK<div class="bar"><i id="hBossHp"></i></div></div></div>
   <div class="dock">
     <div class="tip" id="tip"></div>
     <div class="dlg" id="dlg" hidden><div class="who" id="dWho"></div><p class="line" id="dLine"></p><div class="opts" id="dOpts"></div></div>
@@ -152,7 +162,7 @@ button{font:inherit;color:inherit;touch-action:manipulation}
 
 <div class="screen" id="sTitle">
   <h1 class="title"><small>Stormie Games presents</small>Schoolyard<br><span>Bully</span></h1>
-  <p class="tag">Five recesses. Thirty weird kids. One very tired teacher. Talk your way out of trouble, or don't.</p>
+  <p class="tag">You are the new kid. Brick runs the yard. You have five recesses to build a crew and take him down on Friday, or become something worse.</p>
   <div class="how desk-only"><span><b>WASD / arrows</b>walk</span><span><b>E</b>talk, grab</span><span><b>J / Space</b>hit, throw</span><span><b>K / Shift</b>dodge</span><span><b>1 2 3</b>answer</span><span><b>M</b>music</span></div>
   <p class="tag touch-only" style="font-size:14px">Thumbstick to walk. Works upright or sideways.</p>
   <div class="row"><button class="btn" id="play" type="button" disabled>Go to recess</button><button class="tb musicBtn" type="button">Music on</button></div>
@@ -174,6 +184,9 @@ button{font:inherit;color:inherit;touch-action:manipulation}
       <div class="f"><span>Known as</span><b id="oRank"></b></div>
       <h4>Reason for referral</h4>
       <p class="reason" id="oReason"></p>
+      <div class="f"><span>Crew</span><b id="oCrew"></b></div>
+      <h4>This week's goals</h4>
+      <ul class="goals" id="oGoals"></ul>
       <h4>Offences on record</h4>
       <ul id="oOff"></ul>
     </div>
@@ -750,17 +763,19 @@ const CONVOS = [
 ];
 const STARTERS = ["What are YOU looking at?", "You're in my spot.", "Nice backpack. Is it from the baby store?", "My brother can beat you up. I'm his brother.", "You bumped me. On purpose. Probably.", "New kid has to fight someone. It's the rule."];
 const DAYS = [
-  { name: 'Monday', len: 95, kids: 16, mean: 1, balls: 2, items: 2, tip: 'Walk up to kids and press {TALK}. Some of them are nice. Some of them are not.' },
-  { name: 'Tuesday', len: 100, kids: 18, mean: 2, balls: 2, items: 2, tip: 'Fights draw a crowd. Crowds draw Ms. Grimsby. Brawl where she cannot see.' },
-  { name: 'Wednesday', len: 100, kids: 18, mean: 3, balls: 6, items: 2, tip: 'Dodgeball Wednesday. Grab a ball with {TALK}, throw it with {HIT}.' },
-  { name: 'Thursday', len: 105, kids: 20, mean: 4, balls: 3, items: 3, tip: 'Thursday. Everyone is cranky. Make some friends, they will back you up.' },
-  { name: 'Friday', len: 110, kids: 20, mean: 3, balls: 3, items: 3, boss: true, tip: 'Friday. Brick runs this yard. He has heard about you.' }
+  { name: 'Monday', len: 95, kids: 16, mean: 1, balls: 2, items: 2, tip: 'Walk up to kids and press {TALK}. Some of them are nice. Some of them are not.', goal: { id: 'friends', text: 'Make 2 friends', need: 2, reward: 'One of your friends joins your crew' } },
+  { name: 'Tuesday', len: 100, kids: 18, mean: 2, balls: 2, items: 2, tip: 'Fights draw a crowd. Crowds draw Ms. Grimsby. Brawl where she cannot see.', goal: { id: 'stealth', text: 'Win a fight without being seen', need: 1, reward: 'Sneaky: the Busted meter fills slower' } },
+  { name: 'Wednesday', len: 100, kids: 18, mean: 3, balls: 6, items: 2, tip: 'Dodgeball Wednesday. Grab a ball with {TALK}, throw it with {HIT}.', goal: { id: 'balls', text: 'Hit 3 kids with dodgeballs', need: 3, reward: 'Power arm: harder throws, and a ball for Friday' } },
+  { name: 'Thursday', len: 105, kids: 20, mean: 4, balls: 3, items: 3, tip: 'Thursday. Brick sent his crew to soften you up. They wear red caps.', goal: { id: 'crew', text: "Beat one of Brick's crew", need: 1, reward: 'Brick shows up on Friday one goon short' } },
+  { name: 'Friday', len: 110, kids: 20, mean: 3, balls: 3, items: 3, boss: true, tip: 'Friday. Brick is coming. Your crew is with you.', goal: { id: 'brick', text: 'Take down Brick', need: 1 } }
 ];
 const BOSS_LINES = { line: "So you're the new kid everybody's talking about.", opts: [['Yes.', 'boss', 'Then everybody is about to watch you lose.'], ['No.', 'boss', 'Liar. I can smell new kid on you.'], ['Who is asking?', 'boss', 'BRICK. Everybody knows Brick.']] };
 const OUCH = ['OW!', 'HEY!', 'RUDE!', 'OOF!', 'MOM!'];
 const KO_LINES = ["I'M TELLING!", 'NOT FAIR!', 'REMATCH!', 'MY LUNCH MONEY...', 'I SLIPPED!'];
 const CROWD_LINES = ['FIGHT! FIGHT!', 'OHHHH!', 'GET HIM!', 'GET HER!', 'OH SNAP!', 'OOOH!'];
 const RANKS = [[0, 'Hall Pass Holder'], [600, 'Snack Broker'], [1400, 'Swing Set Sheriff'], [2400, 'Legend of Recess'], [3600, 'Ruler of the Schoolyard']];
+const WATCH_LINES = ['TICK TOCK, NEW KID.', 'FRIDAY.', 'I SEE YOU.', 'ENJOY IT WHILE IT LASTS.', 'NICE CREW. SHAME ABOUT FRIDAY.', 'THIS IS MY YARD.'];
+const PATH_TITLES = { feared: 'The New Schoolyard Bully', liked: 'Hero of the Yard' };
 
 /* ================= SCHOOLYARD BULLY: game ================= */
 const GH = 216, BAND0 = 118, BAND1 = 208;
@@ -797,9 +812,10 @@ function moveVec() {
 /* ---------- run state ---------- */
 let G = null, game = null;
 function newRun() {
-  G = { day: 0, rep: 0, hp: 100, over: false, used: new Set(), tipSeen: {}, quotes: [],
+  G = { day: 0, rep: 0, hp: 100, over: false, used: new Set(), tipSeen: {}, quotes: [], crew: [], perks: {}, goals: [], mean: 0, nice: 0,
     stats: { won: 0, lost: 0, kos: 0, talks: 0, friends: 0, allies: 0, ballHits: 0, dodges: 0, seen: 0, snacks: 0, weird: 0, fightsStarted: 0, slapped: 0, bossBeaten: false } };
 }
+function pathOf() { const d = G.mean - G.nice; return d >= 4 ? 'feared' : d <= -3 ? 'liked' : 'new'; }
 function convoFor() {
   let pool = CONVOS.filter(c => !G.used.has(c.who));
   if (!pool.length) { G.used.clear(); pool = CONVOS.slice(); }
@@ -814,10 +830,10 @@ const Fx = {
     sc.tweens.add({ targets: t, y: y - 16, duration: 750, ease: 'Quad.out' });
     sc.tweens.add({ targets: t, alpha: 0, delay: 550, duration: 300, onComplete: () => t.destroy() });
   },
-  banner(sc, text, col = '#ffd23a', ms = 1400, y = 56) {
+  banner(sc, text, col = '#ffd23a', ms = 1400, y = 56, sz = 2) {
     const cam = sc.cameras.main;
     const t = sc.add.bitmapText(cam.width / 2, y, 'px', text.toUpperCase()).setLetterSpacing(-1).setOrigin(.5).setScrollFactor(0).setDepth(950).setTint(hex(col)).setScale(.5);
-    sc.tweens.add({ targets: t, scale: 2, duration: 220, ease: 'Back.out' });
+    if (t.width * sz > cam.width - 8) sz = Math.max(1, Math.floor((cam.width - 8) / t.width)); sc.tweens.add({ targets: t, scale: sz, duration: 220, ease: 'Back.out' });
     sc.tweens.add({ targets: t, alpha: 0, delay: ms, duration: 300, onComplete: () => t.destroy() });
   },
   /* speech bubbles are real HTML text over the canvas, so they stay crisp and readable at any size */
@@ -970,6 +986,11 @@ class Yard extends Phaser.Scene {
       else if (i < 4) { k.act = 'dig'; k.x = rnd(40, 100); k.y = rnd(176, 192); }
     }
     for (let i = 0; i < D.mean; i++) { const k = this.addKid(randomKid(r, Math.random() < .5 ? 2 : 1), rnd(40, YW - 40), rnd(BAND0, BAND1), 'neutral'); k.k.mean = true; k.mean = true; k.meanT = rnd(8, D.len - 20); k.convo = { who: 'Some Kid', line: pick(STARTERS), opts: [['Leave me alone.', 'fight', 'NO.'], ['Want a snack instead?', Math.random() < .5 ? 'friend' : 'fight', ''], ['Look, a dog!', 'stun', 'WHERE?!']] }; }
+    if (D.goal && D.goal.id === 'crew') for (let i = 0; i < 2; i++) {
+      const lk = randomKid(Math.random, 2); lk.hs = 4; lk.cap = '#d8302a'; lk.mean = true;
+      const k = this.addKid(lk, rnd(300, YW - 60), rnd(BAND0, BAND1), 'neutral'); k.mean = true; k.brickCrew = true; k.meanT = 6 + i * 22;
+      k.convo = { who: "Brick's Crew", line: pick(["Brick says you're in his spot.", "Brick wants a word. I'm the word.", "Friday's too far away. Let's do it now."]), opts: [['Tell Brick I said hi.', 'fight', 'TELL HIM YOURSELF.'], ['I want no trouble.', 'fight', 'TOO BAD.'], ['Is that a spider on you?', 'stun', 'WHERE?! GET IT OFF!']] };
+    }
     for (let i = 0; i < D.balls; i++) this.spawnBall(rnd(60, YW - 60), rnd(BAND0 + 6, BAND1 - 6));
     const spots = [[420, 136], [770, 136], [545, 128], [250, 200], [880, 190], [1110, 140]];
     for (let i = 0; i < D.items; i++) { const s = spots[(G.day + i * 2) % spots.length]; this.spawnItem(Math.random() < .5 ? 0 : 1, s[0] + rnd(-8, 8), s[1]); }
@@ -978,9 +999,39 @@ class Yard extends Phaser.Scene {
     /* day card */
     Fx.banner(this, D.name.toUpperCase(), '#ffffff', 1400, 70); Fx.banner(this, 'RECESS', '#ffd23a', 1400, 92);
     sfx.bell();
-    this.time.delayedCall(900, () => { this.live = true; setTip(D.tip); });
+    /* your crew walks out with you */
+    this.goalN = 0; this.goalDone = false; this.fightSeen = false;
+    G.crew.forEach((c, i) => { const a = this.addKid(c.k, 500 - 16 * (i + 1), clamp(170 + (i % 2 ? 14 : -14), BAND0, BAND1), 'ally'); a.talked = true; a.crew = c; a.convo = { who: c.who }; });
+    if (D.boss && G.perks.arm) { const b = this.spawnBall(P.x, P.y); P.hold = b; b.owner = P; b.free = false; }
+    /* Brick watches from the school doors all week */
+    if (!D.boss) { const w = this.watch = this.addKid(BULLY_KID, 600, BAND0 + 1, 'neutral'); w.watch = true; w.talked = true; w.inv = 1e9; w.lineT = G.day === 0 ? 1.2 : rnd(6, 10); }
+    this.time.delayedCall(900, () => {
+      this.live = true;
+      if (G.day === 0) { setTip('Brick runs this yard. Build a crew this week and take him down on Friday. Goal today: ' + D.goal.text + '.', 9000); }
+      else setTip(D.tip + ' Goal: ' + D.goal.text + '.', 8000);
+    });
+    Fx.banner(this, 'GOAL: ' + D.goal.text.toUpperCase(), '#6aff8a', 1800, 116, 1);
     hudDay(this);
     if (DEBUG) window.SC = this;
+  }
+  goalAdd(id, n = 1) {
+    const g = this.D.goal; if (!g || g.id !== id || this.goalDone || this.ending) return;
+    this.goalN = Math.min(g.need, this.goalN + n);
+    if (this.goalN >= g.need) {
+      this.goalDone = true; G.goals.push(g.id); sfx.coin(); sfx.cheer();
+      Fx.banner(this, 'GOAL DONE!', '#6aff8a', 1400, 70);
+      if (g.reward) { setTip('Goal done! ' + g.reward + '.', 6000); Fx.banner(this, g.reward.toUpperCase(), '#ffffff', 1800, 92, 1); }
+      if (g.id === 'stealth') G.perks.sneaky = true;
+      if (g.id === 'balls') G.perks.arm = true;
+      if (g.id === 'crew') G.perks.goon = true;
+      if (g.id === 'friends' && G.crew.length === 0) { const f = this.kids.filter(k => k.friend && !k.dead && !k.ko).pop(); if (f) this.recruit(f); }
+    }
+    hudGoal(this);
+  }
+  recruit(a) {
+    if (a.crew || G.crew.length >= 4) return;
+    a.team = 'ally'; a.crew = { k: a.k, who: (a.convo && a.convo.who) || 'Friend' }; G.crew.push(a.crew);
+    Fx.pop(this, a.x, a.y - 40, 'JOINED YOUR CREW', '#8ff7ff'); hudCrew();
   }
   blocked(x, y) { return this.blocks.some(b => x > b.x0 - 6 && x < b.x1 + 6 && y > b.y0 - 6 && y < b.y1 + 6); }
   addKid(k, x, y, team) { const a = new Actor(this, k, x, y, team); this.kids.push(a); return a; }
@@ -1035,10 +1086,11 @@ class Yard extends Phaser.Scene {
     for (const a of this.kids) {
       if (a.dead || a.ko || a.team === 'ally' || a.st === 'down') continue;
       const dx = (a.x - P.x) * P.face;
+      if (a.watch) { if (dx > -4 && dx < 22 && Math.abs(a.y - P.y) < 9 && !this.watchHit) { this.watchHit = true; Fx.say(this, a, 'NOT TODAY. FRIDAY.', 1500, '#c83a2a'); this.time.delayedCall(2000, () => this.watchHit = false); } continue; }
       if (dx > -4 && dx < (a.k.sz === 3 ? 28 : 21) && Math.abs(a.y - P.y) < 9 && a.z < 14) {
         if (a.hurtBy(P, big ? 13 : 7, big)) {
           any = true;
-          if (a.team === 'neutral') { G.stats.slapped++; this.provoke(a, pick(['HEY! WHAT WAS THAT FOR?', 'YOU ASKED FOR IT.', 'OH IT IS ON.'])); }
+          if (a.team === 'neutral') { G.stats.slapped++; G.mean += 2; this.provoke(a, pick(['HEY! WHAT WAS THAT FOR?', 'YOU ASKED FOR IT.', 'OH IT IS ON.'])); }
           if (a.ko) this.onKO(a);
         }
       }
@@ -1054,7 +1106,9 @@ class Yard extends Phaser.Scene {
     let best = null, bd = 1e9;
     for (const it of [...this.balls, ...this.items]) { if (it.fly || it.owner || it.taken) continue; const d = Math.abs(it.gx - P.x) + Math.abs(it.gy - P.y) * 1.4; if (d < 20 && d < bd) { bd = d; best = it; } }
     if (best && !P.hold) { if (this.balls.includes(best)) { P.hold = best; best.owner = P; best.free = false; sfx.pick(); tipKey('ball'); } else this.useItem(best); return; }
-    const k = this.talkTarget(); if (k) this.openTalk(k);
+    const k = this.talkTarget(); if (!k) return;
+    if (pathOf() === 'feared' && !k.mean && Math.random() < .6) { k.talked = true; Fx.say(this, k, pick(['STAY AWAY FROM ME!', "YOU'RE THE MEAN ONE!", 'PLEASE DON\'T HIT ME.']), 1400); k.st = 'flee'; k.tx = k.x < this.P.x ? -30 : YW + 30; G.rep += 10; return; }
+    this.openTalk(k);
   }
   talkTarget() {
     const P = this.P; let best = null, bd = 1e9;
@@ -1077,6 +1131,7 @@ class Yard extends Phaser.Scene {
     if (reply) Fx.say(this, a, reply, 2200);
     const later = (ms, f) => this.time.delayedCall(ms, f);
     if (out === 'fight' || out === 'fight2' || out === 'stun' || out === 'boss') {
+      if (!a.mean && out !== 'boss') G.mean += 1;
       later(out === 'stun' ? 0 : 500, () => {
         if (a.dead) return;
         this.provoke(a);
@@ -1086,8 +1141,8 @@ class Yard extends Phaser.Scene {
       return;
     }
     if (out === 'friend' || out === 'ally') {
-      G.rep += 50; G.stats.friends++; a.friend = true; Fx.pop(this, a.x, a.y - 30, 'FRIEND +50', '#6aff8a'); sfx.coin(); a.frame(KF.cheer);
-      if (out === 'ally') { a.team = 'ally'; G.stats.allies++; later(900, () => Fx.say(this, a, 'I GOT YOUR BACK.', 1200)); tipKey('ally'); }
+      G.rep += 50; G.stats.friends++; a.friend = true; G.nice += 1; this.goalAdd('friends'); Fx.pop(this, a.x, a.y - 30, 'FRIEND +50', '#6aff8a'); sfx.coin(); a.frame(KF.cheer);
+      if (out === 'ally') { G.nice += 1; G.stats.allies++; this.recruit(a); a.team = 'ally'; later(900, () => Fx.say(this, a, 'I GOT YOUR BACK.', 1200)); tipKey('ally'); }
       return;
     }
     if (out === 'weird') { G.rep += 25; G.stats.weird++; Fx.pop(this, a.x, a.y - 30, 'WEIRD +25', '#c8a8ff'); return; }
@@ -1104,7 +1159,8 @@ class Yard extends Phaser.Scene {
     if (!this.fightOn) G.stats.fightsStarted++;
   }
   onKO(a) {
-    G.stats.kos++; const pts = a.boss ? 600 : a.k.sz === 2 ? 120 : 80; G.rep += pts;
+    G.stats.kos++; if (a.brickCrew) this.goalAdd('crew'); if (a.boss) this.goalAdd('brick'); if (!a.boss && !a.mean && !a.brickCrew) G.mean += 1;
+    const pts = a.boss ? 600 : a.k.sz === 2 ? 120 : 80; G.rep += pts;
     Fx.pop(this, a.x, a.y - 34, 'KO! +' + pts, '#ffd23a', true); sfx.ko();
     this.time.delayedCall(900, () => { if (!a.dead) Fx.say(this, a, a.boss ? 'THIS ISN\'T OVER, NEW KID.' : pick(KO_LINES), 1600, '#5a5a8a'); });
     if (a.boss) { G.stats.bossBeaten = true; this.time.delayedCall(2600, () => this.win()); }
@@ -1119,7 +1175,16 @@ class Yard extends Phaser.Scene {
     if (a.st === 'dizzy') { a.t -= dt; a.frame(KF.dizzy); if (a.t <= 0) a.st = 'idle'; return; }
     if (a.st === 'flee') { a.setFace(a.tx - a.x); a.move(Math.sign(a.tx - a.x) * 90, 0, dt); a.walkFrame(dt, true); if (a.x < -20 || a.x > YW + 20) a.destroy(); return; }
     if (!this.live) { a.walkFrame(dt, false); return; }
+    if (a.watch) {
+      a.setFace(P.x - a.x); a.frame(Math.floor(this.time.now / 900) % 2); a.lineT -= dt;
+      if (a.lineT <= 0) { a.lineT = rnd(10, 16); Fx.say(this, a, G.day === 0 && !a.said ? 'THIS IS MY YARD, NEW KID. FRIDAY. YOU AND ME.' : pick(WATCH_LINES), 2200, '#c83a2a'); a.said = true; }
+      return;
+    }
     if (a.team === 'enemy' || a.team === 'ally') return this.fighter(a, dt);
+    if (pathOf() === 'feared' && !a.mean && a.act !== 'swing' && !this.fightOn) {
+      const dx = a.x - P.x, dy = a.y - P.y;
+      if (Math.abs(dx) < 46 && Math.abs(dy) < 24) { a.setFace(-dx); a.move(Math.sign(dx || 1) * 70, Math.sign(dy || 1) * 30, dt); a.walkFrame(dt, true); if (Math.random() < dt * .4) Fx.say(this, a, pick(['EEK!', 'RUN!', "IT'S THE NEW KID!"]), 800); return; }
+    }
     /* the mean kids come looking for you */
     if (a.mean && !a.talked && this.t < this.D.len - a.meanT && !this.fightOn) {
       const dx = P.x - a.x, dy = P.y - a.y, d = Math.hypot(dx, dy * 1.5);
@@ -1129,7 +1194,7 @@ class Yard extends Phaser.Scene {
       return;
     }
     /* crowds gather round a fight */
-    if (this.fightOn && !a.ko && Math.hypot(a.x - this.fc.x, a.y - this.fc.y) < 250 && a.act !== 'swing') {
+    if (this.fightOn && !a.ko && !a.watch && Math.hypot(a.x - this.fc.x, a.y - this.fc.y) < 250 && a.act !== 'swing') {
       if (a.st !== 'crowd') { a.st = 'crowd'; a.ang = rnd(0, 6.28); }
       const tx = this.fc.x + Math.cos(a.ang) * 48, ty = clamp(this.fc.y + Math.sin(a.ang) * 22, BAND0, BAND1), dx = tx - a.x, dy = ty - a.y;
       if (Math.abs(dx) + Math.abs(dy) > 4) { a.setFace(dx); a.move(Math.sign(dx) * Math.min(Math.abs(dx) * 4, 70), Math.sign(dy) * Math.min(Math.abs(dy) * 4, 50), dt); a.walkFrame(dt, true); }
@@ -1233,7 +1298,7 @@ class Yard extends Phaser.Scene {
     if (on) {
       let cx = this.P.x, cy = this.P.y; for (const k of near) { cx += k.x; cy += k.y; } cx /= near.length + 1; cy /= near.length + 1;
       this.fc = { x: cx, y: cy };
-      if (!this.fightOn) { this.fightOn = true; this.fightT = 0; this.fightFoes = new Set(near); playSong('fight'); sfx.chant(); tipKey('fight'); }
+      if (!this.fightOn) { this.fightOn = true; this.fightT = 0; this.fightSeen = false; this.fightFoes = new Set(near); playSong('fight'); sfx.chant(); tipKey('fight'); }
       for (const k of near) this.fightFoes.add(k);
       this.fightT += dt; this.chantT -= dt;
       if (this.chantT <= 0) { this.chantT = rnd(1.4, 2.6); const crowd = this.kids.filter(k => k.st === 'crowd'); if (crowd.length) { Fx.say(this, pick(crowd), pick(CROWD_LINES), 900, '#c83a2a'); if (Math.random() < .6) sfx.chant(); } }
@@ -1241,7 +1306,7 @@ class Yard extends Phaser.Scene {
       this.fightOn = false; playSong('recess');
       const all = [...this.fightFoes], beaten = all.filter(k => k.ko).length;
       if (beaten && this.P.hp > 0 && !this.ending) {
-        const pts = 60 * beaten; G.rep += pts; G.stats.won++;
+        const pts = 60 * beaten; G.rep += pts; G.stats.won++; if (!this.fightSeen) { this.goalAdd('stealth'); Fx.pop(this, this.P.x, this.P.y - 46, 'UNSEEN!', '#8ff7ff'); }
         Fx.banner(this, 'YOU WON! +' + pts, '#6aff8a', 1000); sfx.cheer(); this.P.frame(KF.cheer);
       } else if (!this.ending) sfx.aww();
       if (this.kids.some(k => k.st === 'crowd')) sfx.aww();
@@ -1262,14 +1327,15 @@ class Yard extends Phaser.Scene {
     }
     if (seeing) {
       if (!this.seen) { this.seen = true; G.stats.seen++; sfx.whistle(); Fx.bang(this, T.x, T.y - T.h - 12, 1); Fx.say(this, T, pick(['YOU THERE!', 'STOP THAT AT ONCE!', 'I SEE YOU!']), 1400, '#c83a2a'); T.frame(KF.whistle); tipKey('busted'); }
-      this.busted = Math.min(100, this.busted + dt * 24);
+      this.fightSeen = true;
+      this.busted = Math.min(100, this.busted + dt * (G.perks.sneaky ? 15 : 24));
       if (this.busted >= 100 && !this.ending) return this.lose('busted');
     } else { this.seen = false; this.busted = Math.max(0, this.busted - dt * 9); }
     /* where is she going? noise draws her in */
     let tx, ty;
     if (this.fightOn && (seeing || crowd >= 4)) { tx = this.fc.x; ty = this.fc.y; T.busy = 1.5; }
     else if (T.busy > 0) { T.busy -= dt; T.walkFrame(dt, false); if (Math.random() < dt * .8) T.setFace(-T.face); return; }
-    else { if (T.wait > 0) { T.wait -= dt; T.walkFrame(dt, false); if (Math.random() < dt * .5) T.setFace(-T.face); return; } [tx, ty] = T.way[T.wi]; }
+    else { if (T.wait > 0) { T.wait -= dt; T.walkFrame(dt, false); if (Math.random() < dt * .5) T.setFace(-T.face); return; } [tx, ty] = T.way[T.wi % T.way.length]; }
     const dx = tx - T.x, dy = ty - T.y;
     if (Math.abs(dx) + Math.abs(dy) < 6) { if (!this.fightOn) { T.wi = (T.wi + 1) % T.way.length; T.wait = rnd(1.5, 3.5); } T.walkFrame(dt, false); return; }
     const sp = seeing ? 50 : 36;
@@ -1306,9 +1372,10 @@ class Yard extends Phaser.Scene {
           if (b.owner.team !== 'player' && a.team === b.owner.team) continue;
           if (Math.abs(a.x - b.gx) < 8 && Math.abs(a.y - b.gy) < 8 && b.z < a.h + 4) {
             if (a === this.P && a.st === 'dodge') { this.perfectDodge(); continue; }
-            if (a.hurtBy(b.owner, 14, true)) {
+            if (a.watch) continue;
+            if (a.hurtBy(b.owner, b.owner === this.P && G.perks.arm ? 22 : 14, true)) {
               sfx.boing();
-              if (b.owner === this.P) { G.stats.ballHits++; G.rep += 20; Fx.pop(this, a.x, a.y - 30, 'DODGEBALL +20', '#ffd23a'); if (a.team === 'neutral') this.provoke(a, 'DODGEBALL IS OVER!'); if (a.ko) this.onKO(a); }
+              if (b.owner === this.P) { G.stats.ballHits++; G.rep += 20; this.goalAdd('balls'); Fx.pop(this, a.x, a.y - 30, 'DODGEBALL +20', '#ffd23a'); if (a.team === 'neutral') this.provoke(a, 'DODGEBALL IS OVER!'); if (a.ko) this.onKO(a); }
               else if (a === this.P) this.playerHit(); else if (a.ko) this.onKO(a);
             }
             b.fly = false; b.vx = -Math.sign(b.vx) * 40; b.vz = 120; b.owner = null; break;
@@ -1336,7 +1403,9 @@ class Yard extends Phaser.Scene {
     this.bossSpawned = true;
     const b = this.boss = this.addKid(BULLY_KID, 576, BAND0 + 2, 'neutral'); b.boss = true; b.talked = true; b.mean = false;
     b.hpMax = b.hp = 170;
-    const goons = [this.addKid(randomKid(Math.random, 2), 556, BAND0 + 6, 'neutral'), this.addKid(randomKid(Math.random, 1), 598, BAND0 + 6, 'neutral')];
+    const goons = [this.addKid(randomKid(Math.random, 2), 556, BAND0 + 6, 'neutral'), this.addKid(randomKid(Math.random, 1), 598, BAND0 + 6, 'neutral')].slice(0, G.perks.goon ? 1 : 2);
+    goons.forEach(g => { g.k.mean = true; });
+    if (G.perks.goon) Fx.say(this, b, 'WHERE IS EVERYBODY?', 1600, '#c83a2a');
     goons.forEach(g => { g.talked = true; g.k.mean = true; });
     this.bossGoons = goons;
     Fx.banner(this, 'BRICK HAS ARRIVED', '#c83a2a', 1600); sfx.alarm(); tipKey('boss', true);
@@ -1350,8 +1419,10 @@ class Yard extends Phaser.Scene {
     if (this.D.boss) { Fx.banner(this, 'SAVED BY THE BELL', '#ffd23a', 1800); this.time.delayedCall(2200, () => office('bell')); return; }
     const gained = G.rep - this.dayRep0, bonus = 150; G.rep += bonus;
     Fx.banner(this, 'BRRRING!', '#ffd23a', 1300, 56); Fx.banner(this, 'RECESS OVER  +' + (gained + bonus) + ' REP', '#ffffff', 1600, 84);
+    Fx.banner(this, this.goalDone ? 'GOAL DONE' : 'GOAL MISSED', this.goalDone ? '#6aff8a' : '#ff8a7a', 1600, 112);
+    if (this.watch) Fx.say(this, this.watch, pick(['SEE YOU TOMORROW.', 'ONE DAY CLOSER.', 'FRIDAY, NEW KID.']), 2000, '#c83a2a');
     playSong('recess');
-    for (const a of this.kids) if (!a.ko) { a.team = 'neutral'; a.st = 'flee'; a.tx = 576 + rnd(-10, 10); }
+    for (const a of this.kids) if (!a.ko && !a.watch) { a.team = 'neutral'; a.st = 'flee'; a.tx = 576 + rnd(-10, 10); }
     this.time.delayedCall(2400, () => { G.day++; G.hp = this.P.hp; go('yard'); });
   }
   lose(why) {
@@ -1382,7 +1453,8 @@ Yard.prototype.update = function (time, delta) {
     const b = this.boss, P = this.P, dx = P.x - b.x, dy = P.y - b.y;
     if (Math.hypot(dx, dy) < 34) {
       this.bossApproach = false;
-      openDialog('Brick', BOSS_LINES.line, BOSS_LINES.opts.map(o => o[0]), .7, i => {
+      const bl = pathOf() === 'feared' ? "Everybody's scared of you now. That's MY job." : G.crew.length ? 'Cute crew. They can watch you lose.' : BOSS_LINES.line;
+      openDialog('Brick', bl, BOSS_LINES.opts.map(o => o[0]), .7, i => {
         Fx.say(this, b, BOSS_LINES.opts[i][2], 2200, '#c83a2a');
         this.time.delayedCall(600, () => { this.provoke(b); this.bossGoons.forEach(g => this.provoke(g)); setTip('Brick telegraphs everything. Watch for the "!" and {DODGE} through his charge and his belly flop.'); });
       });
@@ -1467,13 +1539,32 @@ function dlgKey(e) {
 /* ---------- HUD ---------- */
 function setMode(m) { $('app').dataset.mode = m; }
 let hudT = 0;
-function hudDay(sc) { $('hDay').textContent = sc.D.name; }
+function hudDay(sc) { $('hDay').textContent = sc.D.name; hudGoal(sc); hudCrew(); }
+function hudGoal(sc) {
+  const g = sc.D.goal, el = $('hGoal'); if (!g) { el.hidden = true; return; }
+  el.hidden = false; el.classList.toggle('done', !!sc.goalDone);
+  el.innerHTML = '<b>' + (sc.goalDone ? '&#10003;' : 'GOAL') + '</b> ' + g.text + (g.need > 1 ? ' <i>' + sc.goalN + '/' + g.need + '</i>' : '');
+}
+const PORTRAITS = new Map();
+function portraitOf(k) {
+  if (PORTRAITS.has(k)) return PORTRAITS.get(k);
+  const s = kidSheetCanvas(k), [c, x] = cnv(16, 14); x.drawImage(s.c, 0, 0, s.fw, s.fh, -5, -(s.fh - 2 - BODY[k.sz].t) + 3, s.fw, s.fh);
+  const u = c.toDataURL(); PORTRAITS.set(k, u); return u;
+}
+function hudCrew() {
+  const el = $('hCrew'); if (!G) return;
+  el.hidden = !G.crew.length;
+  el.innerHTML = '<span>Crew</span>' + G.crew.map(c => '<img src="' + portraitOf(c.k) + '" alt="' + c.who + '" title="' + c.who + '">').join('');
+  const p = pathOf(); const b = $('hPath'); b.textContent = p === 'feared' ? 'Feared' : p === 'liked' ? 'Liked' : 'New kid'; b.className = 'path ' + p;
+}
 function hudTick(sc) {
   const now = performance.now(); if (now - hudT < 100) return; hudT = now;
   const t = Math.max(0, Math.ceil(sc.t)); $('hTime').textContent = Math.floor(t / 60) + ':' + String(t % 60).padStart(2, '0');
   $('hRep').textContent = G.rep.toLocaleString('en-US');
   $('hHp').style.width = Math.max(0, sc.P.hp) + '%'; $('hHpBox').classList.toggle('low', sc.P.hp < 30);
   $('hBust').style.width = sc.busted + '%'; $('hBustBox').classList.toggle('hot', sc.seen);
+  if (sc.goalN !== sc._gN || sc.goalDone !== sc._gD) { sc._gN = sc.goalN; sc._gD = sc.goalDone; hudGoal(sc); }
+  if (pathOf() !== hudTick.p) { hudTick.p = pathOf(); hudCrew(); }
   const B = sc.boss; $('hBoss').hidden = !(B && B.team === 'enemy' && !B.ko); if (B) $('hBossHp').style.width = Math.max(0, B.hp / B.hpMax * 100) + '%';
 }
 function toggleMusic() { initAudio(); setMusic(!AU.music); syncMusic(); }
@@ -1520,7 +1611,10 @@ function office(why) {
   G.over = true; playSong('office'); $('bubs').innerHTML = '';
   for (const s of game.scene.getScenes(true)) if (s.scene.key !== 'boot') s.scene.pause();
   const s = G.stats, day = DAYS[Math.min(G.day, 4)].name;
-  const rank = RANKS.filter(r => G.rep >= r[0]).pop()[1];
+  const path = pathOf();
+  let rank = RANKS.filter(r => G.rep >= r[0]).pop()[1];
+  if (why === 'win' || why === 'bell') rank = path === 'feared' ? PATH_TITLES.feared : path === 'liked' || why === 'win' ? PATH_TITLES.liked : rank;
+  else if (path === 'feared') rank = 'Future Schoolyard Bully';
   const reason = { ko: 'Found crying under the slide after losing a fight.', busted: 'Caught brawling on the playground by Ms. Grimsby.', bell: 'Survived an entire week. The principal finds this deeply suspicious.', win: "Defeated Brick in front of the whole school. Was asked to explain 'how'." }[why];
   const off = []; const add = (n, t) => { if (n) off.push([n, t]); };
   add(s.fightsStarted, 'Fights involved in');
@@ -1538,6 +1632,10 @@ function office(why) {
     bell: ["Five days and I barely heard your name. Keep it that way.", "I will be watching you next week. Closely."],
     win: ["Brick has been sent home to think about his life. As have you.", "Congratulations. You are the new problem."]
   }[why];
+  if (why === 'win' && path === 'feared') quotes.splice(0, 2, "Brick was the bully. Now there is a new one. I wonder who.", "Half the school is hiding in the library. Because of you.");
+  if (why === 'win' && path !== 'feared') quotes.splice(0, 2, "I hear you made a lot of friends this week. Brick did not.", "The yard is quieter. Suspiciously nicer. I will allow it.");
+  $('oGoals').innerHTML = DAYS.map(d => '<li class="' + (G.goals.includes(d.goal.id) ? 'ok' : 'no') + '">' + d.name + ': ' + d.goal.text + '</li>').join('');
+  $('oCrew').textContent = G.crew.length ? G.crew.map(c => c.who).join(', ') : 'Nobody. You walked alone.';
   $('oReason').textContent = reason;
   $('oDay').textContent = day; $('oRep').textContent = G.rep.toLocaleString('en-US'); $('oRank').textContent = rank;
   $('oOff').innerHTML = off.length ? off.map(([n, t]) => '<li><b>' + n + 'x</b> ' + t + '</li>').join('') : '<li>None. Which is somehow worse.</li>';
