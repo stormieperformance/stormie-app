@@ -1,0 +1,1563 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#1e3a2e">
+<meta name="author" content="Storm Kolmodin">
+<title>Schoolyard Bully | Stormie Games</title>
+<meta name="description" content="Schoolyard Bully: recess is a battlefield. Talk to the weirdest kids in school, pick fights or make friends, dodge Ms. Grimsby and survive the week. Free in your browser.">
+<meta property="og:title" content="Schoolyard Bully | Stormie Games">
+<meta property="og:image" content="https://stormie.app/schoolyard-bully-preview.jpg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600;700&family=Silkscreen&display=swap" rel="stylesheet">
+<style>
+:root{--board:#1e3a2e;--board2:#244636;--ink:#fffaf0;--chalk:#e8f0e0;--muted:#a8c0b0;--yellow:#ffd23a;--red:#e8483a;--blue:#4a8ae8;--paper:#fffdf4;--deck:200px;--side:150px;
+  --display:"Pixelify Sans","Courier New",monospace;--label:"Silkscreen","Courier New",monospace;color-scheme:dark}
+*,*::before,*::after{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;margin:0;background:var(--board);color:var(--ink);overflow:hidden;overscroll-behavior:none}
+body{font-family:var(--display);-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;touch-action:none}
+button{font:inherit;color:inherit;touch-action:manipulation}
+.app{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;
+  padding:max(6px,env(safe-area-inset-top)) max(6px,env(safe-area-inset-right)) max(8px,env(safe-area-inset-bottom)) max(6px,env(safe-area-inset-left));
+  background:radial-gradient(ellipse 90% 70% at 50% 30%,#2e5440 0%,transparent 70%),repeating-linear-gradient(0deg,rgba(255,255,255,.018) 0 2px,transparent 2px 5px),var(--board)}
+.hud{width:100%;max-width:900px;display:flex;align-items:center;gap:10px;min-height:40px;padding:0 2px 6px;font-family:var(--label);font-size:11px;letter-spacing:.05em;z-index:6}
+.hud[hidden]{visibility:hidden;display:flex}
+.hud .day{color:var(--yellow);min-width:0;white-space:nowrap}
+.hud .tm{color:var(--chalk);min-width:38px}
+.meter{display:flex;align-items:center;gap:5px;flex:1;min-width:0}
+.meter span{color:var(--muted);white-space:nowrap}
+.bar{flex:1;height:10px;background:rgba(0,0,0,.35);box-shadow:inset 0 0 0 1px rgba(255,255,255,.25);min-width:30px;max-width:150px}
+.bar i{display:block;height:100%;width:100%;background:#6aff8a;transition:width .15s}
+#hHpBox.low i{background:var(--red);animation:blink .5s steps(2) infinite}
+#hBustBox i{background:var(--yellow)}#hBustBox.hot i{background:var(--red)}
+#hBustBox.hot span{color:var(--red)}
+@keyframes blink{50%{opacity:.45}}
+.hud .rep{font-family:var(--display);font-weight:700;font-size:19px;color:var(--yellow);text-shadow:2px 2px 0 #0b1a12;min-width:50px;text-align:right}
+.boss{position:absolute;left:50%;transform:translateX(-50%);top:-2px;width:min(70%,300px);z-index:7;font-family:var(--label);font-size:10px;color:#ffb0a8;text-align:center}
+.boss[hidden]{display:none}.boss .bar{max-width:none;height:8px;margin-top:2px}.boss .bar i{background:var(--red)}
+.stage{position:relative;flex:none;box-shadow:0 0 0 3px #0b1a12,0 0 0 6px #8a6a3a,0 0 0 8px #5a4220,0 20px 40px -12px #000;background:#5ab8f0}
+.stage canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges}
+.dock{width:100%;max-width:760px;min-height:112px;display:flex;align-items:center;justify-content:center;padding:6px 4px;z-index:8;position:relative}
+.dock .tip{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:max-content;max-width:96%}
+.tip{max-width:620px;text-align:center;font-family:var(--label);font-size:12px;line-height:1.5;color:var(--chalk);background:rgba(11,26,18,.9);box-shadow:inset 0 0 0 1px var(--yellow);padding:.55em .9em;opacity:0;transition:opacity .25s;text-wrap:balance;pointer-events:none}
+.tip.show{opacity:1}
+.dlg{position:relative;width:100%;display:flex;flex-direction:column;gap:6px;background:var(--paper);color:#2a2238;padding:10px 12px;box-shadow:0 0 0 3px #2a2238,6px 6px 0 rgba(0,0,0,.35);
+  background-image:repeating-linear-gradient(180deg,transparent 0 21px,rgba(74,138,232,.18) 21px 22px);font-family:var(--label);font-size:12px;overflow-y:auto}
+.dlg[hidden]{display:none}
+.dlg .who{font-family:var(--display);font-weight:700;font-size:16px;color:var(--red);line-height:1}
+.dlg .line{margin:0;font-family:var(--display);font-size:16px;line-height:1.3;min-height:1.3em}
+.opts{display:flex;flex-wrap:wrap;gap:6px}
+.opt{flex:1 1 30%;min-width:140px;display:flex;align-items:center;gap:8px;text-align:left;border:none;background:#efe8d0;color:#2a2238;padding:9px 10px;min-height:42px;cursor:pointer;font-family:var(--label);font-size:11px;letter-spacing:.02em;box-shadow:inset 0 0 0 2px #2a2238;border-radius:4px}
+.opt span{display:inline-grid;place-items:center;flex:none;width:20px;height:20px;background:#2a2238;color:var(--paper);border-radius:3px;font-size:10px}
+.opt.sel,.opt:hover{background:var(--yellow)}
+.deck{display:none;width:100%;max-width:560px;z-index:5;justify-content:space-between;align-items:center;gap:10px;padding:2px 6px}
+.app.tp .deck{display:flex;flex:none;height:var(--deck)}
+.stick{position:relative;width:min(44vw,170px);aspect-ratio:1;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.08),rgba(0,0,0,.25));box-shadow:inset 0 0 0 3px rgba(255,255,255,.18);touch-action:none;flex:none}
+.stick::after{content:"";position:absolute;inset:30%;border-radius:50%;box-shadow:inset 0 0 0 2px rgba(255,255,255,.08)}
+.knob{position:absolute;left:50%;top:50%;width:38%;height:38%;margin:-19% 0 0 -19%;border-radius:50%;background:linear-gradient(180deg,#f8f0d8,#c8b890);box-shadow:0 4px 0 #6a5a3a;pointer-events:none}
+.btns3{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:48%}
+.cb{display:flex;align-items:center;justify-content:center;border:none;cursor:pointer;color:#fff;border-radius:16px;min-height:70px;font-family:var(--label);font-size:12px;letter-spacing:.06em;touch-action:none;
+  background:linear-gradient(180deg,#5a7aa8,#3a5a88);box-shadow:inset 0 0 0 2px #8ab0e0,0 4px 0 #0b1a12}
+.cb.on{transform:translateY(3px);box-shadow:inset 0 0 0 2px #fff,0 1px 0 #0b1a12}
+.cb[data-a=hit]{grid-column:1/3;min-height:80px;background:linear-gradient(180deg,#f05a4a,#c8382a);box-shadow:inset 0 0 0 2px #ffa898,0 4px 0 #5a1208;font-size:14px}
+.cb[data-a=talk]{background:linear-gradient(180deg,#ffd23a,#d0a010);box-shadow:inset 0 0 0 2px #fff0a0,0 4px 0 #5a4008;color:#2a2238}
+/* touch landscape: thumbstick and buttons in side columns */
+.app.tl{padding:0;justify-content:center}
+.app.tl .hud{position:absolute;top:max(4px,env(safe-area-inset-top));left:0;right:0;margin:auto;padding:4px 10px;max-width:none;background:linear-gradient(180deg,rgba(11,26,18,.85),transparent)}
+.app.tl .dock{position:absolute;bottom:max(6px,env(safe-area-inset-bottom));left:var(--side);right:var(--side);width:auto;max-width:none;min-height:0;pointer-events:none}
+.app.tl .dock>*{pointer-events:auto}.app.tl .tip{pointer-events:none}
+.app.tl .dock .tip{top:auto;bottom:0;transform:translateX(-50%)}
+.app.tl .deck{display:block;position:absolute;inset:0;max-width:none;padding:0;pointer-events:none}
+.app.tl .stick{position:absolute;left:max(10px,env(safe-area-inset-left));bottom:max(14px,env(safe-area-inset-bottom));width:calc(var(--side) - 20px);pointer-events:auto}
+.app.tl .btns3{position:absolute;right:max(8px,env(safe-area-inset-right));bottom:max(12px,env(safe-area-inset-bottom));width:calc(var(--side) - 14px);pointer-events:auto}
+.app.tl .cb{min-height:58px}.app.tl .cb[data-a=hit]{min-height:66px}
+.app.tl .meter span{display:none}
+.app.tp .meter span{display:none}
+.app.tp .hud{gap:6px}
+.app.tp.talking .deck{display:none}
+.app.tp.talking .dock{flex:1;align-items:flex-start}
+.app.dk .stage{margin:auto 0 0}.app.dk .dock{margin-bottom:auto}
+/* screens */
+.screen{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:safe center;gap:14px;text-align:center;z-index:20;overflow-y:auto;
+  padding:max(18px,env(safe-area-inset-top)) 16px max(18px,env(safe-area-inset-bottom));background:radial-gradient(ellipse 80% 60% at 50% 40%,#2e5440,#1e3a2e 75%)}
+.screen[hidden]{display:none}
+.title{margin:0;font-family:var(--display);font-weight:700;font-size:clamp(52px,15vw,104px);line-height:.85;color:var(--chalk);text-shadow:.04em .04em 0 rgba(0,0,0,.35);transform:rotate(-2deg)}
+.title small{display:block;font-family:var(--label);font-size:11px;letter-spacing:.22em;color:var(--yellow);margin-bottom:.9em;transform:rotate(2deg)}
+.title span{color:var(--yellow);display:inline-block;transform:rotate(3deg)}
+.tag{margin:0;max-width:34ch;color:var(--muted);font-size:17px;text-wrap:balance}
+.how{display:grid;grid-template-columns:repeat(3,auto);gap:10px 18px;font-family:var(--label);font-size:10px;letter-spacing:.05em;color:var(--muted)}
+.how b{display:block;color:var(--chalk);font-weight:400;margin-bottom:2px}
+.btn{font-family:var(--label);font-size:14px;letter-spacing:.12em;color:#2a2238;background:var(--yellow);border:none;padding:16px 32px;min-height:52px;cursor:pointer;border-radius:6px;box-shadow:0 5px 0 #8a6a10}
+.btn:hover,.btn:focus-visible{background:#fff;outline:none}
+.btn:active{transform:translateY(3px);box-shadow:0 2px 0 #8a6a10}
+.btn:disabled{opacity:.5}
+.tb{font-family:var(--label);font-size:10px;letter-spacing:.06em;color:var(--muted);background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.25);padding:8px 10px;min-height:36px;cursor:pointer;border-radius:4px}
+.tb.off{color:#5a7060;text-decoration:line-through}
+.row{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;align-items:center}
+.home{font-family:var(--label);font-size:10px;letter-spacing:.14em;color:var(--muted);text-decoration:none;padding:8px}
+.home:hover{color:var(--yellow)}
+.best{font-family:var(--label);font-size:10px;letter-spacing:.08em;color:var(--yellow);margin:0;min-height:1em}
+.desk-only{display:grid}.touch .desk-only{display:none}.touch-only{display:none}.touch .touch-only{display:block}
+/* the office */
+#sOffice{background:#3a2a3a;background-image:repeating-linear-gradient(90deg,rgba(255,255,255,.03) 0 2px,transparent 2px 40px)}
+.office{display:flex;flex-direction:column;align-items:center;gap:10px;width:min(100%,440px)}
+.office h2{margin:0;font-family:var(--display);font-weight:700;font-size:clamp(30px,8vw,46px);color:#ffd8a0;line-height:1}
+.portrait{width:192px;height:144px;image-rendering:pixelated;box-shadow:0 0 0 3px #1a121a,0 0 0 6px #8a6a3a}
+.quote{margin:0;font-family:var(--display);font-size:17px;color:#f0e0d0;max-width:34ch;text-wrap:balance}
+.slip{position:relative;width:100%;background:#ffe8f0;color:#3a2238;padding:16px 18px 14px;text-align:left;font-family:var(--label);font-size:11px;line-height:1.5;box-shadow:0 0 0 3px #3a2238,8px 10px 0 rgba(0,0,0,.4);transform:rotate(1deg)}
+.slip h3{margin:0 0 6px;font-family:var(--display);font-size:20px;color:#c8304a;letter-spacing:.02em}
+.slip .f{display:flex;justify-content:space-between;gap:8px;border-bottom:1px dashed rgba(58,34,56,.4);padding:2px 0}
+.slip .f b{text-align:right}
+.slip h4{margin:10px 0 2px;font-size:11px;color:#c8304a;letter-spacing:.1em}
+.slip ul{margin:0;padding-left:16px}
+.slip .reason{margin:6px 0 0;font-size:11px}
+.stamp{position:absolute;right:12px;top:10px;transform:rotate(-12deg);font-family:var(--display);font-weight:700;font-size:16px;color:#c8304a;border:3px solid #c8304a;padding:1px 6px;opacity:.85;animation:stampIn .35s cubic-bezier(.2,2,.4,1) both .4s}
+@keyframes stampIn{from{transform:rotate(-12deg) scale(3);opacity:0}}
+</style>
+</head>
+<body>
+<div class="app" id="app" data-mode="yard">
+  <div class="hud" id="hud" hidden>
+    <div class="day" id="hDay">Monday</div>
+    <div class="tm" id="hTime">1:30</div>
+    <div class="meter" id="hHpBox"><span>Dignity</span><div class="bar"><i id="hHp"></i></div></div>
+    <div class="meter" id="hBustBox"><span>Busted</span><div class="bar"><i id="hBust" style="width:0"></i></div></div>
+    <div class="rep" id="hRep">0</div>
+  </div>
+  <div class="stage" id="stage"><div class="boss" id="hBoss" hidden>BRICK<div class="bar"><i id="hBossHp"></i></div></div></div>
+  <div class="dock">
+    <div class="tip" id="tip"></div>
+    <div class="dlg" id="dlg" hidden><div class="who" id="dWho"></div><p class="line" id="dLine"></p><div class="opts" id="dOpts"></div></div>
+  </div>
+  <div class="deck" id="deck">
+    <div class="stick" id="stick"><div class="knob" id="knob"></div></div>
+    <div class="btns3">
+      <button class="cb" data-a="dodge" type="button">DODGE</button>
+      <button class="cb" data-a="talk" type="button">TALK</button>
+      <button class="cb" data-a="hit" type="button">HIT</button>
+    </div>
+  </div>
+</div>
+
+<div class="screen" id="sTitle">
+  <h1 class="title"><small>Stormie Games presents</small>Schoolyard<br><span>Bully</span></h1>
+  <p class="tag">Five recesses. Thirty weird kids. One very tired teacher. Talk your way out of trouble, or don't.</p>
+  <div class="how desk-only"><span><b>WASD / arrows</b>walk</span><span><b>E</b>talk, grab</span><span><b>J / Space</b>hit, throw</span><span><b>K / Shift</b>dodge</span><span><b>1 2 3</b>answer</span><span><b>M</b>music</span></div>
+  <p class="tag touch-only" style="font-size:14px">Thumbstick to walk. Works upright or sideways.</p>
+  <div class="row"><button class="btn" id="play" type="button" disabled>Go to recess</button><button class="tb musicBtn" type="button">Music on</button></div>
+  <p class="best" id="tBest"></p>
+  <a class="home" href="/">More Stormie Games</a>
+</div>
+
+<div class="screen" id="sOffice" hidden>
+  <div class="office">
+    <h2>Principal's Office</h2>
+    <img class="portrait" id="oPortrait" alt="The principal, unimpressed" width="64" height="48">
+    <p class="quote" id="oQuote"></p>
+    <div class="slip">
+      <div class="stamp" id="oVerdict">DETENTION</div>
+      <h3>Referral Slip</h3>
+      <div class="f"><span>Student</span><b>The New Kid</b></div>
+      <div class="f"><span>Day</span><b id="oDay"></b></div>
+      <div class="f"><span>Playground rep</span><b id="oRep"></b></div>
+      <div class="f"><span>Known as</span><b id="oRank"></b></div>
+      <h4>Reason for referral</h4>
+      <p class="reason" id="oReason"></p>
+      <h4>Offences on record</h4>
+      <ul id="oOff"></ul>
+    </div>
+    <p class="best" id="oBest"></p>
+    <div class="row"><button class="btn" id="again" type="button">Back to recess</button><a class="home" href="/">More games</a></div>
+  </div>
+</div>
+
+<script src="vendor/phaser-3.80.1-arcade.min.js"></script>
+<script>
+(function(){
+document.documentElement.classList.toggle('touch', matchMedia('(pointer:coarse)').matches);
+/* ================= SCHOOLYARD BULLY: core pixel helpers (shared with Trash Shift) ================= */
+const OUTL = '#120a14';
+function cnv(w, h) { const c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d'); x.imageSmoothingEnabled = false; return [c, x]; }
+function outline(x, w, h) {
+  const d = x.getImageData(0, 0, w, h), a = d.data, src = new Uint8ClampedArray(a);
+  const o = [18, 10, 20];
+  for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) {
+    const k = (j * w + i) * 4; if (src[k + 3] > 0) continue;
+    const n = (ii, jj) => ii >= 0 && jj >= 0 && ii < w && jj < h && src[(jj * w + ii) * 4 + 3] > 0;
+    if (n(i - 1, j) || n(i + 1, j) || n(i, j - 1) || n(i, j + 1)) { a[k] = o[0]; a[k + 1] = o[1]; a[k + 2] = o[2]; a[k + 3] = 255; }
+  }
+  x.putImageData(d, 0, 0);
+}
+/* build a sprite sheet: n frames of fw x fh, each drawn by fn(ctx, i), auto-outlined */
+const SHEETS = {};
+function sheet(key, fw, fh, n, fn, noOutline) {
+  const [c, x] = cnv(fw * n, fh);
+  for (let i = 0; i < n; i++) {
+    const [fc, fx] = cnv(fw, fh); fn(fx, i);
+    if (!noOutline) outline(fx, fw, fh);
+    x.drawImage(fc, i * fw, 0);
+  }
+  SHEETS[key] = { c, fw, fh, n };
+}
+const R_ = (x, X, Y, W, H, col) => { x.fillStyle = col; x.fillRect(Math.round(X), Math.round(Y), W, H); };
+const PX = (x, X, Y, col) => { x.fillStyle = col; x.fillRect(Math.round(X), Math.round(Y), 1, 1); };
+
+/* ---------- tiny 3x5 pixel font ---------- */
+const FONT = {
+  A: '.#.#.#####.##.#',
+  B: '##.#.###.#.###.',
+  C: '.###..#..#...##',
+  D: '##.#.##.##.###.',
+  E: '####..##.#..###',
+  F: '####..##.#..#..',
+  G: '.###..#.##.#.##',
+  H: '#.##.#####.##.#',
+  I: '###.#..#..#.###',
+  J: '..#..#..##.#.#.',
+  K: '#.##.###.#.##.#',
+  L: '#..#..#..#..###',
+  M: '#.########.##.#',
+  N: '##.#.##.##.##.#',
+  O: '.#.#.##.##.#.#.',
+  P: '##.#.###.#..#..',
+  Q: '.#.#.##.###..##',
+  R: '##.#.###.#.##.#',
+  S: '.###...#...###.',
+  T: '###.#..#..#..#.',
+  U: '#.##.##.##.####',
+  V: '#.##.##.##.#.#.',
+  W: '#.##.########.#',
+  X: '#.##.#.#.#.##.#',
+  Y: '#.##.#.#..#..#.',
+  Z: '###..#.#.#..###',
+  '0': '####.##.##.####',
+  '1': '.#.##..#..#.###',
+  '2': '##...#.#.#..###',
+  '3': '##...#.#...###.',
+  '4': '#.##.####..#..#',
+  '5': '####..##...###.',
+  '6': '.###..####.####',
+  '7': '###..#.#..#..#.',
+  '8': '####.#####.####',
+  '9': '####.####..###.',
+  '!': '.#..#..#.....#.',
+  '?': '##...#.#.....#.',
+  '.': '.............#.',
+  ',': '..........#.#..',
+  "'": '.#..#..........',
+  '-': '......###......',
+  '+': '....#.###.#....',
+  '/': '..#..#.#.#..#..',
+  ':': '....#.....#....',
+  '%': '#.#..#.#.#..#.#',
+  '*': '#.#.#.#.#......',
+  '#': '#.#####.#####.#',
+  ' ': '...............'
+};
+function glyphs(s) { return [...s.toUpperCase()].map(ch => FONT[ch] || FONT[' ']); }
+function drawText(x, s, X, Y, col, scale = 1) {
+  glyphs(s).forEach((g, i) => { for (let j = 0; j < 15; j++) if (g[j] === '#') { x.fillStyle = col; x.fillRect(X + (i * 4 + (j % 3)) * scale, Y + Math.floor(j / 3) * scale, scale, scale); } });
+}
+const textW = (s, scale = 1) => (s.length * 4 - 1) * scale;
+
+function fxFrame(x, i) {
+  if (i === 0) { R_(x, 1, 1, 4, 4, '#ffffff'); }               // puff
+  else if (i === 1) { R_(x, 2, 0, 1, 5, '#ffe060'); R_(x, 0, 2, 5, 1, '#ffe060'); PX(x, 2, 2, '#ffffff'); } // star
+  else if (i === 2) { R_(x, 1, 1, 3, 3, '#b8ff4a'); }          // slime
+  else if (i === 3) { R_(x, 0, 0, 6, 6, '#ffffff'); }          // glow core
+}
+function fontCanvas() {
+  const n = FCH.length, [c, x] = cnv(n * 5, 7);
+  for (let i = 0; i < n; i++) { const [fc, fx] = cnv(5, 7), g = FONT[FCH[i]]; for (let j = 0; j < 15; j++) if (g[j] === '#') { fx.fillStyle = '#ffffff'; fx.fillRect(1 + (j % 3), 1 + Math.floor(j / 3), 1, 1); } if (FCH[i] !== ' ') outline(fx, 5, 7); x.drawImage(fc, i * 5, 0); }
+  return c;
+}
+const FCH = " !'+,-./0123456789:?ABCDEFGHIJKLMNOPQRSTUVWXYZ%*#";
+function rngS(seed) { return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function bangFrame(x, i) { /* warning "!" */ R_(x, 1, 0, 8, 14, i ? '#ffd23a' : '#ff5a2a'); R_(x, 0, 1, 10, 12, i ? '#ffd23a' : '#ff5a2a'); R_(x, 4, 2, 2, 6, OUTL); R_(x, 4, 10, 2, 2, OUTL); }
+
+/* ================= SCHOOLYARD BULLY: art (every sprite drawn in code) ================= */
+/* ---------- the kid generator: one body plan, endless kids ---------- */
+const BODY = [
+  /* total, headW, headH, torsoW, legH */
+  { t: 18, hw: 7, hh: 7, tw: 6, lh: 5 },   // small
+  { t: 21, hw: 7, hh: 7, tw: 7, lh: 6 },   // medium
+  { t: 23, hw: 8, hh: 8, tw: 9, lh: 6 },   // big
+  { t: 29, hw: 10, hh: 9, tw: 13, lh: 8 }, // the bully
+  { t: 33, hw: 7, hh: 8, tw: 9, lh: 13 }   // adult
+];
+function kidDraw(x, o, k, FW, FH) {
+  const B = BODY[k.sz], base = FH - 2, cx = Math.floor(FW / 2) - 1;
+  const C = k.col, face = o.face || 'norm';
+  if (o.pose === 'lie') { lieDraw(x, k, FW, FH); return; }
+  const sit = o.pose === 'sit';
+  const lh = sit ? 2 : B.lh, lean = o.lean || 0, bob = o.bob || 0;
+  const legY = base - lh + 1, th = B.t - B.hh - B.lh, ty = legY - th + bob, hy = ty - B.hh;
+  const tx = cx - Math.floor(B.tw / 2) + lean, hx = cx - Math.floor(B.hw / 2) + 1 + lean * 2;
+  /* behind-the-body extras */
+  if (k.acc === 'cape') R_(x, tx - 2, ty + 1, 3, th + 3, '#d8303a');
+  if (k.acc === 'pack') { R_(x, tx - 3, ty + 1, 3, th - 1, k.pack); R_(x, tx - 3, ty + 1, 3, 1, '#ffffff'); }
+  if (k.hs === 2) R_(x, hx - 1, hy + 1, 3, B.hh + 1, C.hair);
+  /* back arm */
+  const armL = th - 1;
+  if (o.arm === 'up' || o.arm === 'throw') { R_(x, tx, hy - 4, 2, armL, C.shirtD); R_(x, tx, hy - 6, 2, 2, C.skin); }
+  else if (o.arm === 'wind') { R_(x, tx - 3, ty + 2, 4, 2, C.shirtD); R_(x, tx - 5, ty + 2, 2, 2, C.skin); }
+  else if (o.arm === 'out') { R_(x, tx - 3, ty + 1, 3, 2, C.shirtD); R_(x, tx - 5, ty, 2, 2, C.skin); }
+  else { const s = o.swing || 0; R_(x, tx, ty + 1 - s, 2, armL, C.shirtD); R_(x, tx, ty + armL + 1 - s, 2, 2, C.skin); }
+  /* legs */
+  if (sit) {
+    R_(x, tx + 1, base - 2, B.tw + 4, 2, C.pants); R_(x, tx + B.tw + 4, base - 3, 3, 3, C.shoe);
+  } else {
+    const p = o.leg || 0;
+    const l1 = cx - 2 + p, l2 = cx + 1 - p, lift1 = p > 0 ? 1 : 0, lift2 = p < 0 ? 1 : 0;
+    const legW = k.sz >= 2 ? 3 : 2;
+    for (const [lx, lift, col] of [[l1, lift1, C.pantsD], [l2, lift2, C.pants]]) {
+      const top = legY, bot = base - 1 - lift;
+      if (k.legs === 'shorts') { R_(x, lx, top, legW, 2, col); R_(x, lx, top + 2, legW, bot - top - 2, C.skin); }
+      else if (k.legs === 'skirt') R_(x, lx, top, legW, bot - top, C.skin);
+      else R_(x, lx, top, legW, bot - top, col);
+      R_(x, lx, bot, legW + 1, 2, C.shoe);
+    }
+    if (k.legs === 'skirt') R_(x, tx - 1, legY - 1, B.tw + 2, 3, C.pants);
+  }
+  /* torso */
+  R_(x, tx, ty, B.tw, th, C.shirt); R_(x, tx, ty, 1, th, C.shirtD);
+  if (k.stripe) for (let yy = ty + 2; yy < ty + th; yy += 3) R_(x, tx, yy, B.tw, 1, k.stripe);
+  if (k.sz === 4) { R_(x, tx + B.tw - 3, ty, 1, th, C.shirtD); PX(x, tx + B.tw - 2, ty + 2, '#e8e8e8'); R_(x, tx + B.tw - 2, ty + 3, 1, 4, '#c8c8c8'); }
+  if (k.logo) PX(x, tx + Math.floor(B.tw / 2) + 1, ty + 2, k.logo);
+  /* head */
+  R_(x, hx, hy, B.hw, B.hh, C.skin); PX(x, hx + 1, hy + 3, C.skinD);
+  const ex = hx + B.hw - 3, ey = hy + Math.floor(B.hh / 2) - 1;
+  /* hair */
+  if (k.hs === 0) { R_(x, hx, hy, B.hw, 2, C.hair); R_(x, hx, hy + 2, 2, 2, C.hair); }
+  else if (k.hs === 1) { R_(x, hx, hy, B.hw, 2, C.hair); R_(x, hx, hy + 2, 2, 2, C.hair); for (let i = 1; i < B.hw; i += 2) PX(x, hx + i, hy - 1, C.hair); }
+  else if (k.hs === 2) { R_(x, hx, hy, B.hw, 2, C.hair); PX(x, hx + B.hw - 1, hy + 2, C.hair); }
+  else if (k.hs === 3) { R_(x, hx, hy, B.hw, 2, C.hair); R_(x, hx, hy + 2, 2, 2, C.hair); R_(x, hx - 3, hy + 1, 3, 3, C.hair); PX(x, hx - 1, hy + 2, '#ff5a8a'); }
+  else if (k.hs === 4) { R_(x, hx - 1, hy - 1, B.hw + 1, 3, k.cap); R_(x, hx + B.hw - 1, hy + 1, 3, 1, k.cap); R_(x, hx, hy + 2, 2, 2, C.hair); }
+  else if (k.hs === 5) { R_(x, hx - 1, hy - 2, B.hw + 2, 4, C.hair); R_(x, hx - 1, hy + 2, 2, 4, C.hair); }
+  else if (k.hs === 6) { R_(x, hx, hy, B.hw, 1, C.hair); }
+  else if (k.hs === 7) { R_(x, hx, hy, B.hw, 2, C.hair); R_(x, hx, hy + 2, 2, 3, C.hair); R_(x, hx - 2, hy - 2, 4, 4, C.hair); }
+  if (k.acc === 'crown') { R_(x, hx, hy - 3, B.hw, 2, '#ffd23a'); PX(x, hx, hy - 4, '#ffd23a'); PX(x, hx + 3, hy - 4, '#ffd23a'); PX(x, hx + B.hw - 1, hy - 4, '#ffd23a'); }
+  /* face */
+  if (face === 'x') { PX(x, ex, ey, OUTL); PX(x, ex + 1, ey + 1, OUTL); PX(x, ex + 1, ey, OUTL); PX(x, ex, ey + 1, OUTL); }
+  else if (face === 'cry') { R_(x, ex, ey, 2, 1, OUTL); PX(x, ex, ey + 1, '#5ac8ff'); PX(x, ex, ey + 2, '#5ac8ff'); }
+  else { PX(x, ex, ey, OUTL); if (k.sz >= 2) PX(x, ex, ey + 1, OUTL); }
+  if (face === 'angry' || k.mean) R_(x, ex - 1, ey - 1, 3, 1, OUTL);
+  if (k.glasses) { R_(x, ex - 1, ey - 1, 4, 3, '#2a2a3a'); PX(x, ex, ey, '#c8f0ff'); PX(x, ex + 1, ey, '#c8f0ff'); }
+  const my = hy + B.hh - 2;
+  if (face === 'talk' || face === 'cry') R_(x, ex - 1, my - 1, 2, 2, '#6a1a1a');
+  else if (face === 'happy') { R_(x, ex - 1, my, 3, 1, '#6a1a1a'); PX(x, ex - 2, my - 1, '#6a1a1a'); }
+  else if (face === 'angry') R_(x, ex - 1, my, 3, 1, '#4a1a1a');
+  else PX(x, ex, my, '#8a3a2a');
+  if (k.acc === 'band') { R_(x, hx + 2, ey + 2, 2, 1, '#f0d0a0'); }
+  if (k.sz === 4 && k.whistle) { PX(x, ex - 1, my + 2, '#c8c8d8'); }
+  /* front arm */
+  if (o.arm === 'punch') { R_(x, tx + B.tw - 1, ty + 2, 6, 2, C.shirt); R_(x, tx + B.tw + 5, ty + 1, 3, 3, C.skin); }
+  else if (o.arm === 'wind') { R_(x, tx + B.tw - 3, ty + 1, 2, 3, C.shirt); }
+  else if (o.arm === 'up') { R_(x, tx + B.tw - 2, hy - 4, 2, armL, C.shirt); R_(x, tx + B.tw - 2, hy - 6, 2, 2, C.skin); }
+  else if (o.arm === 'throw') { R_(x, tx + B.tw - 1, hy - 2, 2, armL - 2, C.shirt); R_(x, tx + B.tw, hy - 4, 2, 2, C.skin); }
+  else if (o.arm === 'out') { R_(x, tx + B.tw - 1, ty + 1, 3, 2, C.shirt); R_(x, tx + B.tw + 2, ty, 2, 2, C.skin); }
+  else if (o.arm === 'talk') { R_(x, tx + B.tw - 2, ty + 1, 2, 3, C.shirt); R_(x, tx + B.tw, ty + 3, 3, 2, C.shirt); R_(x, tx + B.tw + 2, ty + 1, 2, 2, C.skin); }
+  else if (o.arm === 'whistle') { R_(x, tx + B.tw - 2, ty, 2, 2, C.shirt); R_(x, ex - 2, my + 1, 3, 2, C.skin); PX(x, ex + 1, my + 1, '#c8c8d8'); }
+  else { const s = o.swing || 0; R_(x, tx + B.tw - 2, ty + 1 + s, 2, armL, C.shirt); R_(x, tx + B.tw - 2, ty + armL + 1 + s, 2, 2, C.skin); }
+}
+function lieDraw(x, k, FW, FH) {
+  const B = BODY[k.sz], C = k.col, y = FH - 3, th = B.t - B.hh - B.lh;
+  /* fell over backwards: head on the left, feet on the right */
+  const hx = 0, hy = y - B.hw + 1;
+  R_(x, hx, hy, B.hh, B.hw, C.skin); R_(x, hx, hy, 2, B.hw, C.hair);
+  PX(x, hx + 4, hy + 1, OUTL); PX(x, hx + 5, hy + 2, OUTL); PX(x, hx + 5, hy + 1, OUTL); PX(x, hx + 4, hy + 2, OUTL);
+  R_(x, hx + B.hh, y - B.tw + 2, th + 1, B.tw - 1, C.shirt);
+  R_(x, hx + B.hh + th + 1, y - 3, B.lh, 3, C.pants); R_(x, hx + B.hh + th + 1 + B.lh, y - 4, 2, 4, C.shoe);
+  R_(x, hx + B.hh + 2, y - B.tw - 1, 2, 3, C.skin);
+}
+const KID_POSES = [
+  {}, { bob: 1 },
+  { leg: 1, swing: 1 }, { bob: 1 }, { leg: -1, swing: -1 }, { bob: 1 },
+  { arm: 'wind', face: 'angry', lean: -1 }, { arm: 'punch', face: 'angry', lean: 1 },
+  { arm: 'out', face: 'x', lean: -1 }, { pose: 'lie' },
+  { pose: 'sit', face: 'x', arm: 'out' }, { pose: 'sit', face: 'cry' },
+  { arm: 'up', face: 'happy' }, { arm: 'up', face: 'happy', bob: 1 },
+  { arm: 'throw', face: 'angry' }, { arm: 'up' },
+  { arm: 'talk', face: 'talk' }, { leg: 1, bob: 2, lean: 1, arm: 'out' },
+  { arm: 'whistle' }
+];
+const KF = { idle: 0, walk: 2, wind: 6, punch: 7, hurt: 8, lie: 9, dizzy: 10, cry: 11, cheer: 12, throw: 14, hold: 15, talk: 16, dodge: 17, whistle: 18 };
+function kidSheetCanvas(k) {
+  const FW = k.sz === 3 ? 30 : 26, FH = k.sz === 3 ? 34 : k.sz === 4 ? 38 : 28, n = KID_POSES.length;
+  const [c, x] = cnv(FW * n, FH);
+  KID_POSES.forEach((o, i) => { const [fc, fx] = cnv(FW, FH); kidDraw(fx, o, k, FW, FH); outline(fx, FW, FH); x.drawImage(fc, i * FW, 0); });
+  return { c, fw: FW, fh: FH, n };
+}
+const SKINS = [['#f4c8a0', '#d8a078'], ['#e8a878', '#c88858'], ['#c88050', '#a86034'], ['#8a5432', '#6a3c22'], ['#5a3420', '#40241a'], ['#f8d8b8', '#e0b898']];
+const HAIRS = ['#2a1a10', '#5a3a1a', '#8a5a2a', '#e8c060', '#c84a1a', '#1a1a1a', '#e8e8e0', '#4a2a5a'];
+const SHIRTS = ['#e84a4a', '#4a8ae8', '#4ac86a', '#f0c030', '#a85ae8', '#ff8a3a', '#40c8c8', '#f06aa8', '#8a8a9a', '#ffffff'];
+const PANTS = ['#2a3a6a', '#3a3a3a', '#6a4a2a', '#4a6a3a', '#7a2a4a', '#2a5a7a'];
+const shade = (h, f) => { const n = parseInt(h.slice(1), 16), r = n >> 16 & 255, g = n >> 8 & 255, b = n & 255; return '#' + [r, g, b].map(v => Math.max(0, Math.min(255, Math.round(v * f))).toString(16).padStart(2, '0')).join(''); };
+function randomKid(r, sz) {
+  const pk = a => a[Math.floor(r() * a.length)];
+  const sk = pk(SKINS), shirt = pk(SHIRTS), pants = pk(PANTS);
+  const k = { sz: sz != null ? sz : (r() < .3 ? 0 : r() < .75 ? 1 : 2), hs: Math.floor(r() * 7), col: { skin: sk[0], skinD: sk[1], hair: pk(HAIRS), shirt, shirtD: shade(shirt, .75), pants, pantsD: shade(pants, .75), shoe: pk(['#1a1a1a', '#e8e8e8', '#c83a2a', '#3a5ac8']) },
+    legs: pk(['pants', 'shorts', 'shorts', 'skirt']), glasses: r() < .18, stripe: r() < .25 ? pk(['#ffffff', '#1a1a2a', '#ffd23a']) : null, cap: pk(['#c83a2a', '#2a5ac8', '#2a8a3a', '#1a1a1a']),
+    acc: r() < .5 ? null : pk(['pack', 'pack', 'band', 'crown', 'cape']), pack: pk(['#c83a2a', '#2a5ac8', '#e8a020', '#8a3ac8']), logo: r() < .3 ? '#ffffff' : null };
+  if (k.hs === 3 && k.sz === 2) k.hs = 0;
+  return k;
+}
+const PLAYER_KID = { sz: 1, hs: 1, col: { skin: '#f0c098', skinD: '#d0a078', hair: '#3a2210', shirt: '#e83a3a', shirtD: '#a82a2a', pants: '#2a3a6a', pantsD: '#1e2a50', shoe: '#ffffff' }, legs: 'shorts', acc: 'band', stripe: null, logo: '#ffd23a' };
+const BULLY_KID = { sz: 3, hs: 6, mean: true, col: { skin: '#e8a878', skinD: '#c88858', hair: '#3a2a1a', shirt: '#6a6a7a', shirtD: '#4a4a58', pants: '#2a2a3a', pantsD: '#1a1a28', shoe: '#1a1a1a' }, legs: 'pants', acc: null, stripe: null, logo: '#c83a2a' };
+const TEACHER_KID = { sz: 4, hs: 7, glasses: true, whistle: true, col: { skin: '#f0c8a8', skinD: '#d8a888', hair: '#a8a8b0', shirt: '#4a8a5a', shirtD: '#346a42', pants: '#5a4a6a', pantsD: '#463a54', shoe: '#2a1a14' }, legs: 'skirt', acc: null, stripe: null };
+
+/* ---------- props and items ---------- */
+function ballFrame(x, i) { R_(x, 1, 0, 6, 8, '#e83a3a'); R_(x, 0, 1, 8, 6, '#e83a3a'); R_(x, 2, 1, 2, 2, '#ff9a8a'); R_(x, 0, 4, 8, 1, '#a82a2a'); if (i) R_(x, 3, 0, 1, 8, '#a82a2a'); }
+function itemFrame(x, i) {
+  if (i === 0) { R_(x, 1, 2, 6, 7, '#4ac8f0'); R_(x, 1, 2, 6, 2, '#ffffff'); R_(x, 5, 0, 1, 3, '#ffffff'); drawText(x, 'J', 2, 4, '#1a4a8a'); }      // juice box
+  else if (i === 1) { R_(x, 0, 2, 8, 6, '#c88a3a'); R_(x, 1, 1, 6, 8, '#c88a3a'); PX(x, 2, 3, '#4a2a10'); PX(x, 5, 4, '#4a2a10'); PX(x, 3, 6, '#4a2a10'); } // cookie
+  else { R_(x, 0, 1, 8, 7, '#ffd23a'); R_(x, 1, 2, 6, 5, '#ff6ab8'); PX(x, 3, 4, '#ffffff'); PX(x, 4, 3, '#ffffff'); }                     // shiny sticker
+}
+function treeTex() {
+  const [c, x] = cnv(70, 92);
+  R_(x, 30, 50, 10, 42, '#6a4428'); R_(x, 30, 50, 3, 42, '#4a2e1a'); R_(x, 26, 88, 18, 4, '#4a2e1a');
+  const blob = (cx, cy, r, col) => { x.fillStyle = col; x.beginPath(); x.arc(cx, cy, r, 0, 6.29); x.fill(); };
+  blob(35, 30, 26, '#2e7a3a'); blob(18, 38, 16, '#2e7a3a'); blob(52, 38, 16, '#2e7a3a'); blob(30, 22, 18, '#3e9a4a'); blob(46, 26, 12, '#3e9a4a'); blob(26, 16, 9, '#5ab85a');
+  outline(x, 70, 92); return c;
+}
+function swingTex() {
+  const [c, x] = cnv(72, 60);
+  R_(x, 0, 2, 72, 3, '#c83a2a'); R_(x, 2, 2, 3, 58, '#c83a2a'); R_(x, 67, 2, 3, 58, '#c83a2a'); R_(x, 2, 2, 1, 58, '#e85a4a');
+  for (const sx of [18, 46]) { R_(x, sx, 5, 1, 38, '#8a8a9a'); R_(x, sx + 8, 5, 1, 38, '#8a8a9a'); }
+  outline(x, 72, 60); return c;
+}
+function seatTex() { const [c, x] = cnv(11, 3); R_(x, 0, 0, 11, 3, '#2a2a3a'); return c; }
+function benchTex() { const [c, x] = cnv(40, 18); R_(x, 0, 4, 40, 3, '#a86a3a'); R_(x, 0, 0, 40, 3, '#c88a4a'); R_(x, 0, 9, 40, 3, '#c88a4a'); R_(x, 3, 12, 3, 6, '#4a4a54'); R_(x, 34, 12, 3, 6, '#4a4a54'); outline(x, 40, 18); return c; }
+function shedTex() {
+  const [c, x] = cnv(84, 64);
+  R_(x, 2, 18, 80, 46, '#7a5a3a'); for (let i = 4; i < 82; i += 6) R_(x, i, 18, 1, 46, '#5a4028');
+  for (let i = 0; i < 18; i++) R_(x, 2 + i * 2.2, 18 - i, 80 - i * 4.4, 1, '#4a4a5a');
+  R_(x, 30, 34, 22, 30, '#5a3a22'); R_(x, 48, 48, 2, 2, '#ffd23a');
+  R_(x, 60, 28, 14, 10, '#8ac8e8'); R_(x, 66, 28, 1, 10, '#4a4a5a');
+  drawText(x, 'NO KIDS', 8, 24, '#e8e0c0');
+  outline(x, 84, 64); return c;
+}
+function hedgeTex(w) { const [c, x] = cnv(w, 26); for (let i = 0; i < w; i += 7) { x.fillStyle = i % 14 ? '#2e7a3a' : '#3a8a44'; x.beginPath(); x.arc(i + 5, 12, 9, 0, 6.29); x.fill(); } R_(x, 0, 12, w, 14, '#2e7a3a'); for (let i = 3; i < w; i += 9) PX(x, i, 8, '#5ab85a'); outline(x, w, 26); return c; }
+function hoopTex() { const [c, x] = cnv(30, 76); R_(x, 4, 14, 3, 62, '#8a8a9a'); R_(x, 4, 4, 22, 16, '#f0f0f0'); R_(x, 5, 5, 20, 14, '#e8e8f0'); R_(x, 11, 10, 8, 6, '#c83a2a'); R_(x, 12, 11, 6, 4, '#e8e8f0'); R_(x, 10, 20, 12, 1, '#ff7a2a'); for (let i = 0; i < 5; i++) R_(x, 11 + i * 2, 21, 1, 5, '#f0f0f0'); outline(x, 30, 76); return c; }
+function fountainTex() { const [c, x] = cnv(14, 22); R_(x, 4, 6, 6, 16, '#a8a8b8'); R_(x, 0, 2, 14, 5, '#c8c8d8'); R_(x, 2, 3, 10, 2, '#8ac8e8'); outline(x, 14, 22); return c; }
+function binTex() { const [c, x] = cnv(14, 20); R_(x, 1, 3, 12, 17, '#3a6a9a'); R_(x, 0, 1, 14, 3, '#2a5a8a'); R_(x, 3, 7, 1, 10, '#2a5a8a'); R_(x, 7, 7, 1, 10, '#2a5a8a'); R_(x, 10, 7, 1, 10, '#2a5a8a'); outline(x, 14, 20); return c; }
+function rackTex() { const [c, x] = cnv(48, 18); R_(x, 0, 14, 48, 2, '#8a8a9a'); for (let i = 2; i < 48; i += 9) { R_(x, i, 4, 1, 11, '#a8a8b8'); R_(x, i + 6, 4, 1, 11, '#a8a8b8'); R_(x, i, 4, 7, 1, '#a8a8b8'); } R_(x, 12, 6, 16, 1, '#c83a2a'); for (let a = 0; a < 6.3; a += .3) { PX(x, 14 + Math.cos(a) * 4, 12 + Math.sin(a) * 4, '#1a1a1a'); PX(x, 26 + Math.cos(a) * 4, 12 + Math.sin(a) * 4, '#1a1a1a'); } outline(x, 48, 18); return c; }
+
+/* ---------- the yard ---------- */
+const YW = 1152;
+function yardTex() {
+  const [c, x] = cnv(YW, 216), r = rngS(7);
+  const g = x.createLinearGradient(0, 0, 0, 60); g.addColorStop(0, '#5ab8f0'); g.addColorStop(1, '#a8e0ff'); x.fillStyle = g; x.fillRect(0, 0, YW, 110);
+  for (let i = 0; i < 9; i++) { const cx = r() * YW, cy = 8 + r() * 26; x.fillStyle = '#ffffff'; for (let k = 0; k < 4; k++) { x.beginPath(); x.arc(cx + k * 7, cy + (k % 2) * 2, 6 + (k % 2) * 2, 0, 6.29); x.fill(); } }
+  /* far trees and fence */
+  for (let i = 0; i < YW; i += 18) { x.fillStyle = i % 36 ? '#3e9a4a' : '#2e8a3a'; x.beginPath(); x.arc(i + 9, 70 + r() * 6, 14, 0, 6.29); x.fill(); }
+  R_(x, 0, 74, YW, 36, '#6ac86a');
+  /* the school */
+  const sx = 160, sw = 760;
+  R_(x, sx, 14, sw, 92, '#c86a4a');
+  for (let yy = 16; yy < 106; yy += 4) for (let xx = sx + ((yy / 4) % 2 ? 0 : 4); xx < sx + sw; xx += 8) R_(x, xx, yy, 1, 4, '#a8543a');
+  for (let yy = 14; yy < 106; yy += 4) R_(x, sx, yy, sw, 1, '#b05a40');
+  R_(x, sx - 4, 10, sw + 8, 5, '#6a3a2a'); R_(x, sx - 4, 10, sw + 8, 1, '#8a5a4a');
+  const doorX = sx + sw / 2 - 18;
+  for (let row = 0; row < 2; row++) for (let wx = sx + 16; wx < sx + sw - 30; wx += 44) {
+    if (wx > doorX - 40 && wx < doorX + 44) continue;
+    const wy = 24 + row * 40;
+    R_(x, wx - 2, wy - 2, 32, 28, '#e8e0d0'); R_(x, wx, wy, 28, 24, '#4a6a8a'); R_(x, wx, wy, 28, 3, '#6a8aaa'); R_(x, wx + 13, wy, 2, 24, '#e8e0d0'); R_(x, wx, wy + 11, 28, 2, '#e8e0d0');
+    /* kids' drawings taped to the glass */
+    if (r() < .6) { const col = ['#ffd23a', '#ff6a8a', '#6aff8a', '#ffffff'][Math.floor(r() * 4)]; R_(x, wx + 3, wy + 14, 8, 8, '#ffffff'); R_(x, wx + 4, wy + 16, 3, 3, col); R_(x, wx + 7, wy + 18, 3, 2, '#4a8ae8'); }
+    if (r() < .4) { R_(x, wx + 17, wy + 3, 7, 7, '#fff0a0'); PX(x, wx + 19, wy + 5, '#c83a2a'); PX(x, wx + 21, wy + 6, '#c83a2a'); }
+  }
+  /* doors, sign and clock */
+  R_(x, doorX - 4, 58, 44, 48, '#e8e0d0'); R_(x, doorX, 62, 36, 44, '#3a5a8a'); R_(x, doorX + 17, 62, 2, 44, '#e8e0d0'); R_(x, doorX + 4, 66, 9, 14, '#8ac8e8'); R_(x, doorX + 23, 66, 9, 14, '#8ac8e8');
+  R_(x, doorX - 20, 44, 76, 11, '#2a3a6a'); drawText(x, 'GRIMSBY PRIMARY', doorX - 12, 47, '#ffd23a');
+  x.fillStyle = '#ffffff'; x.beginPath(); x.arc(doorX + 18, 30, 9, 0, 6.29); x.fill(); x.strokeStyle = '#2a2a3a'; x.stroke(); R_(x, doorX + 18, 23, 1, 7, '#2a2a3a'); R_(x, doorX + 18, 30, 5, 1, '#2a2a3a');
+  R_(x, sx, 104, sw, 4, '#8a4a34');
+  /* asphalt */
+  R_(x, 0, 108, YW, 108, '#7a7a84');
+  for (let i = 0; i < 2600; i++) { x.fillStyle = r() < .5 ? '#6e6e78' : '#888892'; x.fillRect(Math.floor(r() * YW), 108 + Math.floor(r() * 108), 1, 1); }
+  R_(x, 0, 108, YW, 2, '#5a5a64');
+  for (const [cx2, cy2, w2] of [[300, 180, 40], [620, 150, 30], [980, 196, 50]]) R_(x, cx2, cy2, w2, 1, '#6a6a72');
+  /* grass corner and sandpit */
+  R_(x, 0, 108, 140, 108, '#5ab85a'); for (let i = 0; i < 400; i++) { x.fillStyle = r() < .5 ? '#4aa84a' : '#6ac86a'; x.fillRect(Math.floor(r() * 140), 108 + Math.floor(r() * 108), 1, 2); }
+  R_(x, 140, 108, 3, 108, '#4a4a54');
+  x.fillStyle = '#e8d090'; x.beginPath(); x.ellipse(70, 184, 52, 20, 0, 0, 6.29); x.fill(); x.strokeStyle = '#a87a40'; x.lineWidth = 3; x.stroke(); x.lineWidth = 1;
+  for (let i = 0; i < 80; i++) { x.fillStyle = '#d8b878'; x.fillRect(30 + Math.floor(r() * 80), 172 + Math.floor(r() * 24), 1, 1); }
+  /* hopscotch */
+  const hs = [[0, 1], [1, 1], [2, 2], [3, 1], [4, 2], [5, 1]];
+  let n = 1; for (const [i, w] of hs) for (let j = 0; j < w; j++) { const bx = 250 + i * 13, by = 160 + (w === 2 ? j * 13 - 6 : 0); x.strokeStyle = '#ffd23a'; x.strokeRect(bx + .5, by + .5, 12, 12); drawText(x, String(n++), bx + 5, by + 4, '#ffd23a'); }
+  /* four square */
+  x.strokeStyle = '#f0f0f0'; x.strokeRect(560.5, 150.5, 50, 50); R_(x, 585, 150, 1, 50, '#f0f0f0'); R_(x, 560, 175, 50, 1, '#f0f0f0'); R_(x, 562, 152, 22, 22, 'rgba(200,58,42,.35)');
+  /* court */
+  x.strokeStyle = '#f0f0f0'; x.strokeRect(830.5, 124.5, 310, 86); x.beginPath(); x.arc(1140, 167, 34, Math.PI / 2, Math.PI * 1.5); x.stroke(); R_(x, 985, 124, 1, 86, '#f0f0f0'); x.beginPath(); x.arc(985, 167, 14, 0, 6.29); x.stroke();
+  /* chalk drawings */
+  x.strokeStyle = '#ff9ac8'; x.beginPath(); x.arc(420, 196, 7, 0, 6.29); x.stroke(); for (let a = 0; a < 6.3; a += .8) R_(x, 420 + Math.cos(a) * 10, 196 + Math.sin(a) * 10, 2, 1, '#ffd23a');
+  drawText(x, 'BRICK WAS HERE', 700, 205, '#c8c8d8');
+  return c;
+}
+
+/* ---------- the principal (for the office screen) ---------- */
+function principalCanvas() {
+  const [c, x] = cnv(64, 48);
+  R_(x, 0, 0, 64, 48, '#3a2a3a'); for (let i = 0; i < 64; i += 8) R_(x, i, 0, 1, 34, '#4a3848');
+  R_(x, 2, 4, 23, 11, '#e8e0c0'); drawText(x, 'RULES', 4, 7, '#6a2a2a');
+  R_(x, 54, 6, 8, 8, '#ffffff'); R_(x, 57, 7, 1, 4, '#2a2a3a'); R_(x, 57, 10, 3, 1, '#2a2a3a');
+  R_(x, 29, 10, 22, 22, '#e8b090'); R_(x, 27, 8, 26, 5, '#5a4a3a'); R_(x, 27, 8, 4, 12, '#5a4a3a');
+  R_(x, 33, 18, 5, 2, '#2a2a3a'); R_(x, 42, 18, 5, 2, '#2a2a3a'); R_(x, 32, 16, 7, 1, OUTL); R_(x, 41, 15, 7, 1, OUTL); R_(x, 36, 26, 9, 1, '#6a2a2a');
+  R_(x, 23, 32, 34, 16, '#2a3a5a'); R_(x, 38, 32, 4, 10, '#c83a2a');
+  R_(x, 0, 38, 64, 10, '#6a4428'); R_(x, 0, 38, 64, 2, '#8a5a38'); R_(x, 6, 34, 10, 4, '#e8e8e8'); R_(x, 48, 33, 8, 5, '#c8c8d8');
+  return c;
+}
+
+function buildArt() {
+  sheet('ball', 8, 8, 2, ballFrame);
+  sheet('item', 8, 10, 3, itemFrame);
+  sheet('fx', 6, 6, 4, fxFrame, true);
+  sheet('bang', 10, 14, 2, bangFrame);
+  sheet('shadow', 16, 6, 1, x => { x.fillStyle = 'rgba(20,20,40,.32)'; x.beginPath(); x.ellipse(8, 3, 8, 3, 0, 0, 6.29); x.fill(); }, true);
+}
+
+/* ================= SCHOOLYARD BULLY: audio (WebAudio chip engine, ska score) ================= */
+const AU = { ctx: null, master: null, mus: null, sfx: null, wet: null, music: true, sound: true, noise: null, waves: {}, song: null, timer: null, step: 0, nextT: 0, eng: null, pending: null };
+try { AU.music = localStorage.getItem('sy_music') !== '0'; } catch (_) {}
+function initAudio() {
+  if (AU.ctx) { if (AU.ctx.state === 'suspended') AU.ctx.resume(); return; }
+  const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
+  const c = AU.ctx = new AC();
+  AU.master = c.createGain(); AU.master.gain.value = .8;
+  const comp = c.createDynamicsCompressor(); comp.threshold.value = -14; comp.ratio.value = 4;
+  AU.master.connect(comp); comp.connect(c.destination);
+  AU.mus = c.createGain(); AU.mus.gain.value = AU.music ? .55 : 0; AU.mus.connect(AU.master);
+  AU.sfx = c.createGain(); AU.sfx.gain.value = .9; AU.sfx.connect(AU.master);
+  const dl = c.createDelay(); dl.delayTime.value = .21; const fb = c.createGain(); fb.gain.value = .25; const lp = c.createBiquadFilter(); lp.frequency.value = 1700;
+  AU.wet = c.createGain(); AU.wet.gain.value = .32; AU.wet.connect(dl); dl.connect(lp); lp.connect(fb); fb.connect(dl); lp.connect(AU.mus);
+  const nb = c.createBuffer(1, c.sampleRate, c.sampleRate), d = nb.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; AU.noise = nb;
+  for (const duty of [.125, .25, .5]) { const n = 40, re = new Float32Array(n), im = new Float32Array(n); for (let k = 1; k < n; k++) re[k] = (2 / (k * Math.PI)) * Math.sin(k * Math.PI * duty); AU.waves[duty] = c.createPeriodicWave(re, im); }
+  if (AU.pending) { const p = AU.pending; AU.pending = null; playSong(p); }
+}
+function setMusic(on) { AU.music = on; try { localStorage.setItem('sy_music', on ? '1' : '0'); } catch (_) {} if (AU.mus) AU.mus.gain.setTargetAtTime(on ? .55 : 0, AU.ctx.currentTime, .05); }
+function voice(bus, wave, f, t, dur, vol, o = {}) {
+  const c = AU.ctx; if (!c) return;
+  const os = c.createOscillator(), g = c.createGain();
+  if (typeof wave === 'number') os.setPeriodicWave(AU.waves[wave]); else os.type = wave;
+  os.frequency.setValueAtTime(f, t);
+  if (o.f2) os.frequency.exponentialRampToValueAtTime(Math.max(20, o.f2), t + (o.slide || dur));
+  if (o.vib) { const l = c.createOscillator(), lg = c.createGain(); l.frequency.value = o.vib; lg.gain.setValueAtTime(0, t); lg.gain.linearRampToValueAtTime(o.vibD || f * .018, t + (o.vibDelay || 0) + .05); l.connect(lg); lg.connect(os.frequency); l.start(t); l.stop(t + dur + .05); }
+  let node = os;
+  if (o.lp) { const fl = c.createBiquadFilter(); fl.type = 'lowpass'; fl.frequency.value = o.lp; fl.Q.value = o.q || .7; node.connect(fl); node = fl; }
+  node.connect(g);
+  const a = o.att || .004;
+  g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t + a);
+  if (o.env === 'pluck') g.gain.exponentialRampToValueAtTime(.0006, t + dur);
+  else { g.gain.setValueAtTime(vol, t + Math.max(a, dur - (o.rel || .04))); g.gain.linearRampToValueAtTime(0, t + dur); }
+  g.connect(bus); if (o.wet) { const ws = c.createGain(); ws.gain.value = o.wet; g.connect(ws); ws.connect(AU.wet); }
+  os.start(t); os.stop(t + dur + .06);
+}
+function nz(bus, t, dur, vol, o = {}) {
+  const c = AU.ctx; if (!c) return;
+  const s = c.createBufferSource(); s.buffer = AU.noise; s.loop = true;
+  const f = c.createBiquadFilter(); f.type = o.type || 'bandpass'; f.frequency.setValueAtTime(o.f || 1000, t); if (o.f2) f.frequency.exponentialRampToValueAtTime(o.f2, t + dur); f.Q.value = o.q || 1;
+  const g = c.createGain(); g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t + (o.att || .002)); g.gain.exponentialRampToValueAtTime(.0006, t + dur);
+  s.connect(f); f.connect(g); g.connect(bus); if (o.wet) { const ws = c.createGain(); ws.gain.value = o.wet; g.connect(ws); ws.connect(AU.wet); }
+  s.start(t, Math.random() * .5); s.stop(t + dur + .03);
+}
+const mtof = m => 440 * Math.pow(2, (m - 69) / 12);
+
+const S = () => (AU.ctx && AU.sound) ? AU.ctx.currentTime + .005 : -1;
+/* ---------- music: a noir-funk combo (walking bass, muted trumpet, brushes) ---------- */
+const NOTE = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
+function chordOf(name) {
+  const m = /^([A-G])([#b]?)(.*)$/.exec(name); const r = NOTE[m[1]] + (m[2] === '#' ? 1 : m[2] === 'b' ? -1 : 0), q = m[3];
+  const iv = q === 'm7' ? [0, 3, 7, 10] : q === 'maj7' ? [0, 4, 7, 11] : q === '7' ? [0, 4, 7, 10] : q === 'm6' ? [0, 3, 7, 9] : q === 'm' ? [0, 3, 7] : q === '7#9' ? [0, 4, 7, 10, 15] : [0, 4, 7];
+  return { r, iv };
+}
+/* lead lines: [bar, step, midi, lenSteps] */
+function playSong(name) {
+  if (!AU.ctx) { AU.pending = name; return; }
+  if (AU.song && AU.song.name === name) return;
+  AU.song = Object.assign({ name }, SONGS[name]); AU.step = 0; AU.nextT = AU.ctx.currentTime + .1;
+  if (!AU.timer) AU.timer = setInterval(tickMusic, 25);
+}
+function stopSong() { AU.song = null; }
+function tickMusic() {
+  const c = AU.ctx, s = AU.song; if (!c || !s) return;
+  const sd = 60 / s.bpm / 4;
+  if (AU.nextT < c.currentTime - .3) AU.nextT = c.currentTime + .05;
+  while (AU.nextT < c.currentTime + .15) {
+    const st = AU.step, nb = s.bars.length, bar = Math.floor(st / 16) % nb, k = st % 16, loop = Math.floor(st / (16 * nb));
+    const t = AU.nextT + (k % 2 ? s.swing * sd * 2 : 0);
+    if (AU.music) musicStep(s, bar, k, loop, t, sd);
+    AU.step++; AU.nextT += sd;
+  }
+}
+
+/* ================= SCHOOLYARD BULLY: sounds and a ska-punk score with a recorder on lead ================= */
+const sfx = {
+  slap() { const t = S(); if (t < 0) return; nz(AU.sfx, t, .07, .45, { type: 'highpass', f: 1800 }); voice(AU.sfx, 'square', 520, t, .05, .08, { f2: 200, env: 'pluck', lp: 2400 }); },
+  shove() { const t = S(); if (t < 0) return; nz(AU.sfx, t, .14, .4, { type: 'lowpass', f: 900 }); voice(AU.sfx, 'sine', 160, t, .14, .3, { f2: 60, env: 'pluck' }); },
+  whoosh() { const t = S(); if (t < 0) return; nz(AU.sfx, t, .14, .14, { f: 600, f2: 2400, q: 2 }); },
+  hurt() { const t = S(); if (t < 0) return; voice(AU.sfx, .25, 620, t, .14, .07, { f2: 360, lp: 2200 }); },
+  thud() { const t = S(); if (t < 0) return; voice(AU.sfx, 'sine', 110, t, .2, .35, { f2: 40, env: 'pluck' }); nz(AU.sfx, t, .1, .2, { type: 'lowpass', f: 500 }); },
+  boing() { const t = S(); if (t < 0) return; voice(AU.sfx, 'triangle', 180, t, .22, .25, { f2: 520, slide: .08, env: 'pluck' }); voice(AU.sfx, 'sine', 90, t, .12, .2, { f2: 50, env: 'pluck' }); },
+  throw() { const t = S(); if (t < 0) return; nz(AU.sfx, t, .18, .16, { f: 500, f2: 2600, q: 2 }); },
+  pick() { const t = S(); if (t < 0) return; voice(AU.sfx, .25, 660, t, .06, .07, { f2: 990, env: 'pluck' }); },
+  munch() { const t = S(); if (t < 0) return; for (let i = 0; i < 4; i++) nz(AU.sfx, t + i * .08, .06, .22, { type: 'lowpass', f: 1400 }); [784, 1047].forEach((f, i) => voice(AU.sfx, .25, f, t + .34 + i * .07, .1, .06, { env: 'pluck' })); },
+  coin() { const t = S(); if (t < 0) return; [988, 1319, 1568].forEach((f, i) => voice(AU.sfx, .25, f, t + i * .06, .12, .07, { env: 'pluck', wet: .4 })); },
+  ko() { const t = S(); if (t < 0) return; voice(AU.sfx, 'sine', 900, t, .5, .12, { f2: 160 }); for (let i = 0; i < 4; i++) voice(AU.sfx, 'triangle', 1700 + i * 240, t + .18 + i * .07, .06, .05, { env: 'pluck' }); },
+  cry() { const t = S(); if (t < 0) return; voice(AU.sfx, .25, 700, t, .5, .07, { f2: 420, vib: 7, vibD: 20, lp: 2000 }); voice(AU.sfx, .25, 760, t + .55, .6, .06, { f2: 380, vib: 7, vibD: 22, lp: 2000 }); },
+  whistle() { const t = S(); if (t < 0) return; voice(AU.sfx, 'sine', 2900, t, .55, .14, { vib: 32, vibD: 140 }); voice(AU.sfx, 'sine', 2900, t + .62, .3, .12, { vib: 32, vibD: 140 }); },
+  bell() { const t = S(); if (t < 0) return; for (const [f, v] of [[1180, .09], [2390, .05], [3560, .03]]) voice(AU.sfx, 'triangle', f, t, 2.2, v, { vib: 18, vibD: f * .03, rel: .5 }); nz(AU.sfx, t, 2, .05, { f: 3800, q: 6 }); },
+  dodge() { const t = S(); if (t < 0) return; nz(AU.sfx, t, .16, .14, { f: 1200, f2: 400, q: 2 }); },
+  wind() { const t = S(); if (t < 0) return; voice(AU.sfx, .125, 440, t, .12, .04, { f2: 880, lp: 2400 }); },
+  cheer() { const t = S(); if (t < 0) return; for (let i = 0; i < 6; i++) nz(AU.sfx, t + i * .05, .3, .07, { f: 900 + Math.random() * 900, q: 3 }); },
+  aww() { const t = S(); if (t < 0) return; for (let i = 0; i < 4; i++) voice(AU.sfx, .5, 260 + i * 37, t + i * .02, .6, .025, { f2: 180 + i * 20, lp: 900 }); },
+  chant() { /* "FIGHT! FIGHT!" from a crowd of tiny synth voices */
+    const t = S(); if (t < 0) return;
+    for (let k = 0; k < 2; k++) { const tt = t + k * .3; for (let v = 0; v < 4; v++) { voice(AU.sfx, .5, 300 + v * 41, tt, .17, .028, { f2: 260 + v * 30, lp: 1300 }); } nz(AU.sfx, tt, .05, .12, { type: 'highpass', f: 3000 }); nz(AU.sfx, tt + .14, .04, .1, { type: 'highpass', f: 3500 }); }
+  },
+  blip(p = 1) { const t = S(); if (t < 0) return; voice(AU.sfx, .25, (380 + Math.random() * 140) * p, t, .045, .05, { env: 'pluck', lp: 2600 }); },
+  ui() { const t = S(); if (t < 0) return; voice(AU.sfx, .25, 880, t, .06, .06, { env: 'pluck' }); },
+  bad() { const t = S(); if (t < 0) return; voice(AU.sfx, .5, 196, t, .14, .07, { lp: 900 }); voice(AU.sfx, .5, 147, t + .12, .25, .07, { lp: 900 }); },
+  alarm() { const t = S(); if (t < 0) return; for (let i = 0; i < 2; i++) voice(AU.sfx, .5, 880, t + i * .16, .1, .05, { lp: 2600 }); },
+  stamp() { const t = S(); if (t < 0) return; nz(AU.sfx, t, .12, .5, { type: 'lowpass', f: 800 }); voice(AU.sfx, 'sine', 110, t, .15, .3, { f2: 50, env: 'pluck' }); },
+  tick() { const t = S(); if (t < 0) return; nz(AU.sfx, t, .02, .12, { type: 'highpass', f: 5000 }); }
+};
+/* the recorder: every school's least favourite instrument */
+function recorder(B, m, t, dur, v = .07) {
+  voice(B, 'triangle', mtof(m), t, dur, v, { att: .03, vib: 5, vibD: mtof(m) * .01, vibDelay: .15, lp: 3000, wet: .35 });
+  voice(B, 'sine', mtof(m + 12), t, dur, v * .25, { att: .03 });
+  nz(B, t, Math.min(.1, dur), v * .5, { f: mtof(m) * 3, q: 8 });
+}
+const SONGS = {
+  recess: { bpm: 152, swing: 0, bars: ['G', 'Em', 'C', 'D', 'G', 'Em', 'Am7', 'D'], kind: 'ska',
+    lead: [[0, 0, 79, 2], [0, 2, 79, 2], [0, 4, 81, 2], [0, 6, 83, 4], [0, 12, 81, 2], [0, 14, 79, 2], [1, 0, 76, 6], [1, 8, 74, 2], [1, 10, 76, 2], [1, 12, 79, 4],
+      [2, 0, 76, 2], [2, 2, 76, 2], [2, 4, 79, 2], [2, 6, 84, 4], [2, 12, 83, 2], [2, 14, 81, 2], [3, 0, 78, 8], [3, 10, 79, 2], [3, 12, 81, 4],
+      [4, 0, 83, 2], [4, 2, 83, 2], [4, 4, 81, 2], [4, 6, 79, 4], [4, 12, 76, 4], [5, 0, 79, 6], [5, 8, 76, 2], [5, 10, 74, 2], [5, 12, 71, 4],
+      [6, 0, 72, 2], [6, 2, 76, 2], [6, 4, 79, 2], [6, 6, 84, 6], [7, 0, 83, 4], [7, 4, 81, 4], [7, 8, 78, 4], [7, 12, 74, 4]] },
+  fight: { bpm: 176, swing: 0, bars: ['Am', 'F', 'C', 'G', 'Am', 'F', 'E', 'E'], kind: 'punk',
+    lead: [[0, 0, 76, 4], [0, 4, 76, 2], [0, 6, 77, 2], [0, 8, 76, 4], [0, 12, 72, 4], [1, 0, 77, 4], [1, 4, 77, 2], [1, 6, 76, 2], [1, 8, 72, 8],
+      [2, 0, 79, 4], [2, 4, 79, 2], [2, 6, 81, 2], [2, 8, 79, 4], [2, 12, 76, 4], [3, 0, 74, 8], [3, 8, 71, 8],
+      [6, 0, 76, 4], [6, 4, 80, 4], [6, 8, 83, 4], [6, 12, 80, 4], [7, 0, 88, 12]] },
+  office: { bpm: 66, swing: 0, bars: ['Dm', 'Dm', 'Bb', 'A7'], kind: 'office',
+    lead: [[0, 0, 62, 4], [0, 4, 65, 4], [0, 8, 64, 8], [1, 0, 62, 4], [1, 4, 61, 4], [1, 8, 62, 8], [2, 0, 65, 4], [2, 4, 69, 4], [2, 8, 67, 8], [3, 0, 64, 6], [3, 8, 61, 8]] }
+};
+function musicStep(s, bar, k, loop, t, sd) {
+  const B = AU.mus, ch = chordOf(s.bars[bar]);
+  let root = 36 + ch.r; if (root < 40) root += 12;
+  const tones = ch.iv.slice(0, 3).map(i => 60 + ch.r + i).map(m => m > 71 ? m - 12 : m);
+  if (s.kind === 'ska') {
+    /* bouncy bass: root, fifth, octave walk */
+    const bp = { 0: 0, 4: 7, 6: 12, 8: 0, 12: 7, 14: k === 14 && bar % 2 ? 10 : 4 };
+    if (k in bp) { voice(B, 'triangle', mtof(root + bp[k]), t, sd * 1.7, .22, { env: 'pluck' }); voice(B, .5, mtof(root + bp[k]), t, sd, .03, { env: 'pluck', lp: 700 }); }
+    /* the skank: chops on every off-beat */
+    if (k % 4 === 2) tones.forEach(m => voice(B, .25, mtof(m + 12), t, sd * .7, .028, { env: 'pluck', lp: 3200 }));
+    /* drums: off-beat hats, rim on 2 and 4 */
+    if (k % 2 === 0) nz(B, t, .04, k % 4 === 2 ? .07 : .03, { type: 'highpass', f: 7000 });
+    if (k === 4 || k === 12) { nz(B, t, .1, .14, { f: 2200, q: 1.2 }); voice(B, 'triangle', 330, t, .05, .06, { env: 'pluck' }); }
+    if (k === 0 || k === 8 || (k === 10 && bar % 2)) voice(B, 'sine', 110, t, .12, .3, { f2: 45, env: 'pluck' });
+    if (loop % 2 === 0) { for (const n of s.lead) if (n[0] === bar && n[1] === k) recorder(B, n[2], t, n[3] * sd * .92); }
+    else if (k === 0 || k === 6 || k === 10) voice(B, .125, mtof(tones[1] + 12), t, sd * 1.5, .03, { lp: 2400, env: 'pluck', wet: .4 });
+  } else if (s.kind === 'punk') {
+    if (k % 2 === 0) { voice(B, 'sawtooth', mtof(root), t, sd * 1.8, .07, { lp: 900, env: 'pluck' }); voice(B, 'triangle', mtof(root), t, sd * 1.8, .16, { env: 'pluck' }); }
+    if (k % 4 === 0) [0, 7, 12].forEach(i => voice(B, 'sawtooth', mtof(root + 24 + i), t, sd * 3.6, .022, { lp: 1800, env: 'pluck' }));
+    nz(B, t, .035, k % 4 === 2 ? .07 : .04, { type: 'highpass', f: 7500 });
+    if (k === 4 || k === 12) { nz(B, t, .14, .2, { f: 1800, q: .8 }); voice(B, 'triangle', 200, t, .06, .1, { env: 'pluck' }); }
+    if (k === 0 || k === 6 || k === 8 || k === 10) voice(B, 'sine', 110, t, .12, .34, { f2: 42, env: 'pluck' });
+    if (k === 0 && bar === 0) nz(B, t, .5, .12, { type: 'highpass', f: 5000 });
+    for (const n of s.lead) if (n[0] === bar && n[1] === k) voice(B, .25, mtof(n[2]), t, n[3] * sd * .9, .05, { lp: 2600, vib: 6, vibDelay: .1, wet: .3 });
+  } else {
+    /* the office: a clock, an organ, a sense of doom */
+    if (k % 4 === 0) nz(B, t, .02, .1, { type: 'highpass', f: 5000 });
+    if (k === 0) { tones.forEach(m => voice(B, 'triangle', mtof(m - 12), t, sd * 15, .03, { att: .2, rel: .4, vib: 3, vibD: 1 })); voice(B, 'sine', mtof(root - 12), t, sd * 15, .14, { att: .1, rel: .4 }); }
+    for (const n of s.lead) if (n[0] === bar && n[1] === k) recorder(B, n[2] + 12, t, n[3] * sd * .9, .05);
+  }
+}
+
+/* ================= SCHOOLYARD BULLY: the week, and everything the kids say ================= */
+/* each option: [what you say, outcome, what they say back]
+   outcomes: friend, ally, fight, fight2 (they bring a friend), stun (fight, but they start dizzy), weird, snack, juice, ball, sticker, flee */
+const CONVOS = [
+  { who: 'Horse Girl', line: "I'm not a kid. I'm a horse. Say neigh or leave my field.", opts: [
+    ['Neigh.', 'friend', 'Welcome to the herd.'], ['You are clearly a kid.', 'fight', 'HORSES CAN KICK.'], ['What do horses eat?', 'snack', 'Apples. Take one. I am full of oats.']] },
+  { who: 'Theo', line: "The teacher is three raccoons in a cardigan. Watch how she walks.", opts: [
+    ["I've always known.", 'ally', 'Finally. Someone awake. I have your back.'], ["That's ridiculous.", 'fight', 'SHE GOT TO YOU TOO!'], ['Which raccoon is in charge?', 'weird', 'The middle one. Always the middle one.']] },
+  { who: 'Sticker Baron', line: "Holographic sticker for your lunch money. Final offer.", opts: [
+    ['Deal.', 'sticker', 'Pleasure doing business.'], ['Stickers are for babies.', 'fight', 'TAKE THAT BACK.'], ['Make it two stickers.', 'friend', 'You drive a hard bargain, new kid.']] },
+  { who: 'Paste Kid', line: "Wanna know what purple tastes like?", opts: [
+    ['Yes.', 'weird', 'Like grapes, but sadder.'], ['No thank you.', 'friend', 'Polite. I respect that.'], ['Do you eat GLUE?', 'fight', "IT'S PASTE. THERE'S A DIFFERENCE."]] },
+  { who: 'Sir Stick', line: "This stick is a legendary sword. Kneel before it.", opts: [
+    ['I kneel.', 'ally', 'Rise, knight. Ride with me.'], ["It's a stick.", 'fight', 'EN GARDE!'], ['Mine is bigger.', 'fight', 'PROVE IT.']] },
+  { who: 'Lava Kid', line: "WHY ARE YOU STANDING IN THE LAVA?!", opts: [
+    ["It's not lava.", 'fight', 'THE LAVA HAS CLAIMED YOUR MANNERS.'], ['AAAH!', 'weird', 'Too late. You are toast now.'], ["I'm fireproof.", 'friend', 'Teach me your ways.']] },
+  { who: 'The Twins', line: "We're twins. Guess which one of us is the evil one.", opts: [
+    ['The left one.', 'fight2', 'HOW DID YOU KNOW.'], ['The right one.', 'fight2', 'WRONG. WE ARE BOTH EVIL.'], ['Neither of you.', 'friend', '...Nobody ever says that.']] },
+  { who: 'Dino Dan', line: "RAWR. I am a T-rex. You may hug me.", opts: [
+    ['Okay, hug.', 'friend', 'MY ARMS ARE TOO SHORT. BUT THANK YOU.'], ['No.', 'fight', 'RAAAAWR!'], ['Your arms are tiny.', 'fight', 'YOU TAKE THAT BACK.']] },
+  { who: 'Snack Goblin', line: "I have a secret snack stash. What's the password?", opts: [
+    ['Please?', 'snack', 'Correct. Nobody ever guesses please.'], ['Crackers.', 'weird', "Close. It's 'cracker'. Singular."], ['Give it or else.', 'fight', 'OR ELSE WHAT?']] },
+  { who: 'Bee Keeper', line: "I caught a bee. He's my best friend now. His name is Kevin.", opts: [
+    ['Hi Kevin.', 'friend', 'Kevin says hi back.'], ['Let him go.', 'weird', 'Kevin chooses to stay.'], ['Bees are gross.', 'fight', 'KEVIN. ATTACK.']] },
+  { who: 'Tough Tyler', line: "What are YOU looking at?", opts: [
+    ['Nothing.', 'weird', 'Exactly. Nothing. Keep it that way.'], ['You.', 'fight', 'WRONG ANSWER.'], ['Your shoelace is untied.', 'stun', 'Huh? Where?']] },
+  { who: 'Hall Monitor', line: "Do you have a hall pass?", opts: [
+    ["We're outside.", 'fight', 'OUTSIDE IS A HALL IF I SAY SO.'], ['Here. (Hand over a leaf)', 'friend', '...This is acceptable.'], ['Do YOU have one?', 'flee', "I... I'll be right back."]] },
+  { who: 'Pizza Thinker', line: "If you eat a whole pizza by yourself, is it still a slice?", opts: [
+    ['Yes.', 'weird', 'Then everything is a slice. Of life.'], ['No.', 'weird', "Then I've never eaten a slice. Wow."], ['Stop talking.', 'fight', 'YOU CANNOT SILENCE PHILOSOPHY.']] },
+  { who: 'Rumour Rita', line: "Someone said you said something about my mom.", opts: [
+    ["I didn't.", 'fight', "THAT'S WHAT SOMEONE WHO SAID IT WOULD SAY."], ['Your mom is nice.', 'friend', 'She IS nice. Okay. We are good.'], ['Which someone?', 'flee', 'Oh I KNOW who. Excuse me.']] },
+  { who: 'Digger', line: "I'm digging to the other side of the world. Wanna help?", opts: [
+    ['Sure.', 'ally', 'Partner! Save a shovel for me.'], ["That's impossible.", 'fight', 'DREAM CRUSHER!'], ["I'll hold the snacks.", 'snack', 'Here. You hold this one forever.']] },
+  { who: 'Spelling Bea', line: "Spell 'recess'. You have five seconds.", opts: [
+    ['R-E-C-E-S-S.', 'friend', 'Correct. You may pass.'], ['R-E-S-E-S.', 'fight', 'WRONG! WRONG! WRONG!'], ['No.', 'weird', 'Coward. But a smart coward.']] },
+  { who: 'Ninja Nils', line: "You cannot see me. I am a ninja.", opts: [
+    ['I can see you.', 'fight', 'IMPOSSIBLE!'], ['Where did he go?', 'friend', 'Heh. Heh heh.'], ['Nice pyjamas.', 'fight', 'THEY ARE NINJA ROBES!']] },
+  { who: 'Swing Lord', line: "That's my swing. I sat on it in second grade. It's mine forever.", opts: [
+    ['Okay.', 'weird', 'Good. The law is the law.'], ['Finders keepers.', 'fight', 'LOSERS WEEPERS. YOU.'], ['Can I rent it?', 'sticker', 'One sticker an hour. Here is your receipt.']] },
+  { who: 'Ball Hog', line: "This is my ball. You can look at it. But not with your eyes.", opts: [
+    ['Fine.', 'weird', 'Stop looking at it with your eyes.'], ['Give it.', 'fight', 'PRY IT FROM MY HANDS.'], ['Catch!', 'ball', 'Huh? Oh. I have two now. Have one.']] },
+  { who: 'Future CEO', line: "I'm starting a business. You can be my first employee. Pay is zero.", opts: [
+    ['I accept.', 'juice', 'Welcome aboard. Company juice.'], ['Zero?!', 'fight', 'YOU ARE FIRED. AND HIT.'], ['I want to be the boss.', 'friend', 'Bold. Vice boss. Final offer.']] },
+  { who: 'Shoe Critic', line: "Your shoes are so ugly that I respect them.", opts: [
+    ['Thank you?', 'friend', 'Wear them with pride.'], ['Your FACE is ugly.', 'fight', 'MY FACE IS LIMITED EDITION.'], ['They were my uncle\'s.', 'weird', 'Your uncle had feet the size of a boat.']] },
+  { who: 'Big Mo', line: "Everyone says the new kid is tough. Prove it.", opts: [
+    ["I'm a pacifist.", 'weird', 'Boring. But fine.'], ['Bring it.', 'fight', 'OH IT IS BROUGHT.'], ['Everyone is wrong.', 'friend', 'Honest. Okay. I like you.']] },
+  { who: 'Egg Kid', line: "Smell my sandwich.", opts: [
+    ['No.', 'fight', 'SMELL IT!'], ['Okay.', 'weird', 'It smells like victory. And egg.'], ['Is that egg?', 'snack', "It's ALL egg. Want half?"]] },
+  { who: 'Hypno Hanna', line: "Look into my eyes. You are getting very sleepy.", opts: [
+    ['...zzz.', 'weird', 'Excellent. Now cluck like a chicken. ...Great, you did it.'], ["No I'm not.", 'fight', 'THEN YOU WILL BE SLEEPY BY FORCE.'], ['You look sleepy.', 'flee', '...I need a nap.']] },
+  { who: 'Time Kid', line: "I'm from the future. Don't eat the fish sticks on Thursday.", opts: [
+    ['Thanks for the tip.', 'friend', 'Also, duck.'], ['Prove it.', 'weird', "In three seconds you'll say 'what'."], ['What?', 'weird', 'See? Told you.']] },
+  { who: 'Lonely Leo', line: "Nobody wants to play with me.", opts: [
+    ["I'll play.", 'ally', 'REALLY? I will follow you everywhere.'], ['Good.', 'fight', 'Now I am ANGRY and lonely.'], ['Have you tried being a horse?', 'weird', '...I will look into it.']] },
+  { who: 'Worm Collector', line: "Want to see my worm collection? I keep it in my pocket.", opts: [
+    ['Yes!', 'friend', 'This one is Gerald. He is shy.'], ['Ew.', 'fight', 'GERALD HEARD THAT.'], ['Is one of them eating your sandwich?', 'flee', 'GERALD NO.']] },
+  { who: 'Rule Kid', line: "Running is not allowed. You walked too fast. That counts.", opts: [
+    ['Sorry.', 'friend', 'Apology accepted. Walk slower.'], ['Make me.', 'fight', 'WALKING IS ALSO A FIGHT NOW.'], ['You are running right now.', 'flee', 'I... I have to report myself.']] },
+  { who: 'Gum Dealer', line: "Psst. Gum. Grape or mystery?", opts: [
+    ['Grape.', 'snack', 'Classic choice.'], ['Mystery.', 'weird', "It's chewed. That's the mystery."], ['Gum is banned.', 'fight', 'SNITCH!']] },
+  { who: 'Joke Kid', line: "Knock knock.", opts: [
+    ["Who's there?", 'weird', 'Interrupting cow. MOO. Ha. Got you.'], ['No.', 'fight', 'YOU HAVE TO SAY WHO IS THERE.'], ['MOO.', 'friend', 'You... you knew. Respect.']] }
+];
+const STARTERS = ["What are YOU looking at?", "You're in my spot.", "Nice backpack. Is it from the baby store?", "My brother can beat you up. I'm his brother.", "You bumped me. On purpose. Probably.", "New kid has to fight someone. It's the rule."];
+const DAYS = [
+  { name: 'Monday', len: 95, kids: 16, mean: 1, balls: 2, items: 2, tip: 'Walk up to kids and press {TALK}. Some of them are nice. Some of them are not.' },
+  { name: 'Tuesday', len: 100, kids: 18, mean: 2, balls: 2, items: 2, tip: 'Fights draw a crowd. Crowds draw Ms. Grimsby. Brawl where she cannot see.' },
+  { name: 'Wednesday', len: 100, kids: 18, mean: 3, balls: 6, items: 2, tip: 'Dodgeball Wednesday. Grab a ball with {TALK}, throw it with {HIT}.' },
+  { name: 'Thursday', len: 105, kids: 20, mean: 4, balls: 3, items: 3, tip: 'Thursday. Everyone is cranky. Make some friends, they will back you up.' },
+  { name: 'Friday', len: 110, kids: 20, mean: 3, balls: 3, items: 3, boss: true, tip: 'Friday. Brick runs this yard. He has heard about you.' }
+];
+const BOSS_LINES = { line: "So you're the new kid everybody's talking about.", opts: [['Yes.', 'boss', 'Then everybody is about to watch you lose.'], ['No.', 'boss', 'Liar. I can smell new kid on you.'], ['Who is asking?', 'boss', 'BRICK. Everybody knows Brick.']] };
+const OUCH = ['OW!', 'HEY!', 'RUDE!', 'OOF!', 'MOM!'];
+const KO_LINES = ["I'M TELLING!", 'NOT FAIR!', 'REMATCH!', 'MY LUNCH MONEY...', 'I SLIPPED!'];
+const CROWD_LINES = ['FIGHT! FIGHT!', 'OHHHH!', 'GET HIM!', 'GET HER!', 'OH SNAP!', 'OOOH!'];
+const RANKS = [[0, 'Hall Pass Holder'], [600, 'Snack Broker'], [1400, 'Swing Set Sheriff'], [2400, 'Legend of Recess'], [3600, 'Ruler of the Schoolyard']];
+
+/* ================= SCHOOLYARD BULLY: game ================= */
+const GH = 216, BAND0 = 118, BAND1 = 208;
+const DEBUG = /[?&]debug/.test(location.search);
+let IS_TOUCH = matchMedia('(pointer:coarse)').matches;
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+const rnd = (a, b) => a + Math.random() * (b - a);
+const pick = a => a[Math.floor(Math.random() * a.length)];
+const hex = c => parseInt(c.slice(1), 16);
+const KL = () => IS_TOUCH ? { HIT: 'HIT', DODGE: 'DODGE', TALK: 'TALK' } : { HIT: 'J', DODGE: 'K', TALK: 'E' };
+const K = s => s.replace(/\{(\w+)\}/g, (_, k) => KL()[k] || k);
+
+/* ---------- input ---------- */
+const IN = { h: {}, p: {}, sx: 0, sy: 0 };
+function inDown(a) { if (!IN.h[a]) IN.p[a] = true; IN.h[a] = true; initAudio(); }
+function inUp(a) { IN.h[a] = false; }
+const held = a => !!IN.h[a], hit = a => !!IN.p[a];
+function inClear() { IN.p = {}; }
+const KEYMAP = { ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right', ArrowUp: 'up', KeyW: 'up', ArrowDown: 'down', KeyS: 'down', KeyJ: 'hit', Space: 'hit', KeyK: 'dodge', ShiftLeft: 'dodge', ShiftRight: 'dodge', KeyE: 'talk', Enter: 'talk' };
+addEventListener('keydown', e => {
+  if (DLG.open) { dlgKey(e); return; }
+  if (e.code in KEYMAP) { e.preventDefault(); if (!e.repeat) inDown(KEYMAP[e.code]); if (IS_TOUCH) { IS_TOUCH = false; layout(); } }
+  else if (e.code === 'KeyM') toggleMusic();
+});
+addEventListener('keyup', e => { if (e.code in KEYMAP) inUp(KEYMAP[e.code]); });
+addEventListener('blur', () => { IN.h = {}; IN.sx = IN.sy = 0; });
+function moveVec() {
+  let x = (held('right') ? 1 : 0) - (held('left') ? 1 : 0), y = (held('down') ? 1 : 0) - (held('up') ? 1 : 0);
+  if (IN.sx || IN.sy) { x = IN.sx; y = IN.sy; }
+  const m = Math.hypot(x, y); if (m > 1) { x /= m; y /= m; }
+  return [x, y];
+}
+
+/* ---------- run state ---------- */
+let G = null, game = null;
+function newRun() {
+  G = { day: 0, rep: 0, hp: 100, over: false, used: new Set(), tipSeen: {}, quotes: [],
+    stats: { won: 0, lost: 0, kos: 0, talks: 0, friends: 0, allies: 0, ballHits: 0, dodges: 0, seen: 0, snacks: 0, weird: 0, fightsStarted: 0, slapped: 0, bossBeaten: false } };
+}
+function convoFor() {
+  let pool = CONVOS.filter(c => !G.used.has(c.who));
+  if (!pool.length) { G.used.clear(); pool = CONVOS.slice(); }
+  const c = pick(pool); G.used.add(c.who); return c;
+}
+
+/* ---------- shared fx helpers (bitmap font text in the world) ---------- */
+const Fx = {
+  pop(sc, x, y, text, col = '#ffd23a', big) {
+    const t = sc.add.bitmapText(Math.round(x), Math.round(y), 'px', text.toUpperCase()).setLetterSpacing(-1).setOrigin(.5).setDepth(900).setTint(hex(col));
+    if (big) t.setScale(2);
+    sc.tweens.add({ targets: t, y: y - 16, duration: 750, ease: 'Quad.out' });
+    sc.tweens.add({ targets: t, alpha: 0, delay: 550, duration: 300, onComplete: () => t.destroy() });
+  },
+  banner(sc, text, col = '#ffd23a', ms = 1400, y = 56) {
+    const cam = sc.cameras.main;
+    const t = sc.add.bitmapText(cam.width / 2, y, 'px', text.toUpperCase()).setLetterSpacing(-1).setOrigin(.5).setScrollFactor(0).setDepth(950).setTint(hex(col)).setScale(.5);
+    sc.tweens.add({ targets: t, scale: 2, duration: 220, ease: 'Back.out' });
+    sc.tweens.add({ targets: t, alpha: 0, delay: ms, duration: 300, onComplete: () => t.destroy() });
+  },
+  say(sc, a, text, ms = 1600, col = '#2a2238') {
+    for (const bb of sc.bubbles) if (bb.a === a) bb.kill = true;
+    const t = sc.add.bitmapText(0, 0, 'px', text.toUpperCase()).setLetterSpacing(-1).setOrigin(.5, 1).setDepth(925).setTint(hex(col));
+    const w = Math.round(t.width) + 6, g = sc.add.graphics().setDepth(924);
+    g.fillStyle(0xffffff, .96); g.fillRoundedRect(-w / 2, -10, w, 10, 3); g.fillTriangle(-2, 0, 3, 0, 0, 3); g.lineStyle(1, 0x2a2238, 1); g.strokeRoundedRect(-w / 2, -10, w, 10, 3);
+    sc.bubbles.push({ a, t, g, w, until: sc.time.now + ms });
+  },
+  updBubbles(sc) {
+    const cam = sc.cameras.main;
+    for (const bb of sc.bubbles) {
+      if (bb.kill || sc.time.now > bb.until || bb.a.gone) { bb.t.destroy(); bb.g.destroy(); bb.dead = true; continue; }
+      const a = bb.a, x = Math.round(clamp(a.x, cam.scrollX + bb.w / 2 + 2, cam.scrollX + cam.width - bb.w / 2 - 2)), y = Math.round(Math.max(13, a.y - a.z - a.h - 4));
+      bb.t.setPosition(x, y - 1); bb.g.setPosition(x, y);
+    }
+    sc.bubbles = sc.bubbles.filter(b => !b.dead);
+  },
+  bang(sc, x, y, s = .8) {
+    const b = sc.add.image(x, y, 'bang', 0).setDepth(930);
+    sc.tweens.add({ targets: b, y: y - 3, duration: 120, yoyo: true, repeat: -1 });
+    sc.time.delayedCall(s * 1000, () => b.destroy()); return b;
+  },
+  puff(sc, x, y, n = 5, tint = 0xe8e0d0, d = 500) {
+    for (let i = 0; i < n; i++) {
+      const p = sc.add.image(x + rnd(-4, 4), y + rnd(-2, 2), 'fx', 0).setDepth(y + 1).setTint(tint).setAlpha(.85);
+      sc.tweens.add({ targets: p, x: p.x + rnd(-16, 16), y: p.y - rnd(2, 10), scale: rnd(1.4, 2.4), alpha: 0, duration: rnd(d * .7, d * 1.2), onComplete: () => p.destroy() });
+    }
+  },
+  impact(sc, x, y, big) {
+    const s = sc.add.image(x, y, 'fx', 1).setDepth(931).setScale(big ? 3 : 2).setTint(0xffffff);
+    sc.tweens.add({ targets: s, scale: big ? 5 : 3.5, alpha: 0, angle: 45, duration: 180, onComplete: () => s.destroy() });
+    const w = big ? 'POW!' : pick(['SLAP!', 'BAP!', 'WHAP!']);
+    Fx.pop(sc, x + rnd(-6, 6), y - 6, w, big ? '#ff5a5a' : '#ffffff');
+  }
+};
+
+/* =====================================================================
+   ACTORS: every kid, the player, the teacher and Brick share one body
+   ===================================================================== */
+let KIDN = 0;
+function kidTexture(sc, k) {
+  const key = 'kid' + (KIDN++), s = kidSheetCanvas(k), t = sc.textures.addCanvas(key, s.c);
+  for (let i = 0; i < s.n; i++) t.add(i, 0, i * s.fw, 0, s.fw, s.fh);
+  return { key, fw: s.fw, fh: s.fh };
+}
+const STATS = [
+  { hp: 22, spd: 60, dmg: 6, wind: .34 }, { hp: 32, spd: 52, dmg: 8, wind: .4 }, { hp: 46, spd: 42, dmg: 12, wind: .5 },
+  { hp: 170, spd: 46, dmg: 16, wind: .55 }, { hp: 999, spd: 44, dmg: 0, wind: 1 }
+];
+class Actor {
+  constructor(sc, k, x, y, team) {
+    this.sc = sc; this.k = k; this.team = team; this.x = x; this.y = y; this.z = 0; this.vx = 0; this.vy = 0; this.vz = 0; this.face = 1;
+    const tex = kidTexture(sc, k); this.key = tex.key; this.h = BODY[k.sz].t;
+    this.spr = sc.add.sprite(x, y, tex.key, 0).setOrigin(.5, (tex.fh - 2) / tex.fh);
+    this.sh = sc.add.image(x, y, 'shadow').setScale(k.sz >= 3 ? 1.4 : .9, 1).setAlpha(.9);
+    const S0 = STATS[k.sz]; this.hpMax = S0.hp; this.hp = S0.hp; this.spd = S0.spd; this.dmg = S0.dmg; this.windT = S0.wind;
+    this.st = 'idle'; this.t = 0; this.cd = rnd(.5, 1.2); this.inv = 0; this.anim = 0; this.hold = null; this.talked = false; this.ko = false;
+    this.pitch = rnd(.8, 1.4) * (k.sz === 0 ? 1.25 : k.sz >= 2 ? .8 : 1);
+    this.tx = x; this.ty = y; this.wait = rnd(0, 2);
+  }
+  get gone() { return this.dead; }
+  frame(f) { this.spr.setFrame(f); }
+  setFace(d) { if (d) this.face = d > 0 ? 1 : -1; }
+  move(dx, dy, dt) {
+    let nx = this.x + dx * dt, ny = clamp(this.y + dy * dt, BAND0, BAND1);
+    nx = clamp(nx, 6, YW - 6);
+    for (const b of this.sc.blocks) {
+      if (nx > b.x0 - 4 && nx < b.x1 + 4 && ny > b.y0 - 2 && ny < b.y1 + 2) {
+        const ox = Math.min(nx - (b.x0 - 4), b.x1 + 4 - nx), oy = Math.min(ny - (b.y0 - 2), b.y1 + 2 - ny);
+        if (ox < oy) nx = nx - (b.x0 + b.x1) / 2 < 0 ? b.x0 - 4 : b.x1 + 4; else ny = ny - (b.y0 + b.y1) / 2 < 0 ? b.y0 - 2 : b.y1 + 2;
+      }
+    }
+    this.x = nx; this.y = clamp(ny, BAND0, BAND1);
+  }
+  physics(dt) {
+    if (this.z > 0 || this.vz) { this.vz -= 600 * dt; this.z += this.vz * dt; if (this.z <= 0) { if (this.vz < -120 && this.st !== 'hold') { sfx.thud(); Fx.puff(this.sc, this.x, this.y, 3, 0xd8d0c8, 300); } this.z = 0; this.vz = 0; } }
+    if (this.vx || this.vy) { this.move(this.vx, this.vy, dt); const f = Math.pow(.02, dt); this.vx *= f; this.vy *= f; if (Math.abs(this.vx) < 2) this.vx = 0; if (Math.abs(this.vy) < 2) this.vy = 0; }
+  }
+  draw() {
+    this.spr.setPosition(Math.round(this.x), Math.round(this.y - this.z)).setFlipX(this.face < 0).setDepth(this.y + (this.team === 'player' ? .5 : 0));
+    this.sh.setPosition(Math.round(this.x), Math.round(this.y)).setDepth(this.y - 40);
+    if (this.hold) this.hold.setPosition(Math.round(this.x + this.face * 2), Math.round(this.y - this.z - this.h - 4)).setDepth(this.y + .6);
+    this.spr.setAlpha(this.inv > 0 && this.team === 'player' && Math.floor(this.inv * 16) % 2 ? .5 : 1);
+  }
+  walkFrame(dt, moving) { if (moving) { this.anim += dt * 9; this.frame(KF.walk + Math.floor(this.anim) % 4); } else { this.anim += dt * 2; this.frame(Math.floor(this.anim) % 2); } }
+  hurtBy(src, dmg, big) {
+    const sc = this.sc;
+    if (this.inv > 0 || this.ko || this.st === 'down') return false;
+    this.hp -= dmg; this.setFace(src.x - this.x);
+    const dir = this.x >= src.x ? 1 : -1;
+    Fx.impact(sc, (this.x + src.x) / 2, this.y - this.h * .6 - this.z, big);
+    if (big) { sfx.shove(); sc.cameras.main.shake(120, .006); } else sfx.slap();
+    sfx.hurt();
+    if (this.hold) this.dropHold();
+    if (this.hp <= 0) { this.knock(dir, 160); this.ko = true; this.st = 'down'; this.t = .9; return true; }
+    if (big) { this.knock(dir, 150); this.st = 'down'; this.t = .8; }
+    else { this.vx = dir * 70; this.st = 'hurt'; this.t = .28; }
+    if (this.team !== 'player' && Math.random() < .3) Fx.say(sc, this, pick(OUCH), 700);
+    return true;
+  }
+  knock(dir, sp) { this.vx = dir * sp; this.vz = 150; this.z = 1; }
+  dropHold() { const b = this.hold; if (!b) return; this.hold = null; this.sc.dropBall(b, this.x + this.face * 8, this.y); }
+  destroy() { this.dead = true; this.spr.destroy(); this.sh.destroy(); if (this.hold) this.hold.destroy(); }
+}
+
+/* =====================================================================
+   THE YARD
+   ===================================================================== */
+class Yard extends Phaser.Scene {
+  constructor() { super('yard'); }
+  create() {
+    const D = this.D = DAYS[G.day];
+    /* free the per-kid textures from the last recess */
+    for (const k of this.textures.getTextureKeys()) if (/^kid\d+$/.test(k)) this.textures.remove(k);
+    this.bubbles = []; this.kids = []; this.balls = []; this.items = []; this.t = D.len; this.live = false; this.ending = false; this.fightOn = false; this.fightT = 0; this.chantT = 0; this.dayRep0 = G.rep; this.bossSpawned = false;
+    G.hp = Math.max(G.hp, 60);
+    setMode('yard'); playSong('recess');
+    const cam = this.cameras.main; cam.setBounds(0, 0, YW, GH); cam.setRoundPixels(true);
+    this.add.image(0, 0, texC(this, 'yard', yardTex)).setOrigin(0).setDepth(-1000);
+    /* props: [key, maker, x, yBase, blocker footprint w/h] */
+    this.blocks = []; this.occ = [];
+    const prop = (key, make, x, yb, bw, bh, occ) => { const im = this.add.image(x, yb, texC(this, key, make)).setOrigin(.5, 1).setDepth(yb); if (bw) { const b = { x0: x - bw / 2, x1: x + bw / 2, y0: yb - bh, y1: yb }; this.blocks.push(b); if (occ) this.occ.push(b); } return im; };
+    prop('swing', swingTex, 66, 152, 0, 0);
+    this.seats = [this.add.image(46, 140, texC(this, 'seat', seatTex)).setDepth(150), this.add.image(74, 140, 'seat').setDepth(150)];
+    prop('tree', treeTex, 205, 146, 12, 6, true);
+    prop('bench', benchTex, 420, 132, 38, 6); prop('bench', benchTex, 770, 132, 38, 6);
+    prop('fountain', fountainTex, 545, 122, 12, 5); prop('bin', binTex, 700, 124, 12, 5);
+    prop('rack', rackTex, 330, 124, 46, 5);
+    prop('hedge', () => hedgeTex(78), 640, 172, 76, 10, true);
+    prop('shed', shedTex, 1060, 150, 80, 28, true);
+    prop('hoop', hoopTex, 1138, 168, 6, 4);
+    this.coneG = this.add.graphics().setDepth(-900);
+    /* the player */
+    const P = this.P = new Actor(this, PLAYER_KID, 520, 170, 'player');
+    P.hpMax = 100; P.hp = G.hp; P.spd = 74; P.combo = 0; P.comboT = 0; P.hitCd = 0; P.dodgeCd = 0;
+    cam.startFollow(P.spr, true, .12, 0, 0, 0); cam.scrollX = 520 - cam.width / 2;
+    /* the teacher */
+    const T = this.T = new Actor(this, TEACHER_KID, 300, 190, 'teacher');
+    T.way = [[300, 190], [520, 140], [760, 196], [930, 160], [420, 200], [160, 170]]; T.wi = 0; T.st = 'patrol'; T.wait = 0; T.busy = 0; this.busted = 0; this.seen = false;
+    /* kids */
+    const r = Math.random;
+    for (let i = 0; i < D.kids; i++) {
+      let x, y; do { x = rnd(20, YW - 20); y = rnd(BAND0 + 4, BAND1 - 4); } while (Math.abs(x - 520) < 60 || this.blocked(x, y));
+      const k = this.addKid(randomKid(r), x, y, 'neutral'); k.convo = convoFor();
+      if (i < 2) { k.act = 'swing'; k.seat = i; k.x = [46, 74][i]; k.y = 150; }
+      else if (i < 4) { k.act = 'dig'; k.x = rnd(40, 100); k.y = rnd(176, 192); }
+    }
+    for (let i = 0; i < D.mean; i++) { const k = this.addKid(randomKid(r, Math.random() < .5 ? 2 : 1), rnd(40, YW - 40), rnd(BAND0, BAND1), 'neutral'); k.k.mean = true; k.mean = true; k.meanT = rnd(8, D.len - 20); k.convo = { who: 'Some Kid', line: pick(STARTERS), opts: [['Leave me alone.', 'fight', 'NO.'], ['Want a snack instead?', Math.random() < .5 ? 'friend' : 'fight', ''], ['Look, a dog!', 'stun', 'WHERE?!']] }; }
+    for (let i = 0; i < D.balls; i++) this.spawnBall(rnd(60, YW - 60), rnd(BAND0 + 6, BAND1 - 6));
+    const spots = [[420, 136], [770, 136], [545, 128], [250, 200], [880, 190], [1110, 140]];
+    for (let i = 0; i < D.items; i++) { const s = spots[(G.day + i * 2) % spots.length]; this.spawnItem(Math.random() < .5 ? 0 : 1, s[0] + rnd(-8, 8), s[1]); }
+    if (Math.random() < .5) this.spawnItem(2, rnd(100, YW - 100), rnd(BAND0, BAND1));
+    this.prompt = this.add.bitmapText(0, 0, 'px', '').setLetterSpacing(-1).setOrigin(.5, 1).setDepth(940).setTint(0xffd23a);
+    /* day card */
+    Fx.banner(this, D.name.toUpperCase(), '#ffffff', 1400, 70); Fx.banner(this, 'RECESS', '#ffd23a', 1400, 92);
+    sfx.bell();
+    this.time.delayedCall(900, () => { this.live = true; setTip(D.tip); });
+    hudDay(this);
+    if (DEBUG) window.SC = this;
+  }
+  blocked(x, y) { return this.blocks.some(b => x > b.x0 - 6 && x < b.x1 + 6 && y > b.y0 - 6 && y < b.y1 + 6); }
+  addKid(k, x, y, team) { const a = new Actor(this, k, x, y, team); this.kids.push(a); return a; }
+  spawnBall(x, y) { const b = this.add.image(x, y - 4, 'ball', 0).setOrigin(.5, 1); b.gx = x; b.gy = y; b.z = 0; b.vx = 0; b.vz = 0; b.fly = false; b.free = true; this.balls.push(b); b.setDepth(y); return b; }
+  dropBall(b, x, y) { b.gx = clamp(x, 8, YW - 8); b.gy = clamp(y, BAND0, BAND1); b.z = 10; b.vz = 80; b.vx = 0; b.fly = false; b.free = true; b.owner = null; }
+  spawnItem(f, x, y) { const it = this.add.image(x, y, 'item', f).setOrigin(.5, 1).setDepth(y); it.kind = ['juice', 'snack', 'sticker'][f]; it.gx = x; it.gy = y; this.items.push(it); this.tweens.add({ targets: it, y: y - 2, duration: 500, yoyo: true, repeat: -1 }); return it; }
+
+  /* ---------- the main loop ---------- */
+  update(time, delta) {
+    const dt = Math.min(delta / 1000, 1 / 20);
+    if (DLG.open) { Fx.updBubbles(this); inClear(); return; }
+    if (this.live && !this.ending) { this.t -= dt; if (this.t <= 0) this.bell(); }
+    this.updPlayer(dt);
+    for (const a of this.kids) if (!a.dead) this.updKid(a, dt);
+    this.updTeacher(dt);
+    this.updBalls(dt); this.updItems();
+    this.updFight(dt);
+    for (const a of [this.P, this.T, ...this.kids]) if (!a.dead) { a.physics(dt); a.draw(); }
+    this.kids = this.kids.filter(a => !a.dead);
+    for (let i = 0; i < 2; i++) { const kid = this.kids.find(k => k.act === 'swing' && k.seat === i && k.st === 'idle'); const s = this.seats[i]; if (kid) s.setPosition(Math.round(kid.x), Math.round(kid.y - kid.z - 10)).setDepth(kid.y - .1); }
+    Fx.updBubbles(this); this.updPrompt(); this.drawCone();
+    if (DEBUG && this.boss) window.BOSS = this.boss;
+    hudTick(this);
+    inClear();
+  }
+  updPlayer(dt) {
+    const P = this.P;
+    P.inv = Math.max(0, P.inv - dt); P.hitCd -= dt; P.comboT -= dt; P.dodgeCd -= dt;
+    if (P.st === 'down') { P.t -= dt; P.frame(KF.lie); if (P.t <= 0) { if (P.hp <= 0) return this.lose('ko'); P.st = 'idle'; P.inv = .8; } return; }
+    if (P.st === 'hurt') { P.t -= dt; P.frame(KF.hurt); if (P.t <= 0) P.st = 'idle'; return; }
+    if (P.st === 'cry') { P.frame(KF.cry); return; }
+    if (!this.live || this.ending) { P.walkFrame(dt, false); return; }
+    if (P.st === 'dodge') { P.t -= dt; P.move(P.dvx, P.dvy, dt); P.frame(KF.dodge); if (P.t <= 0) P.st = 'idle'; return; }
+    if (P.st === 'atk') { P.t -= dt; if (P.t <= 0) P.st = 'idle'; return; }
+    const [mx, my] = moveVec();
+    if (mx || my) { P.move(mx * P.spd, my * P.spd * .75, dt); P.setFace(mx); }
+    P.walkFrame(dt, !!(mx || my));
+    if (hit('dodge') && P.dodgeCd <= 0) {
+      const d = (mx || my) ? [mx, my] : [P.face, 0], m = Math.hypot(d[0], d[1]);
+      P.st = 'dodge'; P.t = .28; P.dvx = d[0] / m * 190; P.dvy = d[1] / m * 140; P.inv = .32; P.dodgeCd = .55; sfx.dodge(); Fx.puff(this, P.x, P.y, 3, 0xd8d0c8, 300);
+      return;
+    }
+    if (hit('hit') && P.hitCd <= 0) { if (P.hold) this.throwBall(P); else this.playerAttack(); return; }
+    if (hit('talk')) this.playerTalk();
+  }
+  playerAttack() {
+    const P = this.P;
+    P.combo = P.comboT > 0 ? (P.combo + 1) % 3 : 0; P.comboT = .55;
+    const big = P.combo === 2;
+    P.st = 'atk'; P.t = big ? .26 : .17; P.hitCd = big ? .36 : .2; P.frame(KF.punch); sfx.whoosh();
+    let any = false;
+    for (const a of this.kids) {
+      if (a.dead || a.ko || a.team === 'ally' || a.st === 'down') continue;
+      const dx = (a.x - P.x) * P.face;
+      if (dx > -4 && dx < (a.k.sz === 3 ? 28 : 21) && Math.abs(a.y - P.y) < 9 && a.z < 14) {
+        if (a.hurtBy(P, big ? 13 : 7, big)) {
+          any = true;
+          if (a.team === 'neutral') { G.stats.slapped++; this.provoke(a, pick(['HEY! WHAT WAS THAT FOR?', 'YOU ASKED FOR IT.', 'OH IT IS ON.'])); }
+          if (a.ko) this.onKO(a);
+        }
+      }
+    }
+    if (!any && big) this.cameras.main.shake(40, .002);
+  }
+  throwBall(P) {
+    const b = P.hold; P.hold = null; P.st = 'atk'; P.t = .2; P.hitCd = .3; P.frame(KF.throw); sfx.throw();
+    b.fly = true; b.owner = P; b.gx = P.x + P.face * 8; b.gy = P.y; b.z = P.h + 2; b.vx = P.face * 240; b.vz = 30; b.free = false;
+  }
+  playerTalk() {
+    const P = this.P;
+    let best = null, bd = 1e9;
+    for (const it of [...this.balls, ...this.items]) { if (it.fly || it.owner || it.taken) continue; const d = Math.abs(it.gx - P.x) + Math.abs(it.gy - P.y) * 1.4; if (d < 20 && d < bd) { bd = d; best = it; } }
+    if (best && !P.hold) { if (this.balls.includes(best)) { P.hold = best; best.owner = P; best.free = false; sfx.pick(); tipKey('ball'); } else this.useItem(best); return; }
+    const k = this.talkTarget(); if (k) this.openTalk(k);
+  }
+  talkTarget() {
+    const P = this.P; let best = null, bd = 1e9;
+    for (const a of this.kids) { if (a.dead || a.team !== 'neutral' || a.talked || a.ko || a.st === 'crowd') continue; const d = Math.abs(a.x - P.x) + Math.abs(a.y - P.y) * 1.6; if (d < 30 && d < bd) { bd = d; best = a; } }
+    return best;
+  }
+  useItem(it) {
+    const P = this.P; it.taken = true; this.tweens.killTweensOf(it); it.destroy(); this.items = this.items.filter(i => i !== it);
+    if (it.kind === 'sticker') { G.rep += 150; Fx.pop(this, P.x, P.y - 30, 'SHINY STICKER +150', '#ff6ab8'); sfx.coin(); }
+    else { const h = it.kind === 'juice' ? 30 : 20; P.hp = Math.min(100, P.hp + h); G.hp = P.hp; G.stats.snacks++; Fx.pop(this, P.x, P.y - 30, '+' + h + ' DIGNITY', '#6aff8a'); sfx.munch(); }
+  }
+  openTalk(a, forced) {
+    const P = this.P; P.setFace(a.x - P.x); a.setFace(P.x - a.x); a.talked = true; a.frame(KF.talk);
+    G.stats.talks++;
+    const c = a.convo;
+    openDialog(c.who, c.line, c.opts.map(o => o[0]), a.pitch, i => this.answer(a, c.opts[i]));
+  }
+  answer(a, opt) {
+    const [, out, reply] = opt, P = this.P;
+    if (reply) Fx.say(this, a, reply, 2200);
+    const later = (ms, f) => this.time.delayedCall(ms, f);
+    if (out === 'fight' || out === 'fight2' || out === 'stun' || out === 'boss') {
+      later(out === 'stun' ? 0 : 500, () => {
+        if (a.dead) return;
+        this.provoke(a);
+        if (out === 'stun') { a.st = 'dizzy'; a.t = 2; a.frame(KF.dizzy); Fx.pop(this, a.x, a.y - 30, 'SUCKER!', '#8ff7ff'); tipKey('stun'); }
+        if (out === 'fight2') { const b = this.addKid(randomKid(Math.random, a.k.sz), a.x + 14, clamp(a.y + 10, BAND0, BAND1), 'neutral'); b.talked = true; Fx.puff(this, b.x, b.y, 6); this.provoke(b, 'TWIN POWERS!'); }
+      });
+      return;
+    }
+    if (out === 'friend' || out === 'ally') {
+      G.rep += 50; G.stats.friends++; a.friend = true; Fx.pop(this, a.x, a.y - 30, 'FRIEND +50', '#6aff8a'); sfx.coin(); a.frame(KF.cheer);
+      if (out === 'ally') { a.team = 'ally'; G.stats.allies++; later(900, () => Fx.say(this, a, 'I GOT YOUR BACK.', 1200)); tipKey('ally'); }
+      return;
+    }
+    if (out === 'weird') { G.rep += 25; G.stats.weird++; Fx.pop(this, a.x, a.y - 30, 'WEIRD +25', '#c8a8ff'); return; }
+    if (out === 'flee') { G.rep += 25; later(700, () => { a.st = 'flee'; a.tx = a.x < 576 ? -30 : YW + 30; }); return; }
+    if (out === 'ball') { const b = this.spawnBall(a.x + 6, a.y + 4); Fx.pop(this, a.x, a.y - 30, 'FREE BALL', '#ffd23a'); return; }
+    const f = { juice: 0, snack: 1, sticker: 2 }[out];
+    if (f != null) { later(400, () => { const it = this.spawnItem(f, (a.x + P.x) / 2, (a.y + P.y) / 2 + 2); this.useItem(it); }); G.rep += 25; }
+  }
+  provoke(a, line) {
+    if (a.team === 'enemy' || a.ko) return;
+    a.team = 'enemy'; a.st = a.st === 'dizzy' ? 'dizzy' : 'idle'; a.cd = .6; a.act = null; a.talked = true;
+    if (a.friend) a.friend = false;
+    if (line) Fx.say(this, a, line, 1300, '#c83a2a');
+    if (!this.fightOn) G.stats.fightsStarted++;
+  }
+  onKO(a) {
+    G.stats.kos++; const pts = a.boss ? 600 : a.k.sz === 2 ? 120 : 80; G.rep += pts;
+    Fx.pop(this, a.x, a.y - 34, 'KO! +' + pts, '#ffd23a', true); sfx.ko();
+    this.time.delayedCall(900, () => { if (!a.dead) Fx.say(this, a, a.boss ? 'THIS ISN\'T OVER, NEW KID.' : pick(KO_LINES), 1600, '#5a5a8a'); });
+    if (a.boss) { G.stats.bossBeaten = true; this.time.delayedCall(2600, () => this.win()); }
+  }
+
+  /* ---------- kid brains ---------- */
+  updKid(a, dt) {
+    const P = this.P; a.inv = Math.max(0, a.inv - dt); a.cd -= dt;
+    if (a.st === 'down') { a.t -= dt; a.frame(KF.lie); if (a.t <= 0) { if (a.ko) { a.st = 'ko'; a.frame(KF.dizzy); a.team = 'neutral'; a.talked = true; } else { a.st = 'idle'; a.inv = .3; } } return; }
+    if (a.st === 'ko') { a.frame(Math.floor(this.time.now / 600) % 3 === 0 ? KF.cry : KF.dizzy); return; }
+    if (a.st === 'hurt') { a.t -= dt; a.frame(KF.hurt); if (a.t <= 0) a.st = 'idle'; return; }
+    if (a.st === 'dizzy') { a.t -= dt; a.frame(KF.dizzy); if (a.t <= 0) a.st = 'idle'; return; }
+    if (a.st === 'flee') { a.setFace(a.tx - a.x); a.move(Math.sign(a.tx - a.x) * 90, 0, dt); a.walkFrame(dt, true); if (a.x < -20 || a.x > YW + 20) a.destroy(); return; }
+    if (!this.live) { a.walkFrame(dt, false); return; }
+    if (a.team === 'enemy' || a.team === 'ally') return this.fighter(a, dt);
+    /* the mean kids come looking for you */
+    if (a.mean && !a.talked && this.t < this.D.len - a.meanT && !this.fightOn) {
+      const dx = P.x - a.x, dy = P.y - a.y, d = Math.hypot(dx, dy * 1.5);
+      if (d < 26 && P.st === 'idle') { this.openTalk(a, true); return; }
+      a.setFace(dx); a.move(Math.sign(dx) * Math.min(Math.abs(dx) * 3, a.spd), Math.sign(dy) * Math.min(Math.abs(dy) * 3, a.spd * .7), dt); a.walkFrame(dt, true);
+      if (!a.warned) { a.warned = true; Fx.bang(this, a.x, a.y - a.h - 10, .7); Fx.say(this, a, 'HEY. NEW KID.', 1200, '#c83a2a'); }
+      return;
+    }
+    /* crowds gather round a fight */
+    if (this.fightOn && !a.ko && Math.hypot(a.x - this.fc.x, a.y - this.fc.y) < 250 && a.act !== 'swing') {
+      if (a.st !== 'crowd') { a.st = 'crowd'; a.ang = rnd(0, 6.28); }
+      const tx = this.fc.x + Math.cos(a.ang) * 48, ty = clamp(this.fc.y + Math.sin(a.ang) * 22, BAND0, BAND1), dx = tx - a.x, dy = ty - a.y;
+      if (Math.abs(dx) + Math.abs(dy) > 4) { a.setFace(dx); a.move(Math.sign(dx) * Math.min(Math.abs(dx) * 4, 70), Math.sign(dy) * Math.min(Math.abs(dy) * 4, 50), dt); a.walkFrame(dt, true); }
+      else { a.setFace(this.fc.x - a.x); a.frame(KF.cheer + Math.floor(this.time.now / 220 + a.pitch * 7) % 2); a.ang += dt * .15; }
+      return;
+    }
+    if (a.st === 'crowd') { a.st = 'idle'; a.wait = rnd(.5, 2); }
+    if (a.act === 'swing') { const tt = this.time.now / 1000 * 2.2 + a.seat * 1.3; a.x = [46, 74][a.seat] + Math.sin(tt) * 9; a.y = 150; a.z = 6 + Math.abs(Math.cos(tt)) * 4; a.setFace(Math.cos(tt)); a.frame(KF.hold); return; }
+    if (a.act === 'dig') { a.frame(KF.dizzy); a.setFace(1); if (Math.random() < dt * .4) Fx.puff(this, a.x + 8, a.y, 2, 0xe8d090, 300); return; }
+    /* wander */
+    a.wait -= dt;
+    if (a.wait > 0) { a.walkFrame(dt, false); return; }
+    const dx = a.tx - a.x, dy = a.ty - a.y;
+    if (Math.abs(dx) + Math.abs(dy) < 4) { a.wait = rnd(1, 4); let x, y; do { x = clamp(a.x + rnd(-120, 120), 150, YW - 20); y = rnd(BAND0 + 2, BAND1 - 2); } while (this.blocked(x, y)); a.tx = x; a.ty = y; return; }
+    a.setFace(dx); a.move(Math.sign(dx) * Math.min(Math.abs(dx) * 3, a.spd * .6), Math.sign(dy) * Math.min(Math.abs(dy) * 3, a.spd * .45), dt); a.walkFrame(dt, true);
+  }
+  fighter(a, dt) {
+    const P = this.P;
+    /* pick a target */
+    let tg = null;
+    if (a.team === 'enemy') {
+      let bd = 1e9; for (const o of [P, ...this.kids.filter(k => k.team === 'ally' && !k.ko && !k.dead)]) { const d = Math.hypot(o.x - a.x, o.y - a.y) + (o === P ? -30 : 0); if (d < bd) { bd = d; tg = o; } }
+    } else {
+      let bd = 140; for (const o of this.kids) { if (o.team !== 'enemy' || o.ko || o.dead) continue; const d = Math.hypot(o.x - a.x, o.y - a.y); if (d < bd) { bd = d; tg = o; } }
+      if (!tg) { const tx = P.x - P.face * 22, ty = P.y + 6, dx = tx - a.x, dy = ty - a.y; if (Math.abs(dx) + Math.abs(dy) > 10) { a.setFace(dx); a.move(Math.sign(dx) * Math.min(Math.abs(dx) * 3, 80), Math.sign(dy) * Math.min(Math.abs(dy) * 3, 55), dt); a.walkFrame(dt, true); } else { a.setFace(P.face); a.walkFrame(dt, false); } return; }
+    }
+    if (!tg) { a.walkFrame(dt, false); return; }
+    if (a.boss) return this.bossBrain(a, tg, dt);
+    if (a.st === 'wind') { a.t -= dt; a.frame(KF.wind); if (a.t <= 0) { a.st = 'punch'; a.t = .16; a.frame(KF.punch); this.strike(a, a.dmg, a.k.sz === 2, 20); } return; }
+    if (a.st === 'punch') { a.t -= dt; a.frame(KF.punch); if (a.t <= 0) { a.st = 'idle'; a.cd = rnd(.7, 1.4) * (a.k.sz === 0 ? .8 : 1); } return; }
+    if (a.st === 'throw') { a.t -= dt; a.frame(KF.throw); if (a.t <= 0) a.st = 'idle'; return; }
+    /* balls are for throwing */
+    if (!a.hold && a.team === 'enemy' && Math.random() < dt * .5) { const b = this.balls.find(b => b.free && !b.fly && Math.abs(b.gx - a.x) < 40 && Math.abs(b.gy - a.y) < 20); if (b) { a.hold = b; b.owner = a; b.free = false; } }
+    const dx = tg.x - a.x, dy = tg.y - a.y;
+    if (a.hold && Math.abs(dy) < 8 && Math.abs(dx) > 50 && Math.abs(dx) < 170 && a.cd <= 0) { a.setFace(dx); a.st = 'throw'; a.t = .3; this.throwBall(a); a.st = 'throw'; a.t = .3; a.cd = 1.4; Fx.bang(this, a.x, a.y - a.h - 8, .3); return; }
+    const want = tg.x - Math.sign(dx || 1) * 17, wdx = want - a.x;
+    const inRange = Math.abs(dx) < 22 && Math.abs(dy) < 7;
+    if (inRange && a.cd <= 0) { a.setFace(dx); a.st = 'wind'; a.t = a.windT; sfx.wind(); if (a.team === 'enemy') Fx.bang(this, a.x, a.y - a.h - 10, a.windT); return; }
+    const hover = a.cd > 0 && Math.abs(dx) < 34;
+    const mvx = hover ? -Math.sign(dx) * 18 : Math.sign(wdx) * Math.min(Math.abs(wdx) * 4, a.spd);
+    const mvy = Math.sign(dy) * Math.min(Math.abs(dy) * 4, a.spd * .7) + (hover ? Math.sin(this.time.now / 300 + a.pitch * 9) * 20 : 0);
+    a.setFace(dx); a.move(mvx, mvy, dt); a.walkFrame(dt, Math.abs(mvx) + Math.abs(mvy) > 4);
+  }
+  strike(a, dmg, big, reach) {
+    const victims = a.team === 'enemy' ? [this.P, ...this.kids.filter(k => k.team === 'ally')] : this.kids.filter(k => k.team === 'enemy');
+    sfx.whoosh();
+    for (const v of victims) {
+      if (v.dead || v.ko) continue;
+      const dx = (v.x - a.x) * a.face;
+      if (dx > -4 && dx < reach && Math.abs(v.y - a.y) < 9 && v.z < 16) {
+        if (v === this.P && v.st === 'dodge') { this.perfectDodge(); continue; }
+        if (v.hurtBy(a, dmg, big)) { if (v === this.P) this.playerHit(); else if (v.ko) this.onKO(v); }
+      }
+    }
+  }
+  perfectDodge() { G.stats.dodges++; G.rep += 10; Fx.pop(this, this.P.x, this.P.y - 32, 'DODGE +10', '#8ff7ff'); }
+  playerHit() {
+    const P = this.P; G.hp = P.hp; if (P.st !== 'down') P.inv = .5;
+    if (P.hp <= 0) { P.hp = 0; G.hp = 0; P.st = 'down'; P.t = 1; }
+    if (P.hp < 30 && !G.tipSeen.low) tipKey('low');
+  }
+  bossBrain(a, tg, dt) {
+    const dx = tg.x - a.x, dy = tg.y - a.y;
+    if (a.st === 'wind') { a.t -= dt; a.frame(KF.wind); if (a.t <= 0) { a.st = 'punch'; a.t = .2; a.frame(KF.punch); this.strike(a, 16, true, 28); } return; }
+    if (a.st === 'punch') { a.t -= dt; if (a.t <= 0) { a.st = 'idle'; a.cd = rnd(.8, 1.3); } return; }
+    if (a.st === 'charge0') { a.t -= dt; a.frame(KF.dodge); a.x += Math.sin(this.time.now / 20) * .6; if (a.t <= 0) { a.st = 'charge'; a.t = .85; sfx.shove(); } return; }
+    if (a.st === 'charge') {
+      a.t -= dt; a.frame(KF.punch); a.move(a.face * 230, 0, dt); if (Math.random() < .5) Fx.puff(this, a.x - a.face * 10, a.y, 1, 0xd8d0c8, 300);
+      const P = this.P;
+      if (Math.abs(P.x - a.x) < 16 && Math.abs(P.y - a.y) < 9 && P.z < 10) { if (P.st === 'dodge') this.perfectDodge(); else if (P.hurtBy(a, 18, true)) this.playerHit(); a.t = 0; }
+      if (a.t <= 0 || a.x < 20 || a.x > YW - 20) { a.st = 'dizzy'; a.t = .8; a.cd = 1; }
+      return;
+    }
+    if (a.st === 'slam0') { a.t -= dt; a.frame(KF.cheer); if (a.t <= 0) { a.st = 'slam'; a.vz = 260; a.z = 1; a.t = .9; } return; }
+    if (a.st === 'slam') {
+      a.t -= dt; a.frame(KF.hold);
+      if (a.slamRing) a.slamRing.setPosition(a.x, a.y).setScale(1 + (.9 - a.t) * 2.4);
+      if (a.z <= 0 && a.t < .7) {
+        a.st = 'idle'; a.cd = 1.2; sfx.thud(); this.cameras.main.shake(260, .012); Fx.puff(this, a.x, a.y, 10, 0xd8d0c8, 600);
+        if (a.slamRing) { a.slamRing.destroy(); a.slamRing = null; }
+        const P = this.P;
+        if (Math.hypot(P.x - a.x, (P.y - a.y) * 1.8) < 46 && P.z < 6) { if (P.st === 'dodge') this.perfectDodge(); else if (P.hurtBy(a, 14, true)) this.playerHit(); }
+      }
+      return;
+    }
+    if (a.cd <= 0) {
+      const far = Math.abs(dx);
+      if (Math.abs(dy) < 10 && far > 70 && far < 220 && Math.random() < .5) { a.setFace(dx); a.st = 'charge0'; a.t = .6; Fx.bang(this, a.x, a.y - a.h - 10, .6); Fx.say(this, a, 'HRRRNGH!', 600, '#c83a2a'); return; }
+      if (far < 40 && Math.abs(dy) < 20 && Math.random() < .35) { a.st = 'slam0'; a.t = .45; Fx.bang(this, a.x, a.y - a.h - 10, 1.2); a.slamRing = this.add.ellipse(a.x, a.y, 92, 34, 0xc83a2a, .25).setDepth(-800); return; }
+      if (far < 28 && Math.abs(dy) < 8) { a.setFace(dx); a.st = 'wind'; a.t = .55; sfx.wind(); Fx.bang(this, a.x, a.y - a.h - 10, .55); return; }
+    }
+    const want = tg.x - Math.sign(dx || 1) * 22, wdx = want - a.x;
+    a.setFace(dx); a.move(Math.sign(wdx) * Math.min(Math.abs(wdx) * 4, a.spd), Math.sign(dy) * Math.min(Math.abs(dy) * 4, a.spd * .7), dt); a.walkFrame(dt, Math.abs(wdx) > 3 || Math.abs(dy) > 3);
+  }
+
+  /* ---------- the fight as a whole: crowd, chants, music, rewards ---------- */
+  updFight(dt) {
+    const foes = this.kids.filter(k => k.team === 'enemy' && !k.ko && !k.dead);
+    const near = foes.filter(k => Math.abs(k.x - this.P.x) < 240);
+    const on = near.length > 0 && !this.ending;
+    if (on) {
+      let cx = this.P.x, cy = this.P.y; for (const k of near) { cx += k.x; cy += k.y; } cx /= near.length + 1; cy /= near.length + 1;
+      this.fc = { x: cx, y: cy };
+      if (!this.fightOn) { this.fightOn = true; this.fightT = 0; this.fightFoes = new Set(near); playSong('fight'); sfx.chant(); tipKey('fight'); }
+      for (const k of near) this.fightFoes.add(k);
+      this.fightT += dt; this.chantT -= dt;
+      if (this.chantT <= 0) { this.chantT = rnd(1.4, 2.6); const crowd = this.kids.filter(k => k.st === 'crowd'); if (crowd.length) { Fx.say(this, pick(crowd), pick(CROWD_LINES), 900, '#c83a2a'); if (Math.random() < .6) sfx.chant(); } }
+    } else if (this.fightOn) {
+      this.fightOn = false; playSong('recess');
+      const all = [...this.fightFoes], beaten = all.filter(k => k.ko).length;
+      if (beaten && this.P.hp > 0 && !this.ending) {
+        const pts = 60 * beaten; G.rep += pts; G.stats.won++;
+        Fx.banner(this, 'YOU WON! +' + pts, '#6aff8a', 1000); sfx.cheer(); this.P.frame(KF.cheer);
+      } else if (!this.ending) sfx.aww();
+      if (this.kids.some(k => k.st === 'crowd')) sfx.aww();
+    }
+  }
+
+  /* ---------- Ms. Grimsby ---------- */
+  updTeacher(dt) {
+    const T = this.T;
+    if (this.ending && T.st !== 'fetch') { T.walkFrame(dt, false); return; }
+    if (T.st === 'fetch') { const dx = this.P.x - T.x - 16 * Math.sign(this.P.x - T.x || 1), dy = this.P.y - T.y; T.setFace(this.P.x - T.x); if (Math.abs(dx) + Math.abs(dy) > 6) { T.move(Math.sign(dx) * 70, Math.sign(dy) * Math.min(Math.abs(dy) * 3, 50), dt); T.walkFrame(dt, true); } else T.frame(KF.talk); return; }
+    /* what can she see? */
+    const crowd = this.kids.filter(k => k.st === 'crowd').length;
+    let seeing = false;
+    if (this.fightOn && this.live) {
+      const tx = this.fc.x, ty = this.fc.y, dx = tx - T.x, dy = ty - T.y, along = dx * T.face;
+      if (along > -8 && along < 165 && Math.abs(dy) < along * .55 + 24 && !this.occluded(T.x, T.y, tx, ty)) seeing = true;
+    }
+    if (seeing) {
+      if (!this.seen) { this.seen = true; G.stats.seen++; sfx.whistle(); Fx.bang(this, T.x, T.y - T.h - 12, 1); Fx.say(this, T, pick(['YOU THERE!', 'STOP THAT AT ONCE!', 'I SEE YOU!']), 1400, '#c83a2a'); T.frame(KF.whistle); tipKey('busted'); }
+      this.busted = Math.min(100, this.busted + dt * 24);
+      if (this.busted >= 100 && !this.ending) return this.lose('busted');
+    } else { this.seen = false; this.busted = Math.max(0, this.busted - dt * 9); }
+    /* where is she going? noise draws her in */
+    let tx, ty;
+    if (this.fightOn && (seeing || crowd >= 4)) { tx = this.fc.x; ty = this.fc.y; T.busy = 1.5; }
+    else if (T.busy > 0) { T.busy -= dt; T.walkFrame(dt, false); if (Math.random() < dt * .8) T.setFace(-T.face); return; }
+    else { if (T.wait > 0) { T.wait -= dt; T.walkFrame(dt, false); if (Math.random() < dt * .5) T.setFace(-T.face); return; } [tx, ty] = T.way[T.wi]; }
+    const dx = tx - T.x, dy = ty - T.y;
+    if (Math.abs(dx) + Math.abs(dy) < 6) { if (!this.fightOn) { T.wi = (T.wi + 1) % T.way.length; T.wait = rnd(1.5, 3.5); } T.walkFrame(dt, false); return; }
+    const sp = seeing ? 50 : 36;
+    T.setFace(dx); T.move(Math.sign(dx) * Math.min(Math.abs(dx) * 3, sp), Math.sign(dy) * Math.min(Math.abs(dy) * 3, sp * .7), dt);
+    if (seeing) T.frame(KF.whistle); else T.walkFrame(dt, true);
+  }
+  occluded(x0, y0, x1, y1) {
+    for (const b of this.occ) {
+      for (let i = 1; i < 12; i++) { const x = x0 + (x1 - x0) * i / 12, y = y0 + (y1 - y0) * i / 12; if (x > b.x0 && x < b.x1 && y > b.y0 - 18 && y < b.y1 + 6) return true; }
+    }
+    return false;
+  }
+  drawCone() {
+    const g = this.coneG, T = this.T; g.clear();
+    if (!this.live || this.ending) return;
+    const f = T.face, col = this.seen ? 0xff4a3a : 0xffe060;
+    g.fillStyle(col, this.seen ? .22 : .13);
+    const L = 165, top = BAND0 - 6;
+    g.beginPath(); g.moveTo(T.x - f * 8, T.y);
+    for (let i = 0; i <= 12; i++) { const d = L * i / 12; g.lineTo(T.x + f * d, Math.max(top, T.y - 24 - d * .55)); }
+    for (let i = 12; i >= 0; i--) { const d = L * i / 12; g.lineTo(T.x + f * d, Math.min(GH, T.y + 24 + d * .55)); }
+    g.closePath(); g.fillPath();
+  }
+
+  /* ---------- balls and items ---------- */
+  updBalls(dt) {
+    for (const b of this.balls) {
+      if (b.owner && !b.fly) continue;
+      if (b.fly) {
+        b.gx += b.vx * dt; b.vz -= 400 * dt; b.z += b.vz * dt;
+        for (const a of [this.P, ...this.kids]) {
+          if (a === b.owner || a.dead || a.ko || a.z > 20) continue;
+          if (b.owner.team === 'player' && a.team === 'ally') continue;
+          if (b.owner.team !== 'player' && a.team === b.owner.team) continue;
+          if (Math.abs(a.x - b.gx) < 8 && Math.abs(a.y - b.gy) < 8 && b.z < a.h + 4) {
+            if (a === this.P && a.st === 'dodge') { this.perfectDodge(); continue; }
+            if (a.hurtBy(b.owner, 14, true)) {
+              sfx.boing();
+              if (b.owner === this.P) { G.stats.ballHits++; G.rep += 20; Fx.pop(this, a.x, a.y - 30, 'DODGEBALL +20', '#ffd23a'); if (a.team === 'neutral') this.provoke(a, 'DODGEBALL IS OVER!'); if (a.ko) this.onKO(a); }
+              else if (a === this.P) this.playerHit(); else if (a.ko) this.onKO(a);
+            }
+            b.fly = false; b.vx = -Math.sign(b.vx) * 40; b.vz = 120; b.owner = null; break;
+          }
+        }
+        if (b.z <= 0) { b.fly = false; b.owner = null; b.vx *= .4; b.vz = 70; b.z = 1; sfx.boing(); }
+        if (b.gx < 0 || b.gx > YW) { b.gx = clamp(b.gx, 4, YW - 4); b.vx *= -.4; }
+      } else if (b.z > 0 || b.vz) { b.vz -= 400 * dt; b.z += b.vz * dt; b.gx += b.vx * dt; if (b.z <= 0) { b.z = 0; b.vz = Math.abs(b.vz) > 60 ? -b.vz * .4 : 0; b.vx *= .6; } b.free = true; }
+      b.setPosition(Math.round(b.gx), Math.round(b.gy - b.z)).setDepth(b.gy + .2).setFrame(Math.floor(b.gx / 6) % 2);
+    }
+  }
+  updItems() {}
+  updPrompt() {
+    const P = this.P, pr = this.prompt;
+    if (!this.live || this.ending || P.st !== 'idle') return pr.setVisible(false);
+    let t = '';
+    if (!P.hold) { for (const it of [...this.balls, ...this.items]) if (!it.fly && !it.owner && !it.taken && Math.abs(it.gx - P.x) + Math.abs(it.gy - P.y) * 1.4 < 20) { t = this.balls.includes(it) ? 'GRAB' : it.kind === 'sticker' ? 'GRAB' : 'EAT'; break; } }
+    if (!t && this.talkTarget()) t = 'TALK';
+    if (!t) return pr.setVisible(false);
+    pr.setVisible(true).setText((IS_TOUCH ? '' : 'E: ') + t).setPosition(Math.round(P.x), Math.round(P.y - P.h - 8));
+  }
+
+  /* ---------- Friday: Brick ---------- */
+  spawnBoss() {
+    this.bossSpawned = true;
+    const b = this.boss = this.addKid(BULLY_KID, 576, BAND0 + 2, 'neutral'); b.boss = true; b.talked = true; b.mean = false;
+    b.hpMax = b.hp = 170;
+    const goons = [this.addKid(randomKid(Math.random, 2), 556, BAND0 + 6, 'neutral'), this.addKid(randomKid(Math.random, 1), 598, BAND0 + 6, 'neutral')];
+    goons.forEach(g => { g.talked = true; g.k.mean = true; });
+    this.bossGoons = goons;
+    Fx.banner(this, 'BRICK HAS ARRIVED', '#c83a2a', 1600); sfx.alarm(); tipKey('boss', true);
+    this.bossApproach = true;
+  }
+
+  /* ---------- endings ---------- */
+  bell() {
+    if (this.ending) return;
+    this.ending = true; this.live = false; sfx.bell();
+    if (this.D.boss) { Fx.banner(this, 'SAVED BY THE BELL', '#ffd23a', 1800); this.time.delayedCall(2200, () => office('bell')); return; }
+    const gained = G.rep - this.dayRep0, bonus = 150; G.rep += bonus;
+    Fx.banner(this, 'BRRRING!', '#ffd23a', 1300, 56); Fx.banner(this, 'RECESS OVER  +' + (gained + bonus) + ' REP', '#ffffff', 1600, 84);
+    playSong('recess');
+    for (const a of this.kids) if (!a.ko) { a.team = 'neutral'; a.st = 'flee'; a.tx = 576 + rnd(-10, 10); }
+    this.time.delayedCall(2400, () => { G.day++; G.hp = this.P.hp; go('yard'); });
+  }
+  lose(why) {
+    if (this.ending) return;
+    this.ending = true; this.live = false; const P = this.P;
+    if (why === 'ko') { G.stats.lost++; P.st = 'cry'; P.frame(KF.cry); sfx.cry(); Fx.say(this, P, 'I WANT MY MOM.', 1800, '#5a5a8a'); }
+    else { P.st = 'idle'; P.frame(KF.hurt); sfx.whistle(); Fx.say(this, this.T, "PRINCIPAL'S OFFICE. NOW.", 2400, '#c83a2a'); }
+    this.T.st = 'fetch'; playSong('office');
+    Fx.banner(this, why === 'ko' ? 'KNOCKED OUT' : 'BUSTED!', '#ff5a5a', 2200);
+    this.time.delayedCall(2800, () => office(why));
+  }
+  win() {
+    if (this.ending) return;
+    this.ending = true; this.live = false; sfx.cheer();
+    Fx.banner(this, 'RULER OF THE YARD', '#ffd23a', 2400);
+    for (const a of this.kids) if (!a.ko && !a.dead) { a.team = 'neutral'; a.st = 'crowd'; a.ang = rnd(0, 6.28); }
+    this.fc = { x: this.P.x, y: this.P.y }; this.fightOn = true;
+    this.P.frame(KF.cheer);
+    this.time.delayedCall(1600, () => { this.T.st = 'fetch'; Fx.say(this, this.T, 'MY OFFICE. BOTH OF YOU. ALL OF YOU.', 2200, '#c83a2a'); });
+    this.time.delayedCall(4200, () => office('win'));
+  }
+}
+/* the bully walks in on Friday: hooked into the normal loop */
+const _upd = Yard.prototype.update;
+Yard.prototype.update = function (time, delta) {
+  if (this.D && this.D.boss && this.live && !this.bossSpawned && this.t < this.D.len - 14 && !this.fightOn) this.spawnBoss();
+  if (this.bossApproach && this.boss && !DLG.open && this.live) {
+    const b = this.boss, P = this.P, dx = P.x - b.x, dy = P.y - b.y;
+    if (Math.hypot(dx, dy) < 34) {
+      this.bossApproach = false;
+      openDialog('Brick', BOSS_LINES.line, BOSS_LINES.opts.map(o => o[0]), .7, i => {
+        Fx.say(this, b, BOSS_LINES.opts[i][2], 2200, '#c83a2a');
+        this.time.delayedCall(600, () => { this.provoke(b); this.bossGoons.forEach(g => this.provoke(g)); setTip('Brick telegraphs everything. Watch for the "!" and {DODGE} through his charge and his belly flop.'); });
+      });
+    } else {
+      const dt = Math.min(delta / 1000, 1 / 20);
+      for (const a of [b, ...this.bossGoons]) { const ddx = P.x - a.x + (a === b ? 0 : (a === this.bossGoons[0] ? -20 : 20)), ddy = P.y - a.y; a.setFace(ddx); a.move(Math.sign(ddx) * Math.min(Math.abs(ddx) * 3, 46), Math.sign(ddy) * Math.min(Math.abs(ddy) * 3, 32), dt); a.walkFrame(dt, true); a.st = 'boss-walk'; }
+    }
+  }
+  return _upd.call(this, time, delta);
+};
+/* the boss walk state should not run the wander brain */
+const _kid = Yard.prototype.updKid;
+Yard.prototype.updKid = function (a, dt) { if (a.st === 'boss-walk') return; return _kid.call(this, a, dt); };
+
+/* ---------- runtime textures ---------- */
+function texC(sc, key, make) { if (!sc.textures.exists(key)) sc.textures.addCanvas(key, make()); return key; }
+class Boot extends Phaser.Scene {
+  constructor() { super('boot'); }
+  create() {
+    buildArt();
+    for (const k in SHEETS) { const s = SHEETS[k], t = this.textures.addCanvas(k, s.c); for (let i = 0; i < s.n; i++) t.add(i, 0, i * s.fw, 0, s.fw, s.fh); }
+    this.textures.addCanvas('pxfont', fontCanvas());
+    this.cache.bitmapFont.add('px', Phaser.GameObjects.RetroFont.Parse(this, { image: 'pxfont', width: 5, height: 7, chars: FCH, charsPerRow: FCH.length, spacing: { x: 0, y: 0 } }));
+    window.BOOTED = true; if (window.onBooted) window.onBooted();
+  }
+}
+function go(key) {
+  for (const s of game.scene.getScenes(false)) if (s.scene.key !== 'boot' && s.scene.key !== key && (s.sys.isActive() || s.sys.isPaused())) s.scene.stop();
+  IN.p = {};
+  const cur = game.scene.getScene(key);
+  if (cur.sys.isActive() || cur.sys.isPaused()) { cur.scene.restart(); return; }
+  game.scene.start(key);
+}
+
+/* ================= SCHOOLYARD BULLY: page shell, dialogue, HUD, touch controls, the office ================= */
+const $ = id => document.getElementById(id);
+let tipTimer = 0;
+function setTip(text, ms = 6500) {
+  if (DLG.open) return;
+  const el = $('tip'); el.textContent = K(text); el.classList.add('show');
+  clearTimeout(tipTimer); if (ms) tipTimer = setTimeout(() => el.classList.remove('show'), ms);
+}
+const TIPS = {
+  fight: 'FIGHT! {HIT} to slap, three in a row for a shove. Watch for the "!" and {DODGE} out of the way.',
+  busted: 'Ms. Grimsby spotted you! Get out of her yellow cone or the Busted meter fills up.',
+  ball: 'Got a ball. {HIT} throws it. Line up with your target first.',
+  ally: 'You made an ally. They will jump into your next fight.',
+  stun: 'Sucker punch! They are dizzy. Get your slaps in.',
+  low: 'Low on dignity. Juice boxes and snacks put it back.',
+  boss: 'Brick is coming for you. Find somewhere Ms. Grimsby cannot see.'
+};
+function tipKey(key, force) { if (!G || !TIPS[key]) return; if (G.tipSeen[key] && !force) return; G.tipSeen[key] = 1; setTip(TIPS[key]); }
+
+/* ---------- dialogue ---------- */
+const DLG = { open: false, sel: 0, n: 0, cb: null, typing: 0 };
+function openDialog(who, line, opts, pitch, cb) {
+  DLG.open = true; DLG.sel = 0; DLG.n = opts.length; DLG.cb = cb; IN.h = {}; IN.sx = IN.sy = 0;
+  $('tip').classList.remove('show');
+  const d = $('dlg'); d.hidden = false; $('app').classList.add('talking');
+  $('dWho').textContent = who; const L = $('dLine'); L.textContent = '';
+  const box = $('dOpts'); box.innerHTML = '';
+  opts.forEach((o, i) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'opt'; b.innerHTML = '<span>' + (i + 1) + '</span>' + o; b.addEventListener('click', () => pickOpt(i)); b.addEventListener('pointerenter', () => selOpt(i)); box.appendChild(b); });
+  selOpt(0);
+  let i = 0; clearInterval(DLG.typing);
+  DLG.typing = setInterval(() => { if (i >= line.length) { clearInterval(DLG.typing); return; } L.textContent += line[i]; if (line[i] !== ' ' && i % 2 === 0) sfx.blip(pitch); i++; }, 22);
+}
+function selOpt(i) { DLG.sel = i; document.querySelectorAll('#dOpts .opt').forEach((b, j) => b.classList.toggle('sel', j === i)); }
+function pickOpt(i) {
+  if (!DLG.open) return;
+  DLG.open = false; clearInterval(DLG.typing); $('dlg').hidden = true; $('app').classList.remove('talking'); sfx.ui();
+  const cb = DLG.cb; DLG.cb = null; if (cb) cb(i);
+}
+function dlgKey(e) {
+  e.preventDefault();
+  if (e.repeat) return;
+  if (e.code === 'ArrowUp' || e.code === 'KeyW') selOpt((DLG.sel + DLG.n - 1) % DLG.n);
+  else if (e.code === 'ArrowDown' || e.code === 'KeyS') selOpt((DLG.sel + 1) % DLG.n);
+  else if (/^Digit[1-3]$/.test(e.code)) { const i = +e.code.slice(5) - 1; if (i < DLG.n) pickOpt(i); }
+  else if (['Enter', 'Space', 'KeyE', 'KeyJ'].includes(e.code)) pickOpt(DLG.sel);
+}
+
+/* ---------- HUD ---------- */
+function setMode(m) { $('app').dataset.mode = m; }
+let hudT = 0;
+function hudDay(sc) { $('hDay').textContent = sc.D.name; }
+function hudTick(sc) {
+  const now = performance.now(); if (now - hudT < 100) return; hudT = now;
+  const t = Math.max(0, Math.ceil(sc.t)); $('hTime').textContent = Math.floor(t / 60) + ':' + String(t % 60).padStart(2, '0');
+  $('hRep').textContent = G.rep.toLocaleString('en-US');
+  $('hHp').style.width = Math.max(0, sc.P.hp) + '%'; $('hHpBox').classList.toggle('low', sc.P.hp < 30);
+  $('hBust').style.width = sc.busted + '%'; $('hBustBox').classList.toggle('hot', sc.seen);
+  const B = sc.boss; $('hBoss').hidden = !(B && B.team === 'enemy' && !B.ko); if (B) $('hBossHp').style.width = Math.max(0, B.hp / B.hpMax * 100) + '%';
+}
+function toggleMusic() { initAudio(); setMusic(!AU.music); syncMusic(); }
+function syncMusic() { document.querySelectorAll('.musicBtn').forEach(b => { b.textContent = AU.music ? 'Music on' : 'Music off'; b.classList.toggle('off', !AU.music); }); }
+
+/* ---------- layout ---------- */
+function layout() {
+  const app = $('app'), stage = $('stage'), vw = innerWidth, vh = innerHeight;
+  const land = vw > vh * 1.05, mode = IS_TOUCH ? (land ? 'tl' : 'tp') : 'dk';
+  app.classList.remove('tl', 'tp', 'dk'); app.classList.add(mode);
+  document.documentElement.classList.toggle('touch', IS_TOUCH);
+  let sw, sh;
+  if (mode === 'tp') { const deckH = clamp(vh * .28, 168, 230); app.style.setProperty('--deck', deckH + 'px'); sw = vw; sh = Math.min(vh - 46 - 96 - deckH - 12, vw * 216 / 240); }
+  else if (mode === 'tl') { const side = clamp(vw * .18, 128, 190); app.style.setProperty('--side', side + 'px'); sw = vw - side * 2; sh = vh; }
+  else { sw = Math.min(vw - 24, 1500); sh = Math.min(vh - 46 - 110 - 24, sw * 216 / 288); }
+  const gw = clamp(Math.round(216 * sw / sh), 240, 400);
+  if (sw / sh > gw / 216) sw = Math.round(sh * gw / 216); else sh = Math.round(sw * 216 / gw);
+  stage.style.width = sw + 'px'; stage.style.height = sh + 'px';
+  if (game && game.scale) { game.scale.setGameSize(gw, 216); game.scale.refresh(); }
+}
+addEventListener('resize', () => setTimeout(layout, 30));
+addEventListener('orientationchange', () => setTimeout(layout, 200));
+
+/* ---------- touch: a thumbstick and three buttons ---------- */
+function bindDeck() {
+  document.querySelectorAll('.cb').forEach(b => {
+    const a = b.dataset.a;
+    const down = e => { e.preventDefault(); b.classList.add('on'); try { b.setPointerCapture(e.pointerId); } catch (_) {} inDown(a); if (navigator.vibrate && e.pointerType === 'touch') navigator.vibrate(8); };
+    const up = () => { b.classList.remove('on'); inUp(a); };
+    b.addEventListener('pointerdown', down); b.addEventListener('pointerup', up); b.addEventListener('pointercancel', up); b.addEventListener('lostpointercapture', up);
+    b.addEventListener('contextmenu', e => e.preventDefault());
+  });
+  const pad = $('stick'), knob = $('knob'); let id = null, ox = 0, oy = 0;
+  const R = () => pad.getBoundingClientRect().width * .32;
+  pad.addEventListener('pointerdown', e => { e.preventDefault(); id = e.pointerId; try { pad.setPointerCapture(id); } catch (_) {} const r = pad.getBoundingClientRect(); ox = r.left + r.width / 2; oy = r.top + r.height / 2; mv(e); initAudio(); });
+  const mv = e => { if (e.pointerId !== id) return; let dx = e.clientX - ox, dy = e.clientY - oy; const m = Math.hypot(dx, dy), rr = R(); if (m > rr) { dx *= rr / m; dy *= rr / m; } knob.style.transform = `translate(${dx}px,${dy}px)`; const nx = dx / rr, ny = dy / rr; IN.sx = Math.abs(nx) > .2 ? nx : 0; IN.sy = Math.abs(ny) > .2 ? ny : 0; };
+  const end = e => { if (e.pointerId !== id) return; id = null; knob.style.transform = ''; IN.sx = IN.sy = 0; };
+  pad.addEventListener('pointermove', mv); pad.addEventListener('pointerup', end); pad.addEventListener('pointercancel', end); pad.addEventListener('lostpointercapture', end);
+  addEventListener('touchstart', () => { if (!IS_TOUCH) { IS_TOUCH = true; layout(); } }, { passive: true });
+}
+
+/* ---------- the principal's office ---------- */
+function office(why) {
+  G.over = true; playSong('office');
+  for (const s of game.scene.getScenes(true)) if (s.scene.key !== 'boot') s.scene.pause();
+  const s = G.stats, day = DAYS[Math.min(G.day, 4)].name;
+  const rank = RANKS.filter(r => G.rep >= r[0]).pop()[1];
+  const reason = { ko: 'Found crying under the slide after losing a fight.', busted: 'Caught brawling on the playground by Ms. Grimsby.', bell: 'Survived an entire week. The principal finds this deeply suspicious.', win: "Defeated Brick in front of the whole school. Was asked to explain 'how'." }[why];
+  const off = []; const add = (n, t) => { if (n) off.push([n, t]); };
+  add(s.fightsStarted, 'Fights involved in');
+  add(s.kos, 'Classmates knocked flat');
+  add(s.ballHits, 'Dodgeballs delivered to faces');
+  add(s.slapped, 'Unprovoked slaps');
+  add(s.weird, 'Conversations described as "weird"');
+  add(s.friends, 'Friends made, possibly a gang');
+  add(s.snacks, 'Snacks eaten that were not yours');
+  add(s.dodges, 'Slaps dodged with suspicious skill');
+  add(s.seen, 'Times spotted by Ms. Grimsby');
+  const quotes = {
+    ko: ["Sit down. Here is a tissue. Now, who started it?", "Losing a fight is its own punishment. Detention is the other one."],
+    busted: ["Ms. Grimsby has excellent eyesight. You should have known that.", "Fighting. On MY playground. During MY recess."],
+    bell: ["Five days and I barely heard your name. Keep it that way.", "I will be watching you next week. Closely."],
+    win: ["Brick has been sent home to think about his life. As have you.", "Congratulations. You are the new problem."]
+  }[why];
+  $('oReason').textContent = reason;
+  $('oDay').textContent = day; $('oRep').textContent = G.rep.toLocaleString('en-US'); $('oRank').textContent = rank;
+  $('oOff').innerHTML = off.length ? off.map(([n, t]) => '<li><b>' + n + 'x</b> ' + t + '</li>').join('') : '<li>None. Which is somehow worse.</li>';
+  $('oQuote').textContent = '"' + pick(quotes) + '"';
+  $('oVerdict').textContent = why === 'win' ? 'DETENTION (WORTH IT)' : why === 'bell' ? 'WARNING' : 'DETENTION';
+  $('sOffice').hidden = false; $('hud').hidden = true; sfx.stamp();
+  try { const best = +localStorage.getItem('sy_best') || 0; if (G.rep > best) { localStorage.setItem('sy_best', G.rep); $('oBest').textContent = 'New record rep!'; } else $('oBest').textContent = 'Best rep: ' + best.toLocaleString('en-US'); } catch (_) {}
+}
+function startRun() {
+  initAudio(); sfx.ui();
+  $('sTitle').hidden = true; $('sOffice').hidden = true; $('hud').hidden = false;
+  newRun(); go('yard');
+}
+window.addEventListener('DOMContentLoaded', () => {
+  bindDeck(); layout();
+  game = new Phaser.Game({
+    type: Phaser.AUTO, parent: 'stage', width: 384, height: GH, pixelArt: true, roundPixels: true, backgroundColor: '#5ab8f0', banner: false,
+    scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
+    audio: { noAudio: true }, input: { keyboard: false, mouse: false, touch: false, gamepad: false },
+    scene: [Boot, Yard]
+  });
+  window.onBooted = () => { layout(); $('play').disabled = false; };
+  $('play').addEventListener('click', startRun);
+  $('again').addEventListener('click', startRun);
+  document.querySelectorAll('.musicBtn').forEach(b => b.addEventListener('click', toggleMusic));
+  syncMusic();
+  $('oPortrait').src = principalCanvas().toDataURL();
+  try { const best = +localStorage.getItem('sy_best'); if (best) $('tBest').textContent = 'Best rep: ' + best.toLocaleString('en-US'); } catch (_) {}
+  if (DEBUG) window.SY = { get G() { return G; }, game, IN, inDown, inUp, startRun, go, office, pickOpt, DLG };
+});
+
+})();
+</script>
+</body>
+</html>
