@@ -69,6 +69,13 @@ canvas{display:block;width:100%;height:100%;image-rendering:pixelated;image-rend
 @keyframes starIn{from{transform:scale(2) rotate(-20deg);opacity:0}to{transform:none;opacity:1}}
 .card{display:flex;flex-direction:column;align-items:center;gap:12px;padding:22px 20px;width:min(100%,380px);background:linear-gradient(180deg,rgba(60,36,96,.97),rgba(24,14,44,.97));box-shadow:inset 0 0 0 2px #6a4a9a;
   clip-path:polygon(12px 0,100% 0,100% calc(100% - 12px),calc(100% - 12px) 100%,0 100%,0 12px)}
+.card.win{gap:10px;box-shadow:inset 0 0 0 2px var(--gold),0 0 60px rgba(255,210,58,.25)}
+.wnote{margin:0;max-width:30ch;font-size:15px;color:var(--ink);text-wrap:balance}
+.trophy{position:relative;width:96px;height:96px;margin:4px auto;border-radius:50%;background:radial-gradient(circle,var(--gold) 0 14%,#fff6e8 14% 28%,var(--red) 28% 42%,#fff6e8 42% 56%,#3a7ae8 56% 70%,#fff6e8 70%);box-shadow:0 0 0 4px #1a1030,0 0 30px rgba(255,210,58,.5);animation:pop .5s cubic-bezier(.2,1.8,.4,1) both}
+.trophy i{position:absolute;left:50%;top:50%;width:70px;height:4px;margin-top:-2px;background:#c8a070;transform-origin:0 50%;transform:rotate(-150deg);animation:thunk .35s .35s ease-in both}
+.trophy b{position:absolute;left:50%;top:50%;width:8px;height:8px;margin:-4px 0 0 -4px;background:#1a1030;border-radius:50%}
+@keyframes pop{from{transform:scale(0)}}
+@keyframes thunk{from{transform:rotate(-150deg) translateX(-120px);opacity:0}}
 .orient-t{display:none;align-items:center;gap:10px;font-family:var(--label);font-size:10px;letter-spacing:.06em;color:var(--muted)}
 @media (pointer:coarse){.orient-t{display:flex}}
 .orient-t svg{width:22px;height:22px;color:var(--gold);animation:rotp 2.6s ease-in-out infinite}
@@ -113,6 +120,19 @@ canvas{display:block;width:100%;height:100%;image-rendering:pixelated;image-rend
     <p class="sub" id="cSub"></p>
     <div class="btns"><button class="btn" id="cNext" type="button">Next level</button><button class="btn ghost" id="cRetry" type="button">Retry</button></div>
     <button class="tb" id="cMenu" type="button">Levels</button>
+  </div>
+</div>
+
+<div class="screen" id="sWin" hidden>
+  <div class="card win">
+    <p class="sub">All ten levels cleared</p>
+    <h2 class="h2">Master Archer</h2>
+    <div class="trophy" aria-hidden="true"><i></i><b></b></div>
+    <div class="stars" id="wStars"></div>
+    <p class="sub" id="wSub"></p>
+    <p class="wnote" id="wNote"></p>
+    <div class="btns"><button class="btn" id="wLevels" type="button">Chase the stars</button><button class="btn ghost" id="wAgain" type="button">Play again</button></div>
+    <a class="home" href="/">More Stormie Games</a>
   </div>
 </div>
 
@@ -662,8 +682,19 @@ function winLevel() {
     $('cSub').textContent = `${world.shots} arrow${world.shots > 1 ? 's' : ''} used · par ${world.L.par}`;
     const sEl = $('cStars'); sEl.innerHTML = [0, 1, 2].map(i => `<i class="${i < st ? 'on' : ''}" style="animation-delay:${.15 + i * .18}s"></i>`).join('');
     for (let i = 0; i < st; i++) setTimeout(() => sfx.star(i), 150 + i * 180);
-    $('cNext').hidden = levelIdx >= LEVELS.length - 1; $('sClear').hidden = false;
+    if (levelIdx >= LEVELS.length - 1) { showWin(); return; }
+    $('cNext').hidden = false; $('sClear').hidden = false;
   }, 1100);
+}
+function showWin() {
+  state = 'win';
+  const total = save.stars.reduce((a, b) => a + (b || 0), 0), max = LEVELS.length * 3, full = save.stars.filter(s => s === 3).length;
+  $('wStars').innerHTML = [0, 1, 2].map(i => `<i class="${i < Math.max(1, Math.round(total / max * 3)) ? 'on' : ''}" style="animation-delay:${.6 + i * .18}s"></i>`).join('');
+  $('wSub').textContent = `${total} / ${max} stars`;
+  $('wNote').textContent = total >= max ? 'Every level on par. Not a single arrow wasted. That is the real last arrow.' : `${LEVELS.length - full} level${LEVELS.length - full === 1 ? '' : 's'} still missing three stars. Hit par to get them all.`;
+  $('wLevels').textContent = total >= max ? 'Level select' : 'Chase the stars';
+  hideScreens(); $('sWin').hidden = false;
+  [0, 1, 2, 3, 4].forEach(i => setTimeout(() => sfx.star(i % 3), 500 + i * 160));
 }
 function failLevel() { state = 'fail'; sfx.lose(); $('sFail').hidden = false; }
 function retry() { if (!world) return; sfx.click(); loadLevel(levelIdx, true); }
@@ -844,7 +875,7 @@ function titleDraw() {
 }
 
 /* ---------- screens and layout ---------- */
-function hideScreens() { for (const id of ['sTitle', 'sLevels', 'sClear', 'sFail']) $(id).hidden = true; }
+function hideScreens() { for (const id of ['sTitle', 'sLevels', 'sClear', 'sFail', 'sWin']) $(id).hidden = true; }
 function openLevels() {
   state = 'levels'; hideScreens(); $('hud').hidden = true; aim = null; $('tip').classList.remove('show');
   const g = $('lvGrid'); g.innerHTML = LEVELS.map((L, i) => { const lock = i + 1 > save.unlocked, st = save.stars[i] || 0; return `<button class="lv${lock ? ' lock' : ''}" data-i="${i}" ${lock ? 'disabled' : ''}><b>${i + 1}</b><span>${L.name}</span><em>${[0, 1, 2].map(k => `<i class="${k < st ? 'on' : ''}"></i>`).join('')}</em></button>`; }).join('');
@@ -853,6 +884,8 @@ function openLevels() {
 }
 $('lvGrid').addEventListener('click', e => { const b = e.target.closest('.lv'); if (!b || b.disabled) return; initAudio(); sfx.click(); loadLevel(+b.dataset.i); });
 $('play').addEventListener('click', () => { initAudio(); sfx.click(); const next = Math.min(save.unlocked, LEVELS.length) - 1; if (!save.stars.length) loadLevel(0); else openLevels(); });
+$('wLevels').addEventListener('click', () => { sfx.click(); openLevels(); });
+$('wAgain').addEventListener('click', () => { sfx.click(); loadLevel(0); });
 $('cNext').addEventListener('click', () => { sfx.click(); loadLevel(levelIdx + 1); });
 $('cRetry').addEventListener('click', retry); $('fRetry').addEventListener('click', retry);
 $('cMenu').addEventListener('click', openLevels); $('fMenu').addEventListener('click', openLevels); $('menuBtn').addEventListener('click', e => { e.currentTarget.blur(); openLevels(); }); $('lvBack').addEventListener('click', () => { hideScreens(); $('sTitle').hidden = false; state = 'title'; world = null; });
