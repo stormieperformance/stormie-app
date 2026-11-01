@@ -547,6 +547,8 @@
       transition: opacity 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.05s, transform 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.05s, filter 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.05s;
     }
     .about-body { max-width: 640px; }
+    .fb-slot { margin-top: 22px; color: var(--gold); }
+    .fb-slot:empty { display: none; }
     .about-body p {
       font-family: var(--sans);
       font-size: 15px;
@@ -1137,6 +1139,8 @@
         <h2 class="about-title">ABOUT STORMIE GAMES</h2>
         <div class="about-body">
           <p>Stormie Games makes short, original browser games designed to be played whenever you have a few minutes to spare. No installation, no account and no commitment. Open a game, play and get back to your day.</p>
+          <p>Every game here is still being tuned. Played one? Tell me what to make better.</p>
+          <div class="fb-slot" data-feedback-slot></div>
         </div>
       </div>
     </section>
@@ -1281,5 +1285,6 @@
       });
     })();
   </script>
+<script src="feedback.js" data-game="The whole site" data-mode="inline" defer></script>
 </body>
 </html>
