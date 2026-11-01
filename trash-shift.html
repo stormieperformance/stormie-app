@@ -139,7 +139,7 @@ button{font:inherit;color:inherit;touch-action:manipulation}
 
 <div class="screen" id="sTitle">
   <h1 class="title"><small>Stormie Games presents</small>Trash<br><span>Shift</span></h1>
-  <p class="tag">The night shift. Five stops, one truck, and a city that throws things back.</p>
+  <p class="tag">The night shift stinks. Literally. Five stops, one burping truck, and a city that throws its underpants at you.</p>
   <div class="how desk-only"><span><b>A D / arrows</b>move</span><span><b>Space</b>jump</span><span><b>E</b>grab, dump, use</span><span><b>K</b>throw</span><span><b>R</b>retry stop</span><span><b>M</b>music</span></div>
   <p class="tag touch-only" style="font-size:14px">Big buttons below the street. Works upright or sideways.</p>
   <div class="btns"><button class="btn" id="play" type="button" disabled>Clock in</button><button class="tb musicBtn" type="button">Music on</button></div>
@@ -422,6 +422,8 @@ function bangFrame(x, i) { /* warning "!" */ R_(x, 1, 0, 8, 14, i ? '#ffd23a' : 
 
 
 function junkFrame(x, i) {
+  if (i === 3) { R_(x, 0, 2, 12, 5, '#f0f0f0'); R_(x, 0, 7, 5, 4, '#f0f0f0'); R_(x, 7, 7, 5, 4, '#f0f0f0'); R_(x, 0, 2, 12, 1, '#4a7ae8'); for (const [a, b] of [[2, 4], [7, 3], [9, 6], [2, 8], [9, 9]]) PX(x, a, b, '#e83a5a'); R_(x, 5, 6, 2, 2, '#a8783a'); return; }
+  if (i === 4) { x.fillStyle = '#e8e8e0'; x.beginPath(); x.ellipse(6, 7, 6, 5, 0, 0, 6.29); x.fill(); x.fillStyle = '#5a4a3a'; x.beginPath(); x.ellipse(6, 7, 3, 2.5, 0, 0, 6.29); x.fill(); R_(x, 2, 0, 8, 3, '#d8d8d0'); PX(x, 3, 1, '#ffffff'); return; }
   if (i === 0) { R_(x, 0, 2, 12, 9, '#6a5a4a'); R_(x, 1, 3, 8, 7, '#3a4a5a'); PX(x, 2, 4, '#8aa8c8'); PX(x, 3, 4, '#8aa8c8'); R_(x, 10, 4, 1, 1, '#c8c8c8'); R_(x, 10, 7, 1, 1, '#c8c8c8'); R_(x, 3, 0, 1, 2, '#8a8a8a'); R_(x, 7, 0, 1, 2, '#8a8a8a'); R_(x, 2, 11, 2, 1, '#3a2a2a'); R_(x, 8, 11, 2, 1, '#3a2a2a'); }
   else if (i === 1) { R_(x, 3, 0, 5, 7, '#7a4a2a'); R_(x, 3, 7, 9, 3, '#7a4a2a'); R_(x, 3, 10, 9, 2, '#2a1a10'); R_(x, 4, 2, 3, 1, '#c8a060'); R_(x, 4, 4, 3, 1, '#c8a060'); }
   else { R_(x, 0, 2, 12, 9, '#d8d8d0'); R_(x, 1, 3, 7, 7, '#2a2a2a'); PX(x, 2, 4, '#ffd060'); R_(x, 9, 4, 2, 1, '#5a5a5a'); R_(x, 9, 6, 2, 1, '#5a5a5a'); R_(x, 9, 8, 2, 1, '#c8302a'); }
@@ -463,7 +465,7 @@ function buildArt() {
   sheet('dumpster', 34, 25, 2, dumpsterFrame);
   sheet('fx', 6, 6, 4, fxFrame, true);
   sheet('bang', 10, 14, 2, bangFrame);
-  sheet('junk', 12, 12, 3, junkFrame);
+  sheet('junk', 12, 12, 5, junkFrame);
   sheet('cone', 8, 10, 1, coneFrame);
   sheet('crate', 16, 16, 1, crateFrame);
   sheet('psign', 10, 32, 1, psignFrame);
@@ -599,6 +601,13 @@ const sfx = {
   err() { const t = S(); if (t < 0) return; voice(AU.sfx, .5, 150, t, .16, .08, { lp: 900 }); voice(AU.sfx, .5, 110, t + .1, .2, .08, { lp: 900 }); },
   door() { const t = S(); if (t < 0) return; nz(AU.sfx, t, .08, .25, { type: 'lowpass', f: 600 }); voice(AU.sfx, 'square', 90, t, .07, .1, { env: 'pluck', lp: 500 }); },
   ui() { const t = S(); if (t < 0) return; voice(AU.sfx, .25, 880, t, .06, .06, { env: 'pluck' }); },
+  fart(big) { const t = S(); if (t < 0) return; const d = big ? .55 : .32;
+    voice(AU.sfx, .5, big ? 70 : 95, t, d, .16, { f2: big ? 48 : 62, vib: 34 + Math.random() * 14, vibD: 22, lp: 520, q: 2 });
+    voice(AU.sfx, 'sawtooth', big ? 52 : 72, t, d * .8, .1, { f2: 40, vib: 21, vibD: 14, lp: 360 });
+    nz(AU.sfx, t, d, .22, { type: 'lowpass', f: 420, f2: 160, q: 3 }); if (big) nz(AU.sfx, t + d * .7, .2, .15, { type: 'lowpass', f: 300, q: 4 }); },
+  burp() { const t = S(); if (t < 0) return; voice(AU.sfx, 'sawtooth', 130, t, .6, .14, { f2: 72, vib: 17, vibD: 18, lp: 700, q: 3 }); voice(AU.sfx, .5, 260, t, .5, .05, { f2: 140, vib: 17, vibD: 30, lp: 900 }); nz(AU.sfx, t, .55, .12, { type: 'bandpass', f: 500, q: 2 }); },
+  gag() { const t = S(); if (t < 0) return; for (let i = 0; i < 2; i++) voice(AU.sfx, .25, 300 - i * 40, t + i * .16, .14, .07, { f2: 180, lp: 1400 }); },
+  combo(n) { const t = S(); if (t < 0) return; [0, 4, 7, 12].slice(0, Math.min(4, 1 + Math.floor(n / 3))).forEach((k, i) => voice(AU.sfx, .25, mtof(72 + k + Math.min(n, 12)), t + i * .05, .1, .06, { env: 'pluck' })); },
   stamp() { const t = S(); if (t < 0) return; nz(AU.sfx, t, .12, .5, { type: 'lowpass', f: 800 }); voice(AU.sfx, 'sine', 110, t, .15, .3, { f2: 50, env: 'pluck' }); }
 };
 function engineOn() {
@@ -730,15 +739,15 @@ const DRIVES = [
   { name: 'To Chippy Corner', w: 1800, seed: 79, haz: [{ t: 'consp', x: 560 }, { t: 'trolley', x: 920 }, { t: 'chef', x: 1260 }], tip: 'mixed' }
 ];
 const TIPS = {
-  start: 'Walk to a bag and press {USE} to grab it.',
+  start: 'Walk to a bag and press {USE} to grab it. Press {JUMP} again in mid-air for a Fart Jump.',
   carry: 'Carry up to 3. Each bag slows you down. Take them to the hopper at the back of the truck.',
   hopper: 'Press {USE} at the hopper to dump. Or press {THROW} from a distance for a SWISH bonus.',
-  compact: 'The hopper holds 5 loads. Press {USE} at the hopper to compact it.',
+  compact: 'The hopper burps it all down when it gets full. Keep feeding it.',
   bin: 'Wheelie bins take both hands. Push it to the hopper and press {USE}. {THROW} shoves it.',
   high: 'Climb up empty-handed. Bags thrown down from up high will burst.',
   split: 'Burst bag! Walk over the litter and grab the leftovers. It still counts.',
-  clear: 'Stop clear! Compact, then press {USE} at the cab to drive on.',
-  coon: 'Shaking bin! Raccoons steal bags. Throw food to distract them, or throw anything to stun them.',
+  clear: 'Stop clear! Press {USE} at the cab to drive on.',
+  coon: 'Shaking bin! Raccoons steal bags. Throw food, throw trash, or Fart Jump right next to them.',
   resident: 'Watch the shadows! She throws junk from up there. Dodge it, then bin it for points.',
   drain: 'Never leave bags near a drain. Something down there is hungry.',
   rival: 'Rival crew! Beat him to the golden bag, or trip him with a throw.',
@@ -751,9 +760,14 @@ const TIPS = {
   mixed: 'Last drive. Honk, slow down, stop. You know the drill.'
 };
 const LECTURES = ['THAT TRUCK IS COLLECTING EVIDENCE!', 'WHERE DO THE BAGS REALLY GO?', 'WAKE UP, BIN MAN!', 'RECYCLING IS A COVER STORY!'];
-const RESIDENT_LINES = ['YOU MISSED MY BIN!', 'OI! BIN MAN!', 'AND THIS ONE!', 'I PAY MY RATES!', 'TAKE IT ALL!'];
-const OUCH = ['OOF!', 'MY BACK!', 'UNION REP!', 'NOT AGAIN!', 'WORTH IT.'];
-const QUIPS = ['LOVELY.', 'BEAUTIFUL.', 'NOTHING BUT BIN.', 'TEXTBOOK.', 'CHEF KISS.'];
+const RESIDENT_LINES = ['YOU MISSED MY BIN!', 'OI! BIN MAN!', "TAKE MY HUSBAND'S PANTS!", 'I PAY MY RATES!', 'CATCH, STINKY!', 'AND THE TOILET SEAT!'];
+const OUCH = ['MY SPINE!', 'NOT THE FACE!', 'IT GOT IN MY MOUTH!', 'UNION REP!', 'I NEED A SHOWER.', 'WORTH IT.', 'MY GOOD VEST!'];
+const QUIPS = ['NOTHING BUT STINK.', 'GRANDMA COULD NEVER.', 'SMELLS LIKE VICTORY. AND HAM.', 'FROM DOWNTOWN!', 'BIN THERE, DONE THAT.', 'DISGUSTING. PERFECT.', 'CHEF KISS. DO NOT KISS.'];
+const PICKUP = ['WHY IS IT WARM?', 'IT MOVED.', 'SQUISHY...', 'SMELLS LIKE FEET.', 'IS THIS A DIAPER?', 'SOMETHING SLOSHED.', 'THIS ONE IS HUMMING.', 'NOPE. YEP. OK.'];
+const CONTENTS = ['DIAPERS!', 'FISH HEADS!', 'OLD UNDIES!', 'ROTTEN EGGS!', 'A WHOLE HAM?!', 'WET CAT FOOD!', 'TOENAILS?!', "SOMEONE'S DIARY!", 'HAIR. SO MUCH HAIR.', 'EXPIRED YOGURT!'];
+const GROSSED = ['I CAN TASTE IT.', 'NOPE NOPE NOPE.', 'MY EYES!', 'THAT IS A CRIME.', 'WHO DOES THIS?!'];
+const FARTS = ['PFFFT!', 'BRAAAP!', 'TOOT!', 'THPPPT!', 'PHWOOO!', 'FRRRT!'];
+const COMBO_WORDS = [[3, 'FILTHY!'], [6, 'DISGUSTING!'], [9, 'ABSOLUTELY RANK!'], [12, 'GARBAGE GOD!'], [16, 'LORD OF THE FLIES!']];
 
 /* ================= TRASH SHIFT: game ================= */
 const GH = 216, GROUND = 196, GRAV = 520;
@@ -793,7 +807,7 @@ const KINDS = {
 let G = null, game = null;
 function newShift() {
   G = { stop: 0, score: 0, mode: null, over: false, food: 0, tipSeen: {}, missed: [],
-    stats: { total: 0, got: 0, swish: 0, near: 0, litter: 0, splits: 0, stolen: 0, eaten: 0, stuns: 0, fed: 0, bonk: 0, unmask: 0, rivalTrips: 0, binTrips: 0, honks: 0, lectures: 0, trolleyHits: 0, gentle: 0, chefFriend: 0, chefCrash: 0, compacts: 0, parks: [], times: [], quick: 0 } };
+    stats: { farts: 0, gross: 0, bestCombo: 0, burps: 0, total: 0, got: 0, swish: 0, near: 0, litter: 0, splits: 0, stolen: 0, eaten: 0, stuns: 0, fed: 0, bonk: 0, unmask: 0, rivalTrips: 0, binTrips: 0, honks: 0, lectures: 0, trolleyHits: 0, gentle: 0, chefFriend: 0, chefCrash: 0, compacts: 0, parks: [], times: [], quick: 0 } };
 }
 function go(key) {
   G.mode = key;
@@ -946,6 +960,10 @@ class StopScene extends Phaser.Scene {
     G.stats.total += this.total0;
     /* prompt above the player */
     this.prompt = this.add.bitmapText(0, 0, 'px', '').setLetterSpacing(-1).setOrigin(.5, 1).setDepth(26).setTint(0x8ff7ff);
+    this.comboTx = this.add.bitmapText(8, 8, 'px', '').setLetterSpacing(-1).setOrigin(0).setDepth(40).setTint(0xb8ff4a).setVisible(false);
+    this.combo = 0; this.comboT = 0;
+    cam.setZoom(1.22);
+    this.time.addEvent({ delay: 380, loop: true, callback: () => { const f = this.items.filter(i => i.st === 'free' && i.kind !== 'bin' && i.kind !== 'food'); if (f.length) { const it = pick(f); const p = this.add.image(it.x + rnd(-3, 3), it.y - 6, 'fx', 0).setDepth(7).setTint(0x9acd32).setAlpha(.6).setScale(.5); this.tweens.add({ targets: p, y: p.y - 14, x: p.x + Math.sin(this.time.now) * 4, alpha: 0, duration: 900, onComplete: () => p.destroy() }); } if (this.time.now - this.comboT > 2500 && this.comboTx.visible) { this.comboTx.setVisible(false); this.combo = 0; } } });
     /* arrival: the truck reverses in, beeping, then the collector hops out */
     this.truck.x = -150; this.wheels.forEach(w => w.x -= 156);
     cam.scrollX = 0;
@@ -1001,6 +1019,7 @@ class StopScene extends Phaser.Scene {
     this.updPlayer(dt); this.updItems(dt); this.updLitter(dt);
     for (const th of this.threats) th.update(dt);
     this.threats = this.threats.filter(t => !t.dead);
+    { const wv = this.cameras.main.worldView; this.comboTx.setPosition(Math.round(wv.x + 6), Math.round(wv.y + 6)); }
     Fx.updBubbles(this); this.updPrompt(); this.drawHopper();
     hudTick(this);
     inClear();
@@ -1018,9 +1037,11 @@ class StopScene extends Phaser.Scene {
     else if (this.live && !this.done) {
       const mv = (held('right') ? 1 : 0) - (held('left') ? 1 : 0);
       if (mv) P.dir = mv;
-      const sp = P.bin ? 64 : 124 * Math.pow(.82, n), k = onG ? 14 : 7;
+      const sp = P.bin ? 70 : 142 * Math.pow(.88, n), k = onG ? 14 : 7;
+      if (onG) P.fartReady = true;
       b.setVelocityX(b.velocity.x + (mv * sp - b.velocity.x) * Math.min(1, dt * k));
-      if (hit('jump') && P.coy > 0) { b.setVelocityY(-218 * (P.bin ? .62 : 1 - .075 * n)); P.coy = 0; P.jh = true; sfx.jump(); this.squash(P, 1.15); }
+      if (hit('jump') && P.coy > 0) { b.setVelocityY(-218 * (P.bin ? .62 : 1 - .075 * n)); P.coy = 0; P.jh = true; sfx.jump(); this.squash(P, 1.15); if (n >= 3 && Math.random() < .5) { sfx.fart(false); Fx.say(this, P, 'HNNNG.', 700); this.stink(P.x - P.dir * 6, P.y + 6, 4); } }
+      else if (hit('jump') && !onG && P.fartReady && !P.bin) { P.fartReady = false; b.setVelocityY(-200); P.jh = false; this.fartBlast(); }
       if (P.jh && !held('jump') && b.velocity.y < -70) { b.setVelocityY(b.velocity.y * .5); P.jh = false; }
       if (b.velocity.y >= 0) P.jh = false;
       if (hit('use')) this.doUse();
@@ -1063,6 +1084,31 @@ class StopScene extends Phaser.Scene {
     for (const [px, py] of pts) g.fillRect(Math.round(px), Math.round(py), 1, 1);
     if (good) { g.lineStyle(1, 0xb8ff4a, .9); g.strokeRect(HOP.x0 + 6, 180, HOP.x1 - HOP.x0 - 12, 2); }
   }
+  stink(x, y, n = 6, big) {
+    for (let i = 0; i < n; i++) { const p = this.add.image(x + rnd(-5, 5), y + rnd(-3, 3), 'fx', 0).setDepth(10).setTint(Phaser.Utils.Array.GetRandom([0x9acd32, 0x7a9a2a, 0xb8c84a])).setAlpha(.85);
+      this.tweens.add({ targets: p, x: p.x + rnd(-18, 18), y: p.y + rnd(-14, 6), scale: rnd(big ? 2.5 : 1.6, big ? 4 : 2.6), alpha: 0, duration: rnd(500, 900), onComplete: () => p.destroy() }); }
+  }
+  fartBlast() {
+    const P = this.player; G.stats.farts++;
+    sfx.fart(true); this.stink(P.x - P.dir * 4, P.y + 10, 10, true); this.cameras.main.shake(90, .003);
+    Fx.pop(this, P.x - P.dir * 10, P.y + 4, pick(FARTS), '#b8ff4a');
+    if (G.stats.farts === 1) setTip('Fart Jump! It also knocks out raccoons and makes everyone nearby regret their life choices.', 5000);
+    /* the cloud is a weapon */
+    for (const th of this.threats) { if (!th.s || !th.hittable || !th.hittable()) continue; if (Math.hypot(th.s.x - P.x, th.s.y - P.y) < 46 && th.onHit) { th.onHit({ kind: 'fart' }); Fx.say(this, th.s, pick(['MY NOSE!', 'GROSS!', 'WHAT DID YOU EAT?!']), 900, '#b8ff4a'); this.addScore(40, th.s.x, th.s.y - 26, 'GAS ATTACK'); } }
+    for (const o of this.items) if (o.legs && (o.legs.st === 'run' || o.legs.st === 'corner') && Math.hypot(o.x - P.x, o.y - P.y) < 46) this.tripBin(o);
+  }
+  /* every scoring action inside 2.5 s of the last one grows the stink combo */
+  addScore(v, x, y, label, col = '#ffd23a', big) {
+    const now = this.time.now;
+    this.combo = now - (this.comboT || 0) < 2500 ? (this.combo || 0) + 1 : 1; this.comboT = now;
+    const mult = Math.min(5, 1 + Math.floor((this.combo - 1) / 3)), pts = v * mult;
+    G.score += pts; G.stats.bestCombo = Math.max(G.stats.bestCombo, this.combo);
+    Fx.pop(this, x, y, (label ? label + ' ' : '') + '+' + pts + (mult > 1 ? ' X' + mult : ''), col, big);
+    const w = COMBO_WORDS.find(c => c[0] === this.combo);
+    if (w) { Fx.banner(this, w[1], '#b8ff4a', 900, 44); sfx.combo(this.combo); this.stink(this.player.x, this.player.y - 20, 6); }
+    if (this.combo >= 2) { this.comboTx.setText('STINK COMBO X' + this.combo).setVisible(true).setScale(1.3); this.tweens.add({ targets: this.comboTx, scale: 1, duration: 200 }); }
+    return pts;
+  }
   squash(o, sy) { this.tweens.killTweensOf(o, 'scaleY'); o.setScale(1 / Math.sqrt(sy), sy); this.tweens.add({ targets: o, scaleX: 1, scaleY: 1, duration: 180, ease: 'Back.out' }); }
   /* ---------- verbs ---------- */
   atHopper() { const P = this.player; return P.x > 96 && P.x < 150 && P.y > GROUND - 40; }
@@ -1098,7 +1144,7 @@ class StopScene extends Phaser.Scene {
       P.bin = it; it.setDepth(8.5); it.setAngle(0); it.anims.stop(); it.setFrame(0);
       if (it.legs) { if (it.legs.st !== 'tame') Fx.say(this, P, 'GOTCHA.', 1000); it.legs.st = 'tame'; }
       sfx.clank(); tipKey('bin');
-    } else { P.carry.push(it); it.setDepth(9); sfx.pick(); tipKey(P.carry.length === 1 && !G.tipSeen.carry ? 'carry' : 'hopper'); }
+    } else { P.carry.push(it); it.setDepth(9); sfx.pick(); tipKey(P.carry.length === 1 && !G.tipSeen.carry ? 'carry' : 'hopper'); if (Math.random() < .3) Fx.say(this, P, pick(PICKUP), 1000); }
     this.squash(P, .88);
   }
   dropTop() { const P = this.player, it = P.carry.pop(); it.setPosition(P.x + P.dir * 8, P.y - 4); this.release(it, P.dir * 30, -60); it.noPick = .25; sfx.drop(); }
@@ -1125,7 +1171,7 @@ class StopScene extends Phaser.Scene {
     const q = P.carry.filter(i => i.kind !== 'food'); let n = 0;
     if (H.load + 1 > H.cap) return this.compact();
     for (const it of q) {
-      if (H.load + 1 > H.cap) { Fx.pop(this, HOP.cx, HOP.y0 - 14, 'FULL! COMPACT', '#ff7a5a'); tipKey('compact', true); break; }
+      if (H.load + 1 > H.cap) { this.compact(); break; }
       P.carry.splice(P.carry.indexOf(it), 1); H.load++;
       it.st = 'flying';
       this.tweens.add({ targets: it, x: HOP.cx, y: HOP.cy, angle: P.dir * 90, duration: 200, delay: n++ * 110, ease: 'Quad.in', onComplete: () => this.consume(it, false) });
@@ -1144,25 +1190,25 @@ class StopScene extends Phaser.Scene {
     const KD = KINDS[it.kind], v = it.val;
     if (it.kind === 'food') { Fx.pop(this, HOP.cx, HOP.y0 - 8, 'THAT WAS DINNER', '#c8b8d8'); }
     else {
-      G.score += v; if (KD.rub) G.stats.got++;
+      if (KD.rub) G.stats.got++;
       if (swish) {
-        G.score += 50; G.stats.swish++; this.player.cheerT = .7; sfx.swish();
-        Fx.pop(this, HOP.cx, HOP.y0 - 10, 'SWISH! +' + (v + 50), '#8ff7ff', true);
-        if (Math.random() < .5) Fx.say(this, this.player, pick(QUIPS), 1100);
-      } else { sfx.deposit(); Fx.pop(this, HOP.cx, HOP.y0 - 10, '+' + v); }
+        G.stats.swish++; this.player.cheerT = .7; sfx.swish();
+        this.addScore(v + 50, HOP.cx, HOP.y0 - 10, 'SWISH!', '#8ff7ff', true);
+        if (Math.random() < .6) Fx.say(this, this.player, pick(QUIPS), 1200);
+      } else { sfx.deposit(); this.addScore(v, HOP.cx, HOP.y0 - 10); }
     }
     this.tweens.add({ targets: this.truck, y: 163, duration: 60, yoyo: true });
     if (!keep) { it.st = 'gone'; it.destroy(); } else it.st = 'done';
-    if (this.hopper.load >= this.hopper.cap) tipKey('compact');
+    if (this.hopper.load >= this.hopper.cap && !this.hopper.busy) this.time.delayedCall(250, () => this.compact());
     this.checkClear();
   }
   compact() {
     const H = this.hopper; if (H.busy > 0 || H.load <= 0) return;
-    H.busy = .85; sfx.crunch(); G.stats.compacts++;
+    H.busy = .7; sfx.crunch(); G.stats.compacts++; G.stats.burps++; this.time.delayedCall(450, () => { sfx.burp(); this.stink(HOP.cx, HOP.y0 - 4, 12, true); Fx.pop(this, HOP.cx + 10, HOP.y0 - 22, pick(['BUUURP!', 'URRRP!', 'BLAAARGH!']), '#b8ff4a', true); });
     const seq = [1, 2, 1, 2, 1, 0]; seq.forEach((f, i) => this.time.delayedCall(i * 140, () => this.truck.setFrame(f)));
     this.cameras.main.shake(260, .004);
     const pts = H.load * 10;
-    this.time.delayedCall(700, () => { H.load = 0; G.score += pts; Fx.pop(this, HOP.cx, HOP.y0 - 10, 'CRUNCH +' + pts, '#b8ff4a'); Fx.puff(this, HOP.cx, HOP.y0, 5, 0x8a9a7a); this.checkClear(); });
+    this.time.delayedCall(700, () => { H.load = 0; G.score += pts; Fx.pop(this, HOP.cx - 12, HOP.y0 + 4, 'CRUNCH +' + pts, '#b8ff4a'); Fx.puff(this, HOP.cx, HOP.y0, 5, 0x8a9a7a); this.checkClear(); });
   }
   remaining() { return this.items.filter(i => KINDS[i.kind].rub && i.st !== 'gone' && i.st !== 'done' && i.st !== 'flying'); }
   checkClear() {
@@ -1172,7 +1218,8 @@ class StopScene extends Phaser.Scene {
   tryLeave() {
     const P = this.player, H = this.hopper;
     if (P.carry.some(i => i.kind !== 'food')) return Fx.pop(this, P.x, P.y - 24, 'BIN WHAT YOU CARRY', '#ff7a5a');
-    if (H.load > 0 || H.busy > 0) { Fx.pop(this, P.x + 30, P.y - 24, 'COMPACT FIRST!', '#ff7a5a'); sfx.err(); return tipKey('clear', true); }
+    if (H.busy > 0) return;
+    if (H.load > 0) { this.compact(); this.time.delayedCall(800, () => this.tryLeave()); return; }
     const rem = this.remaining();
     if (rem.length && this.leaveConfirm <= 0) { this.leaveConfirm = 3; sfx.err(); return setTip(rem.length + ' left behind. Press ' + KL().USE + ' again to leave anyway.'); }
     this.leave(rem);
@@ -1240,7 +1287,8 @@ class StopScene extends Phaser.Scene {
     const gold = it.kind === 'gold';
     it.kind = 'scrap'; it.val = gold ? 400 : 50; it.setFrame(4); it.angle = 0; it.body.setSize(12, 4).setOffset(1, 8);
     for (let i = 0; i < (gold ? 7 : 4); i++) this.spawnLitter(it.x, it.y - 4, gold);
-    G.stats.splits++; sfx.split(); Fx.pop(this, it.x, it.y - 12, gold ? 'GOLD BURST!' : 'SPLAT!', '#ff8a5a'); Fx.puff(this, it.x, it.y, 6, 0x7a8a5a);
+    G.stats.splits++; G.stats.gross++; sfx.split(); sfx.gag(); Fx.pop(this, it.x, it.y - 12, gold ? 'GOLD BURST!' : pick(CONTENTS), '#b8ff4a', true); this.stink(it.x, it.y, 12, true); this.cameras.main.shake(120, .005);
+    if (Math.abs(this.player.x - it.x) < 120) this.time.delayedCall(400, () => Fx.say(this, this.player, pick(GROSSED), 1100, '#b8ff4a'));
     tipKey('split');
   }
   spawnLitter(x, y, gold) {
@@ -1253,7 +1301,7 @@ class StopScene extends Phaser.Scene {
     for (const s of this.litter) {
       s.age += dt;
       if (s.age > .35 && P.visible && Math.abs(s.x - P.x) < 11 && Math.abs(s.y - P.y) < 17) {
-        G.score += s.val; G.stats.litter++; sfx.litter(); Fx.pop(this, s.x, s.y - 6, '+' + s.val, '#e8e0c0'); s.destroy(); s.gone = true;
+        G.stats.litter++; sfx.litter(); this.addScore(s.val, s.x, s.y - 6, '', '#e8e0c0'); s.destroy(); s.gone = true;
       }
     }
     this.litter = this.litter.filter(s => !s.gone);
@@ -1398,7 +1446,7 @@ class Coon {
     const sc = this.sc, s = this.s;
     if (it.kind === 'food') { this.dropCarry(); this.eat(it); return; }
     this.dropCarry(); this.st = 'dizzy'; this.t = 2; s.anims.stop(); s.setFrame(7);
-    G.stats.bonk++; G.score += 75; Fx.pop(sc, s.x, s.y - 16, 'BONK! +75', '#8ff7ff'); sfx.bonk(); Fx.stars(sc, s, 2000);
+    G.stats.bonk++; sc.addScore(75, s.x, s.y - 16, it.kind === 'fart' ? 'GASSED!' : 'BONK!', '#8ff7ff'); sfx.bonk(); Fx.stars(sc, s, 2000);
   }
   kill() { if (this.s) this.s.destroy(); this.st = 'done'; this.dead = true; this.sc.checkClear(); }
 }
@@ -1422,7 +1470,7 @@ class Resident {
     } else if (this.st === 'aim') {
       if (this.t <= 0) {
         s.setFrame(3);
-        const T = .72, y0 = this.y + 4, it = sc.spawnItem('junk', this.x, y0 + 12);
+        const T = .72, y0 = this.y + 4, it = sc.spawnItem('junk', this.x, y0 + 12); it.setFrame(Phaser.Math.Between(0, 4));
         it.setPosition(this.x, y0);
         sc.release(it, (this.tx - this.x) / T, (GROUND - 6 - y0 - .5 * GRAV * T * T) / T);
         it.danger = true; it.shadow = this.shadow; this.shadow = null; it.noPick = .4; G.stats.total++;
@@ -1834,11 +1882,15 @@ function endShift() {
   G.over = true; engineOff(); playSong('report');
   for (const s of game.scene.getScenes(true)) if (s.scene.key !== 'boot') s.scene.pause();
   const s = G.stats, pct = s.total ? Math.round(100 * s.got / s.total) : 0;
-  const ranks = [[0, 'Bin Apprentice'], [6000, 'Kerbside Contender'], [9500, 'Senior Rubbish Technician'], [13000, 'Night Shift Legend'], [16500, 'Lord of the Landfill']];
+  const ranks = [[0, 'Bin Juice Intern'], [9000, 'Kerbside Stinker'], [15000, 'Senior Rubbish Wrangler'], [21000, 'Night Shift Legend'], [27000, 'Lord of the Flies']];
   const rank = ranks.filter(r => G.score >= r[0]).pop()[1];
   const inc = [];
   const add = (n, txt) => { if (n) inc.push([n, txt]); };
-  add(s.stuns, 'Struck by flying household goods');
+  add(s.farts, 'Fart Jumps performed on duty');
+  add(s.gross, 'Bags that revealed things nobody should see');
+  add(s.burps, 'Times the truck burped in public');
+  add(s.bestCombo >= 3 ? s.bestCombo : 0, 'Best stink combo (in a row)');
+  add(s.stuns, 'Struck by flying underpants and appliances');
   add(s.splits, 'Bags that exploded on impact');
   add(s.fed, 'Raccoons fed takeaway (off the books)');
   add(s.bonk, 'Wildlife bonked, non-fatally');
