@@ -283,6 +283,7 @@
       transition: opacity 2s ease 0.5s;
     }
     .hero-video.loaded { opacity: 1; }
+    .hero-video.tall { object-position: center 70%; }
     .hero-overlay {
       position: absolute;
       inset: 0;
@@ -949,6 +950,8 @@
         playsinline
         preload="none"
         data-src="hero-halloween.mp4"
+        data-src-portrait="hero-halloween-portrait.mp4"
+        data-poster-portrait="hero-halloween-poster-portrait.jpg"
         poster="hero-halloween-poster.jpg"
       ></video>
 
@@ -1218,7 +1221,9 @@
           video.remove();
         } else {
           video.addEventListener('canplaythrough', () => video.classList.add('loaded'), { once: true });
-          video.src = video.dataset.src;
+          const tall = window.innerHeight > window.innerWidth * 1.1 && video.dataset.srcPortrait;
+          if (tall) { video.poster = video.dataset.posterPortrait; video.classList.add('tall'); }
+          video.src = tall ? video.dataset.srcPortrait : video.dataset.src;
           const started = video.play();
           if (started && started.catch) started.catch(() => {});
         }
