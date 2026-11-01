@@ -249,12 +249,14 @@ canvas{display:block;width:100%;height:100%;image-rendering:crisp-edges;image-re
       <span><b>W / Space</b>Jump</span>
       <span><b>E</b>Use</span>
       <span><b>J / Click</b>Cast</span>
+      <span><b>S / Down</b>Crouch</span>
       <span><b>B</b>Spellbook</span>
     </div>
     <div class="tkeys">
       <i>Stick</i><span>Walk with your left thumb. Fly with it on the broom.</span>
       <i>Use</i><span>Light candles, gather, bind spirits. Later it casts your wand.</span>
       <i class="e">Jump</i><span>Climb crypts, ledges and tower beams.</span>
+      <i>Stick down</i><span>Crouch under bolts and claws. Crouch and jump to drop off a ledge.</span>
     </div>
     <div class="orient-t"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg><span>Play upright or sideways. Just turn your phone.</span></div>
     <div class="tbtns">
@@ -1114,7 +1116,7 @@ const SC = {
     enter() {
       banner('The Tower', 2.2, 'Floor I');
       [118, 236, 336].forEach((x, i) => enemies.push(mkSpider(x, 54 + i * 8)));
-      talk('Cold stone. Webs. Somewhere above, a heartbeat that is not yours.', '', () => toast(isTouch ? 'Push the stick up while you cast to aim high. The beams lead up to him.' : 'Hold W or Up while casting to aim high, or click right on your target.', 5));
+      talk('Cold stone. Webs. Somewhere above, a heartbeat that is not yours.', '', () => toast(isTouch ? 'Just cast: your wand locks onto the nearest foe. Pull the stick down to crouch under his bolts.' : 'Just cast: your wand locks onto the nearest foe. Hold S or Down to crouch under his bolts.', 5));
     },
     update() {
       if (!G.vyrin && !enemies.some(e => e.type === 'vyrin') && (P.x > 330 || !enemies.some(e => e.type === 'spider'))) spawnVyrin();
@@ -1273,7 +1275,8 @@ function kill(e) {
   if (e.type === 'vyrin') { G.vyrin = true; $('bossbar').hidden = true; musPlay('tower'); flash = 1; setTimeout(() => talk('Lord Vyrin dissolves into shadow. The staircase groans open.'), 600); }
   if (e.type === 'wolf') { G.wolf = true; $('bossbar').hidden = true; flash = 1; musStop(); sfx.howl(); setTimeout(() => talk(['The wolf falls. In its place, the professor sleeps at last.', 'Above the tower, something shifts in the sky...'], '', () => fade(() => { goScene('blood'); saveCheckpoint('blood'); })), 900); }
 }
-function contact(e, r, cy) { if (state === 'play' && Math.hypot(e.x - P.x, cy - (P.y - 13)) < r) hurt(e.x); }
+const pHitY = () => P.crouch ? P.y - 5 : P.y - 13;
+function contact(e, r, cy) { if (state === 'play' && Math.hypot(e.x - P.x, cy - pHitY()) < (P.crouch ? r * .8 : r)) hurt(e.x); }
 function updateSideEnemies(dt) {
   for (const e of enemies) {
     e.flash = Math.max(0, (e.flash || 0) - dt); e.t = (e.t || 0) + dt;
@@ -1330,7 +1333,7 @@ function updateVyrin(e, dt) {
     e.st_t -= dt;
     if (R() < dt * 30) { const a = R() * 6.283; parts.push({ x: e.x + Math.cos(a) * 18, y: e.y + Math.sin(a) * 18, vx: -Math.cos(a) * 70, vy: -Math.sin(a) * 70, g: 0, life: .25, max: .25, col: '#ff3050', em: true, sz: 1 }); }
     if (e.st_t <= 0) {
-      const n = ph2 ? 5 : 3, base = Math.atan2((P.y - 14) - e.y, P.x - e.x), spread = ph2 ? 1.0 : .7;
+      const n = ph2 ? 5 : 3, base = Math.atan2((P.crouch ? P.y - 5 : P.y - 14) - e.y, P.x - e.x), spread = ph2 ? 1.0 : .7;
       for (let i = 0; i < n; i++) { const a = base + (i / (n - 1) - .5) * spread; eshots.push({ x: e.x, y: e.y, vx: Math.cos(a) * 78, vy: Math.sin(a) * 78, life: 5, col: 'blood' }); }
       sfx.shot(); e.st = 'idle'; e.cd = ph2 ? 1.7 : 2.3;
       if (R() < .25) { e.st = 'tele'; e.st_t = .5; sfx.tele(); batBurst(e); }
@@ -1373,7 +1376,7 @@ function updateWolf(e, dt) {
   } else if (e.st === 'crouch') { e.vx = 0; if (e.st_t <= 0) { e.st = 'leap'; e.vy = -300; e.vx = clamp(dx / .75, -240, 240); e.ground = false; } }
   else if (e.st === 'leap') { if (e.ground) { e.st = 'prowl'; e.st_t = 1.2 + R(); shake = 6; sfx.boom(); burst(e.x, FLOOR - 2, 14, ['#3a3448', '#2a2436'], 90, 200, false, .5); } }
   else if (e.st === 'wind') { if (e.st_t <= 0) { e.st = 'slash'; e.st_t = .22; sfx.hit(); } }
-  else if (e.st === 'slash') { if (state === 'play' && Math.abs(P.x - (e.x + e.face * 22)) < 22 && Math.abs((P.y - 12) - (e.y - 18)) < 22) hurt(e.x); if (e.st_t <= 0) { e.st = 'prowl'; e.st_t = .8; } }
+  else if (e.st === 'slash') { if (state === 'play' && !P.crouch && Math.abs(P.x - (e.x + e.face * 22)) < 22 && Math.abs((P.y - 12) - (e.y - 18)) < 22) hurt(e.x); else if (P.crouch && Math.abs(P.x - e.x) < 44 && !e.ducked) { e.ducked = true; toast('Ducked!', .8); } if (e.st_t <= 0) { e.st = 'prowl'; e.st_t = .8; e.ducked = false; } }
   else if (e.st === 'howl') { e.vx = 0; if (e.st_t <= 0) { e.st = 'prowl'; e.st_t = .6; } }
   e.vy = Math.min(e.vy + 760 * dt, 400); const py = e.y; e.x = clamp(e.x + e.vx * dt, 16, WW - 16); e.y += e.vy * dt; landSimple(e, py);
   if (state === 'play' && Math.abs(dx) < 16 && Math.abs((P.y - 12) - (e.y - 16)) < 18) hurt(e.x);
@@ -1394,14 +1397,30 @@ function nearestItem() {
   return best;
 }
 let aimAt = null;
+/* soft lock-on: the wand finds the nearest foe you are facing, and the bolt curves into it */
+const hittable = e => !e.dead && !['skel', 'wraith', 'prof', 'heart'].includes(e.type) && e.vis !== 0 && e.st !== 'intro';
+const eyOf = e => e.type === 'wolf' ? e.y - 16 : e.type === 'spider' ? e.y - 3 : e.y;
+function lockTarget(face) {
+  let best = null, bs = 1e9;
+  for (const e of enemies) {
+    if (!hittable(e)) continue;
+    const dx = e.x - P.x, dy = eyOf(e) - (P.y - 17), d = Math.hypot(dx, dy);
+    if (d > (e.type === 'vyrin' || e.type === 'wolf' ? 380 : 240)) continue;
+    const behind = dx * face < -6;
+    const sc = d + (behind ? 160 : 0) - (e.type === 'vyrin' || e.type === 'wolf' ? 40 : 0);
+    if (sc < bs) { bs = sc; best = e; }
+  }
+  return best;
+}
+let lockT = null;
 function cast() {
   if (!G.wand || P.castCd > 0) { aimAt = null; return; }
   P.castCd = .24; P.castT = .2; sfx.cast();
   let ax = P.face, ay = 0;
   if (aimAt) { const dx = aimAt.x - P.x, dy = aimAt.y - (P.y - 17), L = Math.hypot(dx, dy) || 1; ax = dx / L; ay = dy / L; if (Math.abs(dx) > 2) P.face = dx > 0 ? 1 : -1; aimAt = null; }
-  else if (upHeld()) { ax = P.face * .62; ay = -.79; }
-  const ox = P.x + P.face * 10, oy = P.y - 17 + (ay < -.3 ? -5 : 0);
-  shots.push({ x: ox, y: oy, vx: ax * 270, vy: ay * 270, life: .85, silver: G.silver });
+  else { const t = lockTarget(P.face); if (t) { const dx = t.x - P.x, dy = eyOf(t) - (P.y - 17), L = Math.hypot(dx, dy) || 1; ax = dx / L; ay = dy / L; if (Math.abs(dx) > 2) P.face = dx > 0 ? 1 : -1; } else if (upHeld()) { ax = P.face * .62; ay = -.79; } }
+  const ox = P.x + P.face * 10, oy = P.crouch ? P.y - 8 : P.y - 17 + (ay < -.3 ? -5 : 0);
+  shots.push({ x: ox, y: oy, vx: ax * 270, vy: ay * 270, life: 1, silver: G.silver, home: lockTarget(Math.sign(ax) || P.face) });
   burst(ox, oy, 4, ['#a8ffe6', '#ffffff'], 40, 0, true, .2);
 }
 function updateSidePlayer(dt) {
@@ -1411,12 +1430,19 @@ function updateSidePlayer(dt) {
   if (castReq) cast();
   actReq = castReq = false;
   if (state !== 'play') return;
-  const dir = (right() ? 1 : 0) - (left() ? 1 : 0), max = 98;
+  const wasCr = P.crouch;
+  P.crouch = P.ground && down() && !(jumpP() && P.y < FLOOR);
+  if (P.crouch && !wasCr) { dustP(); P.dropT = 0; P.crT = 0; }
+  if (P.crouch) P.crT = (P.crT || 0) + dt;
+  if (P.crouch && P.y < FLOOR) { P.dropT = (P.dropT || 0) + dt; }
+  const dir = P.crouch ? 0 : (right() ? 1 : 0) - (left() ? 1 : 0), max = 98;
+  if (P.crouch) { const d2 = (right() ? 1 : 0) - (left() ? 1 : 0); if (d2) P.face = d2; }
   if (dir) { P.face = dir; if (P.vx * dir < max) P.vx = Math.min(max, P.vx * dir + (P.ground ? 1100 : 760) * dt) * dir; }
   else { const f = P.ground ? 1000 : 150; if (Math.abs(P.vx) <= f * dt) P.vx = 0; else P.vx -= Math.sign(P.vx) * f * dt; }
   P.coyote = P.ground ? .1 : Math.max(0, P.coyote - dt);
   P.jbuf = jumpP() ? .12 : Math.max(0, P.jbuf - dt);
-  if (P.jbuf > 0 && P.coyote > 0) { P.vy = -232; P.coyote = 0; P.jbuf = 0; P.jumpCut = true; sfx.jump(); dustP(); }
+  if (P.crouch && P.y < FLOOR && (jumpP() || P.dropT > .45)) { P.y += 2; P.ground = false; P.crouch = false; P.dropping = .2; P.jbuf = 0; }
+  if (P.jbuf > 0 && P.coyote > 0 && !P.crouch) { P.vy = -232; P.coyote = 0; P.jbuf = 0; P.jumpCut = true; sfx.jump(); dustP(); }
   if (!jumpHeld() && P.jumpCut && P.vy < -80) { P.vy = -80; P.jumpCut = false; }
   if (P.vy >= 0) P.jumpCut = false;
   P.vy = Math.min(P.vy + 740 * dt, 380);
@@ -1424,18 +1450,20 @@ function updateSidePlayer(dt) {
   P.x = clamp(P.x + P.vx * dt, 6, WW - 6); P.y += P.vy * dt;
   P.ground = false;
   if (P.y >= FLOOR) { P.y = FLOOR; P.vy = 0; P.ground = true; }
-  else if (P.vy >= 0 && !down()) for (const p of PLAT) if (P.x > p.x - 3 && P.x < p.x + p.w + 3 && py <= p.y + .5 && P.y >= p.y) { P.y = p.y; P.vy = 0; P.ground = true; break; }
+  else if (P.vy >= 0 && !(P.dropping > 0)) for (const p of PLAT) if (P.x > p.x - 3 && P.x < p.x + p.w + 3 && py <= p.y + .5 && P.y >= p.y) { P.y = p.y; P.vy = 0; P.ground = true; break; }
   if (P.ground && !wasG) dustP();
   if (Math.abs(P.vx) > 10 && P.ground) P.anim += dt * Math.abs(P.vx) / 13;
+  if (P.dropping > 0) P.dropping -= dt;
 }
 function dustP() { for (let i = 0; i < 6; i++) parts.push({ x: P.x + (R() - .5) * 8, y: P.y - 1, vx: (R() - .5) * 60, vy: -R() * 30, g: 40, life: .4, max: .5, col: '#3a3448', em: false, sz: 1 }); }
 function updateShots(dt) {
   for (const s of shots) {
+    if (s.home && hittable(s.home)) { const dx = s.home.x - s.x, dy = eyOf(s.home) - s.y, L = Math.hypot(dx, dy) || 1, k = Math.min(1, dt * 9); s.vx += (dx / L * 270 - s.vx) * k; s.vy += (dy / L * 270 - s.vy) * k; }
     s.x += s.vx * dt; s.y += s.vy * dt; s.life -= dt;
     if (R() < .7) parts.push({ x: s.x, y: s.y, vx: (R() - .5) * 20, vy: (R() - .5) * 20, g: 0, life: .2, max: .2, col: s.silver ? '#ffffff' : '#a8ffe6', em: true, sz: 1 });
     for (const e of enemies) {
       if (e.dead || e.type === 'skel' || e.type === 'wraith' || e.type === 'prof' || e.type === 'heart' || e.vis === 0) continue;
-      const ey = e.type === 'wolf' ? e.y - 16 : e.type === 'spider' ? e.y - 3 : e.y, r = e.type === 'wolf' ? 16 : e.type === 'vyrin' ? 13 : 9;
+      const ey = eyOf(e), r = e.type === 'wolf' ? 17 : e.type === 'vyrin' ? 15 : 10;
       if (Math.hypot(e.x - s.x, ey - s.y) < r) { damage(e, 1); s.life = 0; break; }
     }
     if (scene.kind === 'side' && (s.x < 0 || s.x > WW)) s.life = 0;
@@ -1444,8 +1472,8 @@ function updateShots(dt) {
   for (const s of eshots) {
     s.x += s.vx * dt; s.y += s.vy * dt; s.life -= dt;
     if (R() < .5) parts.push({ x: s.x, y: s.y, vx: 0, vy: 0, g: 0, life: .2, max: .2, col: s.col === 'blood' ? '#ff3050' : '#ffb347', em: true, sz: 1 });
-    const py = scene.kind === 'fly' ? P.y : P.y - 13;
-    if (state === 'play' && Math.hypot(s.x - P.x, s.y - py) < 7) { hurt(s.x - s.vx); s.life = 0; }
+    const py = scene.kind === 'fly' ? P.y : pHitY();
+    if (state === 'play' && Math.hypot(s.x - P.x, s.y - py) < (scene.kind === 'side' && P.crouch ? 5 : 7)) { if (scene.kind === 'side' && P.crouch && P.crT < .6 && P.inv <= 0) { s.life = 0; sfx.pick(); burst(s.x, s.y, 10, ['#a8ffe6', '#ffffff'], 70, 0, true, .3); if (!P.duckMsg || time - P.duckMsg > 1.2) { P.duckMsg = time; toast('Ducked!', .7); } } else { hurt(s.x - s.vx); s.life = 0; } }
     if (scene.kind === 'side' && (s.y > FLOOR || s.x < -10 || s.x > WW + 10)) s.life = 0;
     if (scene.kind === 'fly' && (s.x < -10 || s.x > W + 10 || s.y < -10 || s.y > H + 10)) s.life = 0;
   }
@@ -1558,6 +1586,10 @@ function spr(img, x, y, face, ox, oy, flipY) {
   if (face < 0 || flipY) { ctx.save(); ctx.translate(x, y); ctx.scale(face < 0 ? -1 : 1, flipY ? -1 : 1); ctx.drawImage(img, face < 0 ? -(img.width - ox) : -ox, -oy); ctx.restore(); }
   else ctx.drawImage(img, x - ox, y - oy);
 }
+function drawWitch(img) {
+  if (!P.crouch || scene.kind !== 'side') return spr(img, P.x, P.y, P.face, 12, 31);
+  ctx.save(); ctx.translate(Math.round(P.x), Math.round(P.y)); ctx.scale(P.face < 0 ? -1 : 1, .58); ctx.drawImage(img, P.face < 0 ? -(img.width - 12) : -12, -31); ctx.restore();
+}
 function witchFrame() {
   const S2 = G.wand ? PSW : PS;
   if (P.castT > 0) return S2.cast;
@@ -1625,12 +1657,14 @@ function drawSide() {
   for (const e of enemies) {
     if (e.type === 'skel') { const f = SK[Math.floor(e.anim) % 4]; spr(f.n, e.x, e.y, e.face, 9, 25); }
     else if (e.type === 'spider') drawSpider(e);
+    else if (false) {}
     else if (e.type === 'heart') { glow(ctx, GL.gold, e.x, e.y - 4, 12, .5 + .2 * Math.sin(time * 6)); ctx.drawImage(HEART, Math.round(e.x) - 3, Math.round(e.y - 8 + Math.sin(time * 4) * 1.5)); }
     else if (e.type === 'bat') { const f = BAT[Math.floor(e.t * 10) % 2]; spr(e.flash > 0 ? f.w : f.n, e.x, e.y, e.face, 9, 6); }
     else if (e.type === 'vyrin' && e.vis) { const f = (e.st === 'cast' || e.st === 'summon' ? VY.cast : VY.idle)[Math.floor(e.t * 3) % 2]; spr(e.flash > 0 ? f.w : f.n, e.x, e.y + 22, e.face, 18, 34); }
     else if (e.type === 'prof') { const f = PROF[Math.floor(e.t * 2) % 2]; if (e.morph > 0 && Math.floor(e.t * 10) % 2) spr(WOLF.howl.n, e.x, e.y, e.face, 22, 35); else spr(f.n, e.x, e.y, e.face, 11, 29); }
     else if (e.type === 'wolf') { const f = e.st === 'crouch' ? WOLF.crouch : e.st === 'leap' ? WOLF.leap : (e.st === 'slash' || e.st === 'wind') ? WOLF.slash : e.st === 'howl' ? WOLF.howl : WOLF.run[Math.floor(e.anim) % 4]; spr(e.flash > 0 ? f.w : f.n, e.x, e.y, e.face, 22, 35); }
   }
+  if (scene.kind === 'side' && G.wand && state === 'play') { const t = lockTarget(P.face); if (t) { const x = Math.round(t.x), y = Math.round(eyOf(t)), r = (t.type === 'vyrin' || t.type === 'wolf' ? 13 : 8) + Math.round(Math.sin(time * 8)); ctx.fillStyle = G.silver ? '#ffffff' : '#a8ffe6'; for (const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) { ctx.fillRect(x + sx * r - (sx > 0 ? 2 : 0), y + sy * r - (sy > 0 ? 0 : 0), 3, 1); ctx.fillRect(x + sx * r - (sx > 0 ? 0 : 0), y + sy * r - (sy > 0 ? 2 : 0), 1, 3); } } }
   for (const p of parts) if (!p.em) {
     if (p.col === 'crow') { spr(CROW.dn.n, p.x, p.y, 1, 10, 8); continue; }
     ctx.globalAlpha = clamp(p.life / p.max, 0, 1); ctx.fillStyle = p.col; ctx.fillRect(Math.round(p.x), Math.round(p.y), p.sz, p.sz);
@@ -1638,7 +1672,7 @@ function drawSide() {
   ctx.globalAlpha = 1;
   for (const t of thrown) { ctx.drawImage(ICON.stone, Math.round(t.x) - 2, Math.round(t.y) - 2); }
   const blink = P.inv > 0 && Math.floor(time * 16) % 2;
-  if (!blink && state !== 'dead') spr(witchFrame().n, P.x, P.y, P.face, 12, 31);
+  if (!blink && state !== 'dead') drawWitch(witchFrame().n);
 
   // darkness
   lx.globalCompositeOperation = 'source-over'; lx.setTransform(1, 0, 0, 1, 0, 0); lx.clearRect(0, 0, W, H);
@@ -1686,7 +1720,7 @@ function drawSide() {
     else if (e.type === 'vyrin' && e.vis) spr(VY.idle[0].e, e.x, e.y + 22, e.face, 18, 34);
     else if (e.type === 'wolf') { const f = WOLF.run[0]; spr(f.e, e.x, e.y, e.face, 22, 35); if (e.st === 'crouch' || e.st === 'wind') { ctx.fillStyle = Math.floor(time * 16) % 2 ? '#ffffff' : '#ffe066'; ctx.fillRect(Math.round(e.x) - 1, Math.round(e.y) - 44, 2, 5); ctx.fillRect(Math.round(e.x) - 1, Math.round(e.y) - 37, 2, 2); } }
   }
-  if (!blink && state !== 'dead') spr(witchFrame().e, P.x, P.y, P.face, 12, 31);
+  if (!blink && state !== 'dead') drawWitch(witchFrame().e);
   for (const s of shots) { pcirc(ctx, s.x, s.y, 2, s.silver ? '#ffffff' : '#a8ffe6'); }
   for (const s of eshots) { pcirc(ctx, s.x, s.y, 2, '#ff3050'); ctx.fillStyle = '#ffd0d8'; ctx.fillRect(Math.round(s.x), Math.round(s.y), 1, 1); }
   for (const p of parts) if (p.em) { ctx.globalAlpha = clamp(p.life / p.max * 1.4, 0, 1); ctx.fillStyle = p.col; ctx.fillRect(Math.round(p.x), Math.round(p.y), p.sz || 1, p.sz || 1); }
@@ -1694,7 +1728,7 @@ function drawSide() {
   for (const r of rings) { ctx.globalAlpha = r.life / r.m; pring(ctx, r.x, r.y, r.r, r.col); } ctx.globalAlpha = 1;
   // glow
   ctx.globalCompositeOperation = 'lighter';
-  if (G.wand) { const f = witchFrame(); glow(ctx, GL.cyan, P.x + P.face * (P.castT > 0 ? 12 : 5), P.y - (P.castT > 0 ? 17 : 22), 8, .6); }
+  if (G.wand) { const f = witchFrame(); glow(ctx, GL.cyan, P.x + P.face * (P.castT > 0 ? 12 : 5), P.y - (P.crouch ? 10 : P.castT > 0 ? 17 : 22), 8, .6); }
   if (sceneId === 'cottage') { glow(ctx, GL.ember, 132, 176, 52, .85); glow(ctx, GL.gold, 132, 182, 22, .7); glow(ctx, GL.gold, 300, 154, 14, .6); if (ready() || G.wand) glow(ctx, GL.cyan, 214, 166, 18, .5); }
   if (sceneId === 'chapel') { G.candles.forEach(i => glow(ctx, GL.gold, CANDLES[i][0], CANDLES[i][1] - 10, 14, .7)); SPIRITS.forEach((s, i) => { if (spiritSeen(i) && !G.spirits.includes(s.name)) glow(ctx, GL.cyan, s.x, s.y - 6, 26, .45); }); for (const e of enemies) if (e.type === 'skel') glow(ctx, GL.cyan, e.x + e.face * 3, e.y - 20, 5, .5); glow(ctx, GL.cyan, 40, 186, 16, ready() ? .7 : .25); }
   if (scene.tower) for (const [x, y] of [[70, 118], [236, 118], [404, 118], [500, 150]]) glow(ctx, GL.ember, x, y - 3, 18, .7);
@@ -1918,7 +1952,7 @@ function loop(now) {
 buildFlight(false);
 if (checkpoint) { $('cont').hidden = false; $('cont').textContent = `Continue: ${CHAPTER[checkpoint.id] || 'last chapter'}`; }
 layout();
-if (/[?&]debug/.test(location.search)) window.__mh = { G: () => G, P, go(id) { hideScreens(); $('hud').hidden = false; goScene(id); }, info() { return { state, sceneId, hp: P.hp, x: Math.round(P.x), near: near ? (typeof near.label === 'function' ? near.label() : near.label) : null, enemies: enemies.map(e => e.type + ':' + (e.hp ?? '') + (e.st ? ':' + e.st : '')) }; }, act() { actReq = true; }, adv() { advance(); }, setG(o) { Object.assign(G, o); }, killAll() { for (const e of enemies) if (e.hp !== undefined) { e.hp = 0; scene.kind === 'fly' ? killFly(e) : kill(e); } }, god() { P.hp = P.maxHp = 99; }, tp(x, y) { P.x = x; if (y != null) { P.y = y; P.vy = 0; } }, ves: () => VES, en: () => enemies, sc: () => scene, skipFly() { if (scene.kind === 'fly') scene.t = scene.len; } };
+if (/[?&]debug/.test(location.search)) window.__mh = { G: () => G, P, go(id) { hideScreens(); $('hud').hidden = false; goScene(id); }, info() { return { state, sceneId, hp: P.hp, x: Math.round(P.x), near: near ? (typeof near.label === 'function' ? near.label() : near.label) : null, enemies: enemies.map(e => e.type + ':' + (e.hp ?? '') + (e.st ? ':' + e.st : '')) }; }, act() { actReq = true; }, adv() { advance(); }, setG(o) { Object.assign(G, o); }, killAll() { for (const e of enemies) if (e.hp !== undefined) { e.hp = 0; scene.kind === 'fly' ? killFly(e) : kill(e); } }, god() { P.hp = P.maxHp = 99; }, tp(x, y) { P.x = x; if (y != null) { P.y = y; P.vy = 0; } }, ves: () => VES, en: () => enemies, es: () => eshots, sc: () => scene, skipFly() { if (scene.kind === 'fly') scene.t = scene.len; } };
 requestAnimationFrame(t => { last = t; loop(t); });
 
 })();
