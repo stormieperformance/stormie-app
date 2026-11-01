@@ -633,6 +633,10 @@
       transition: opacity 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.1s, transform 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.1s, filter 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.1s;
     }
     .game-card { display: flex; flex-direction: column; min-width: 0; }
+    .gc-screen { position: relative; }
+    .gc-flag { position: absolute; top: 10px; left: 10px; z-index: 3; font-family: var(--pixel); font-size: 9px; letter-spacing: .04em; color: #1a0a06; background: #ff8a1e; padding: 7px 9px; box-shadow: 0 0 0 2px #1a0a06, 0 0 18px rgba(255,138,30,.55); text-transform: uppercase; animation: gcFlag 2.4s ease-in-out infinite; }
+    @keyframes gcFlag { 50% { box-shadow: 0 0 0 2px #1a0a06, 0 0 28px rgba(255,138,30,.9); } }
+    @media (prefers-reduced-motion: reduce) { .gc-flag { animation: none; } }
     .gc-screen {
       position: relative;
       display: block;
@@ -976,6 +980,23 @@
     <div class="gateway-wrap">
     <section class="gateway" id="gateway">
       <ul class="games-grid" id="gamesGrid">
+      <li class="game-card gc-feat" data-playable>
+        <a class="gc-screen" href="moonlit-hollow.html" data-name="The Witch of Moonlit Hollow" aria-hidden="true" tabindex="-1">
+          <img src="moonlit-hollow-preview.jpg" alt="" width="960" height="600" loading="lazy" decoding="async" onerror="this.style.display='none'">
+          <span class="tilt-shine"></span>
+          <span class="gc-flag">Halloween pick</span>
+        </a>
+        <div class="gc-body">
+          <p class="gc-genre">Adventure · Story</p>
+          <h3 class="gc-name">The Witch of Moonlit Hollow</h3>
+          <p class="gc-desc">A witch, a haunted graveyard and a vampire's tower. Ward off the dead with candlelight, ring the bell nobody has rung since the fire, then face Lord Vyrin.</p>
+          <ul class="gc-meta">
+            <li class="gc-time">5 min a chapter</li>
+            <li>Mobile + desktop</li>
+          </ul>
+          <a class="enter-btn gc-play" href="moonlit-hollow.html" aria-label="Play The Witch of Moonlit Hollow now"><span>Play now</span></a>
+        </div>
+      </li>
       <li class="game-card" data-playable>
         <a class="gc-screen" href="stormbound.html" data-name="Stormbound" aria-hidden="true" tabindex="-1">
           <img src="stormbound-preview.jpg" alt="" width="960" height="600" loading="lazy" decoding="async" onerror="this.style.display='none'">
@@ -990,22 +1011,6 @@
             <li>Mobile + desktop</li>
           </ul>
           <a class="enter-btn gc-play" href="stormbound.html" aria-label="Play Stormbound now"><span>Play now</span></a>
-        </div>
-      </li>
-      <li class="game-card" data-playable>
-        <a class="gc-screen" href="moonlit-hollow.html" data-name="The Witch of Moonlit Hollow" aria-hidden="true" tabindex="-1">
-          <img src="moonlit-hollow-preview.jpg" alt="" width="960" height="600" loading="lazy" decoding="async" onerror="this.style.display='none'">
-          <span class="tilt-shine"></span>
-        </a>
-        <div class="gc-body">
-          <p class="gc-genre">Adventure · Story</p>
-          <h3 class="gc-name">The Witch of Moonlit Hollow</h3>
-          <p class="gc-desc">Light the chapel candles, bind three restless spirits, then climb a vampire's tower.</p>
-          <ul class="gc-meta">
-            <li class="gc-time">5 min a chapter</li>
-            <li>Mobile + desktop</li>
-          </ul>
-          <a class="enter-btn gc-play" href="moonlit-hollow.html" aria-label="Play The Witch of Moonlit Hollow now"><span>Play now</span></a>
         </div>
       </li>
       <li class="game-card" data-playable>

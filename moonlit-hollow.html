@@ -8,7 +8,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <title>The Witch of Moonlit Hollow</title>
 <meta name="author" content="Storm Kolmodin">
-<meta name="description" content="The Witch of Moonlit Hollow: a pixel adventure. Light candles, bind restless spirits, forge a wand and climb a vampire's tower. Free in your browser.">
+<meta name="description" content="The Witch of Moonlit Hollow: a free Halloween pixel adventure. Ward off the dead with candlelight, ring the haunted chapel bell, bind three spirits and climb a vampire's tower. Play free in your browser.">
 <meta property="og:title" content="The Witch of Moonlit Hollow | Stormie Games">
 <meta property="og:image" content="https://stormie.app/moonlit-hollow-preview.jpg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -976,9 +976,9 @@ function setW(w) { if (w === W) return; W = w; cv.width = W; ctx.imageSmoothingE
 let state = 'title', time = 0, frame = 0, camX = 0, shake = 0, flash = 0, hs = 0, hurtV = 0, runT = 0;
 let parts = [], shots = [], eshots = [], rings = [], enemies = [], bolts = [], thrown = [];
 let PLAT = [];
-const P = { x: 100, y: 190, vx: 0, vy: 0, face: 1, ground: true, hp: 3, maxHp: 3, inv: 0, anim: 0, coyote: 0, jbuf: 0, jumpCut: false, castT: 0, castCd: 0, fireT: 0 };
+const P = { x: 100, y: 190, vx: 0, vy: 0, face: 1, ground: true, hp: 4, maxHp: 4, inv: 0, anim: 0, coyote: 0, jbuf: 0, jumpCut: false, castT: 0, castCd: 0, fireT: 0 };
 const scarf = Array.from({ length: 6 }, () => ({ x: 0, y: 0 }));
-function freshG() { return { book: false, candles: [], stone: false, featherDrop: false, crowX: 0, feather: false, blood: false, moss: false, spirits: [], wand: false, clues: [], silver: false, vyrin: false, wolf: false, chapelIntro: false }; }
+function freshG() { return { book: false, candles: [], stone: false, featherDrop: false, crowX: 0, feather: false, blood: false, moss: false, spirits: [], wand: false, clues: [], silver: false, vyrin: false, wolf: false, chapelIntro: false, bell: false }; }
 let G = freshG();
 let scene = null, sceneId = '', checkpoint = null;
 try { checkpoint = JSON.parse(localStorage.getItem('moonlit-save') || 'null'); } catch (e) {}
@@ -1008,7 +1008,7 @@ function toast(t, dur = 3) { const el = $('toast'); el.textContent = t; el.class
 function banner(t, dur = 2, sub = '') { const b = $('banner'); b.innerHTML = (sub ? `<small>${sub}</small>` : '') + t; b.classList.add('show'); clearTimeout(bannerTO); bannerTO = setTimeout(() => b.classList.remove('show'), dur * 1000); }
 const PAGES = [
   { t: 'Ritual of the Hollow Chapel', b: ['To forge the Wand of the Hollow Chapel, bring home from the sanctuary:', '· one feather from a crow struck down with a stone', '· one vial of bat blood', '· one handful of grave moss', '· three spirits, bound in the salt-glass bottle', '· seven candles, lit upon the graves of the forgotten', 'Skeletons and hollow-eyed wraiths walk the grounds. They cannot be bound, only evaded. Guard your blood.'] },
-  { t: 'Of the Spirits to Bind', b: ['Three names whisper from the chapel stones tonight:', '· Ashroot the Ghoul, who gnaws at the edge of memory', '· Mournshade the Wraith, once a mourner, now a shadow', '· Vesperghast, a small voice that should not still be small', 'Light the candles near them and their shapes will show. Then call them into the bottle.'] },
+  { t: 'Of the Spirits to Bind', b: ['Three names whisper from the chapel stones tonight:', '· Ashroot the Ghoul, who gnaws at the edge of memory', '· Mournshade the Wraith, once a mourner, now a shadow', '· Vesperghast, a small voice that should not still be small', 'Light the candles near them and their shapes will show. Mournshade answers only to the chapel bell. Vesperghast flees all who come near; pin her against the light.', 'Candlelight is a ward. The dead will not walk through it.'] },
   { t: 'Lore of the Hearthwitch', b: ['We are the lantern between worlds.', 'We do not banish. We do not burn.', 'We listen. We brew. We carry the dead a little further than they could carry themselves.', 'The wand we forge will not destroy. It will only see, and a seeing thing in the dark places is a kind of weapon.', 'From the diary of your grandmother, who lived in this cottage before you.'] }
 ];
 let bookPage = 0, bookDone = null, prevState = 'play';
@@ -1024,7 +1024,7 @@ function objText() {
   if (!scene) return '';
   switch (sceneId) {
     case 'cottage': return !G.book ? 'Read the spellbook' : !ready() ? 'Step into the storm' : !G.wand ? 'Brew at the cauldron' : 'Take the broom';
-    case 'chapel': return ready() ? 'Return to the rune by the path' : `Candles ${G.candles.length}/7 · Spirits ${G.spirits.length}/3`;
+    case 'chapel': return ready() ? 'Return to the rune by the path' : G.bellT > 0 ? 'The dead are awake. Hide in the candlelight!' : `Candles ${G.candles.length}/7 · Spirits ${G.spirits.length}/3`;
     case 'flight': return 'Fly to the tower';
     case 'tower1': return G.vyrin ? 'Climb the stairs' : 'Something waits above';
     case 'tower2': return G.clues.length < 3 ? `Clues ${G.clues.length}/3` : 'Take the stairs';
@@ -1040,10 +1040,27 @@ function updHud() { const o = objText(), s = (CHAPTER[sceneId] || '') + '|' + o;
 const CANDLES = [[190, 190], [256, 160], [312, 190], [556, 190], [722, 128], [842, 190], [930, 190]];
 const SPIRITS = [
   { name: 'Ashroot', x: 262, y: 140, need: [0, 1, 2], col: '#a8e6a0', lines: ['I gnaw at the roots of memory.', 'Bind me, hearthwitch, and I will sleep at last.'], horns: true },
-  { name: 'Mournshade', x: 682, y: 168, need: [3, 4], col: '#9fd8f0', lines: ['The bells stopped after the fire. I never did.', 'Take me. The salt-glass is cold but quiet.'], tall: true },
-  { name: 'Vesperghast', x: 888, y: 170, need: [5, 6], col: '#e0b0ff', lines: ['I forget my own face nightly.', 'Bind me before there is nothing left to bind.'], small: true }
+  { name: 'Mournshade', x: 682, y: 168, need: [3, 4], bell: true, col: '#9fd8f0', lines: ['The bells stopped after the fire. I never did.', 'Take me. The salt-glass is cold but quiet.'], tall: true },
+  { name: 'Vesperghast', x: 888, y: 170, need: [5, 6], shy: true, col: '#e0b0ff', lines: ['I forget my own face nightly.', 'Bind me before there is nothing left to bind.'], small: true }
 ];
-const spiritSeen = i => SPIRITS[i].need.every(k => G.candles.includes(k));
+const spiritSeen = i => SPIRITS[i].need.every(k => G.candles.includes(k)) && (!SPIRITS[i].bell || G.bell);
+/* lit candles are wards: skeletons turn back and wraiths are pushed out of their light */
+const WARD = 30;
+const wardAt = x => G.candles.some(i => CANDLES[i][1] === 190 && Math.abs(CANDLES[i][0] - x) < WARD);
+const VES = { x: 888, trapped: false, t: 0, said: 0 };
+function updateVesper(dt) {
+  if (!spiritSeen(2) || G.spirits.includes('Vesperghast')) return;
+  /* she flees from you, but she will not cross candlelight */
+  const lo = 842 + 16, hi = 930 - 16, d = VES.x - P.x;
+  const near = Math.abs(d) < 70 && Math.abs(P.y - FLOOR) < 30;
+  if (near) VES.x += Math.sign(d || 1) * 62 * dt;
+  else VES.x += Math.sin(time * .9) * 14 * dt;
+  VES.x = clamp(VES.x, lo, hi);
+  VES.trapped = near && Math.abs(d) < 26 && (VES.x <= lo + .5 || VES.x >= hi - .5);
+  SPIRITS[2].x = VES.x;
+  VES.t -= dt;
+  if (near && !VES.trapped && VES.t <= 0) { VES.t = 4; toast(VES.said++ ? 'She slips away. Pin her against the candlelight.' : 'Vesperghast flees from you. The candles hem her in.', 2.5); }
+}
 const SC = {
   cottage: {
     kind: 'side', ww: 420, dark: .4, song: 'hollow', spawn: 220,
@@ -1065,22 +1082,23 @@ const SC = {
   },
   chapel: {
     kind: 'side', ww: 1000, dark: .52, song: 'hollow', spawn: 60, rain: true,
-    plats: () => [{ x: 230, y: 160, w: 52, kind: 'crypt' }, { x: 470, y: 158, w: 46, kind: 'crypt' }, { x: 596, y: 160, w: 36 }, { x: 640, y: 128, w: 112 }],
+    plats: () => [{ x: 230, y: 160, w: 52, kind: 'crypt' }, { x: 470, y: 158, w: 46, kind: 'crypt' }, { x: 596, y: 160, w: 36 }, { x: 640, y: 128, w: 112 }, { x: 664, y: 98, w: 36 }, { x: 870, y: 164, w: 34, kind: 'crypt' }],
     build() { buildChapel(); },
     enter() {
-      enemies.push(mkSkel(300, 430), mkSkel(560, 640), mkSkel(780, 910));
+      enemies.push(mkSkel(150, 330), mkSkel(300, 440), mkSkel(530, 650), mkSkel(760, 960), mkSkel(700, 835)); VES.x = 888; VES.said = 0; SPIRITS[2].x = 888;
       enemies.push({ type: 'wraith', cx: 470, cy: 120, range: 54, t: 0, x: 470, y: 120 }, { type: 'wraith', cx: 846, cy: 112, range: 62, t: 2, x: 846, y: 112 });
-      if (!G.chapelIntro) { G.chapelIntro = true; talk(['The chapel waits in the storm, an old sanctuary the witches abandoned.', 'Spirits stir beneath the stones. Walk softly, hearthwitch.'], '', () => toast('Light candles on the graves. Their light reveals the spirits.', 4)); }
+      if (!G.chapelIntro) { G.chapelIntro = true; talk(['The chapel waits in the storm, an old sanctuary the witches abandoned.', 'Spirits stir beneath the stones. Walk softly, hearthwitch.'], '', () => toast('Light candles on the graves. Their light reveals spirits and wards off the dead.', 4)); }
     },
     items() {
       const L = [];
-      CANDLES.forEach(([x, y], i) => L.push({ x, y, label: 'Light the candle', on: () => !G.candles.includes(i), use: () => { G.candles.push(i); sfx.candle(); burst(x, y - 10, 10, ['#ffe08a', '#ff9a3c'], 50, -40, true, .5); SPIRITS.forEach((s, k) => { if (s.need.includes(i) && spiritSeen(k) && !G.spirits.includes(s.name)) { toast(`A shape gathers in the candlelight: ${s.name}.`); sfx.bind(); } }); checkReady(); } }));
+      CANDLES.forEach(([x, y], i) => L.push({ x, y, label: 'Light the candle', on: () => !G.candles.includes(i), use: () => { G.candles.push(i); sfx.candle(); burst(x, y - 10, 10, ['#ffe08a', '#ff9a3c'], 50, -40, true, .5); SPIRITS.forEach((s, k) => { if (s.need.includes(i) && spiritSeen(k) && !G.spirits.includes(s.name)) { toast(`A shape gathers in the candlelight: ${s.name}.`); sfx.bind(); } else if (s.need.includes(i) && s.bell && !G.bell && s.need.every(q => G.candles.includes(q))) toast('A cold voice: "The bells stopped after the fire..." Something waits for the bell.', 4); }); if (CANDLES[i][1] === 190) toast(G.candles.length === 1 ? 'Candlelight wards the grave. Skeletons will not walk through it.' : 'Another ward. The dead turn from the light.', 2.5); checkReady(); } }));
       L.push({ x: 120, y: 190, label: 'Pick up the stone', on: () => !G.stone && !G.featherDrop, use: () => { G.stone = true; sfx.pick(); toast('A stone in hand. A crow watches from the dead tree.'); } });
       L.push({ x: 384, y: 190, r: 34, label: () => G.stone ? 'Throw the stone at the crow' : 'A crow watches you', on: () => !G.featherDrop, use: throwStone });
       L.push({ x: () => G.crowX, y: 190, label: 'Pick up the crow feather', on: () => G.featherDrop && !G.feather, use: () => { G.feather = true; sfx.pick(); toast('Crow feather gathered.'); checkReady(); } });
       L.push({ x: 524, y: 190, label: 'Gather grave moss', on: () => !G.moss, use: () => { G.moss = true; sfx.pick(); burst(524, 186, 12, ['#6ac46a', '#3a7a3a'], 40, 60, false, .6); toast('Grave moss gathered.'); checkReady(); } });
       L.push({ x: 712, y: 128, label: 'Catch the bat', on: () => !G.blood, use: () => { G.blood = true; sfx.squeak(); burst(712, 108, 10, ['#ff4f6d', '#3e2460'], 60, 0, true, .4); toast('Bat caught. Its blood fills the vial.'); checkReady(); } });
-      SPIRITS.forEach((s, i) => L.push({ x: s.x, y: s.y + 20, r: 28, label: `Bind ${s.name}`, on: () => spiritSeen(i) && !G.spirits.includes(s.name), use: () => talk(s.lines, s.name, () => { G.spirits.push(s.name); sfx.bind(); for (let k = 0; k < 24; k++) parts.push({ x: s.x + (R() - .5) * 14, y: s.y + (R() - .5) * 20, vx: (P.x - s.x) * (1.4 + R()), vy: (P.y - 16 - s.y) * (1.4 + R()), g: 0, life: .6, max: .6, col: s.col, em: true, sz: 1 }); toast(`${s.name} is bound.`); checkReady(); }) }));
+      SPIRITS.forEach((s, i) => L.push({ x: () => s.x, y: s.y + 20, r: 28, label: () => s.shy && !VES.trapped ? `${s.name} won't hold still` : `Bind ${s.name}`, on: () => spiritSeen(i) && !G.spirits.includes(s.name) && (!s.shy || VES.trapped), use: () => talk(s.lines, s.name, () => { G.spirits.push(s.name); sfx.bind(); for (let k = 0; k < 24; k++) parts.push({ x: s.x + (R() - .5) * 14, y: s.y + (R() - .5) * 20, vx: (P.x - s.x) * (1.4 + R()), vy: (P.y - 16 - s.y) * (1.4 + R()), g: 0, life: .6, max: .6, col: s.col, em: true, sz: 1 }); toast(`${s.name} is bound.`); checkReady(); }) }));
+      L.push({ x: 682, y: 98, r: 18, label: 'Pull the bell rope', on: () => !G.bell, use: ringBell });
       L.push({ x: 976, y: 190, label: 'Examine the sealed gate', on: () => true, use: () => talk(['The chain is rusted shut. The road beyond it leads to Ashenmoor.', 'No one has walked it in a very long time.']) });
       L.push({ x: 40, y: 190, label: 'Return to the cottage', on: () => true, use: () => { if (ready()) { sfx.door(); fade(() => { goScene('cottage', { x: 360 }); saveCheckpoint('cottage'); }); } else talk(`The ritual is not ready. Still missing: ${missing().join(', ')}.`); } });
       return L;
@@ -1140,6 +1158,11 @@ const SC = {
   }
 };
 function towerLights() { const L = [[70, 118, 70, .8], [236, 118, 70, .8], [404, 118, 70, .8], [500, 150, 60, .7]]; for (const wx of [104, 274, 444]) L.push([wx, 80, 40, .35]); return L; }
+function ringBell() {
+  G.bell = true; G.bellT = 9; sfx.bell(); setTimeout(() => sfx.bell(), 900); setTimeout(() => sfx.bell(), 1800); shake = 6; flash = .4;
+  burst(682, 30, 18, ['#ffe08a', '#ffffff'], 80, 40, true, .6);
+  talk(['The old bell tolls for the first time since the fire.', 'Below, bones rattle awake. They are coming. Stay in the candlelight.'], '', () => { if (spiritSeen(1)) toast('Mournshade answers the bell.', 3); });
+}
 function checkReady() { if (ready()) { sfx.clear(); toast('The ritual is gathered. Return to the rune by the path.', 4); } }
 function brew() {
   sfx.brew(); state = 'cut';
@@ -1179,13 +1202,13 @@ function goScene(id, opt = {}) {
   syncPad();
 }
 function startNew() {
-  G = freshG(); runT = 0; P.hp = P.maxHp = 3; P.inv = 0;
+  G = freshG(); runT = 0; P.hp = P.maxHp = 4; P.inv = 0;
   hideScreens(); $('hud').hidden = false;
   goScene('cottage'); saveCheckpoint('cottage');
 }
 function continueRun() {
   if (!checkpoint) return startNew();
-  G = Object.assign(freshG(), JSON.parse(JSON.stringify(checkpoint.G))); runT = checkpoint.t || 0; P.hp = P.maxHp = 3; P.inv = 0;
+  G = Object.assign(freshG(), JSON.parse(JSON.stringify(checkpoint.G))); runT = checkpoint.t || 0; P.hp = P.maxHp = 4; P.inv = 0;
   hideScreens(); $('hud').hidden = false;
   const id = checkpoint.id;
   goScene(id, id === 'cottage' && G.book ? { x: 360 } : {});
@@ -1228,7 +1251,7 @@ function mkBat(x, y) { return { type: 'bat', x, y, hp: 1, t: R() * 6, flash: 0, 
 function spawnVyrin() {
   const bx0 = P.x < 260 ? 250 : 430; for (let i = 0; i < 20; i++) parts.push({ x: bx0 + (R() - .5) * 40, y: 100 + (R() - .5) * 40, vx: (R() - .5) * 200, vy: (R() - .5) * 200, g: 0, life: .6, max: .6, col: '#3e2460', em: false, sz: 2 });
   const node = P.x < 260 ? 1 : 2, [vx0, vy0] = VNODES[node];
-  const v = { type: 'vyrin', x: vx0, y: vy0, hp: 34, maxHp: 34, st: 'intro', t: 0, cd: 1.6, node, flash: 0, face: -1, dmgSince: 0, vis: 1 };
+  const v = { type: 'vyrin', x: vx0, y: vy0, hp: 24, maxHp: 24, drops: 0, st: 'intro', t: 0, cd: 1.6, node, flash: 0, face: -1, dmgSince: 0, vis: 1 };
   enemies.push(v); sfx.laugh(); musPlay('boss');
   setTimeout(() => talk(['A little hearthwitch climbs my tower? How charming.', 'My pet sleeps below, and you shall not wake him.', 'Come, then. Show me your candles and salt.'], 'Lord Vyrin', () => { v.st = 'idle'; $('bossname').textContent = 'Lord Vyrin'; $('bossbar').hidden = false; updBoss(v); }), 500);
 }
@@ -1236,11 +1259,11 @@ function updBoss(e) { $('bossfill').style.width = Math.max(0, e.hp / e.maxHp * 1
 const VNODES = [[100, 100], [250, 84], [430, 104], [330, 136], [160, 132]];
 function damage(e, d) {
   if (e.dead) return;
-  if (e.type === 'skel' || e.type === 'wraith' || e.type === 'prof') return;
+  if (e.type === 'skel' || e.type === 'wraith' || e.type === 'prof' || e.type === 'heart') return;
   if (e.type === 'wolf' && !G.silver) { burst(e.x, e.y - 16, 4, ['#ffffff'], 40, 0, true, .2); return; }
   e.hp -= d; e.flash = .1; sfx.hit(); vib(10);
   burst(e.x, (e.cy ? e.cy(e) : e.y) - 4, 8, ['#a8ffe6', '#ffffff', '#7dffb0'], 90, 100, true, .35);
-  if (e.type === 'vyrin' || e.type === 'wolf') { updBoss(e); e.dmgSince = (e.dmgSince || 0) + d; }
+  if (e.type === 'vyrin' || e.type === 'wolf') { updBoss(e); e.dmgSince = (e.dmgSince || 0) + d; const th = [.66, .33]; while ((e.drops || 0) < 2 && e.hp > 0 && e.hp <= e.maxHp * th[e.drops || 0]) { e.drops = (e.drops || 0) + 1; enemies.push({ type: 'heart', x: clamp(e.x, 30, WW - 30), y: e.y, vy: -60, t: 0, ground: false }); toast('A heart falls. Grab it!', 2); } }
   if (e.hp <= 0) kill(e);
 }
 function kill(e) {
@@ -1255,11 +1278,19 @@ function updateSideEnemies(dt) {
   for (const e of enemies) {
     e.flash = Math.max(0, (e.flash || 0) - dt); e.t = (e.t || 0) + dt;
     if (e.type === 'skel') {
-      const sp = Math.abs(P.x - e.x) < 80 && Math.abs(P.y - e.y) < 30 ? 30 : 20;
-      e.x += e.face * sp * dt; if (e.x > e.x1) e.face = -1; if (e.x < e.x0) e.face = 1; e.anim += dt * 5;
+      const rage = sceneId === 'chapel' && G.bellT > 0;
+      const sp = (Math.abs(P.x - e.x) < 80 && Math.abs(P.y - e.y) < 30 ? 30 : 20) * (rage ? 2.1 : 1);
+      if (rage && Math.abs(P.y - e.y) < 30 && Math.abs(P.x - e.x) < 160) e.face = P.x > e.x ? 1 : -1;
+      const nx = e.x + e.face * sp * dt;
+      if (sceneId === 'chapel' && wardAt(nx + e.face * 6) && !wardAt(e.x)) { e.face = -e.face; e.balk = .4; }
+      else e.x = nx;
+      if (e.x > e.x1) e.face = -1; if (e.x < e.x0) e.face = 1; e.anim += dt * 5 * (rage ? 2 : 1);
+      if (wardAt(e.x)) { e.x += (G.candles.map(i => CANDLES[i][0]).reduce((a, c) => Math.abs(c - e.x) < Math.abs(a - e.x) ? c : a, 1e9) < e.x ? 1 : -1) * 40 * dt; }
       contact(e, 11, e.y - 12);
     } else if (e.type === 'wraith') {
-      e.x = e.cx + Math.sin(e.t * .45) * e.range; e.y = e.cy + Math.sin(e.t * 1.3) * 12; e.face = Math.cos(e.t * .45) > 0 ? 1 : -1;
+      let wx = e.cx + Math.sin(e.t * .45) * e.range; const wy = e.cy + Math.sin(e.t * 1.3) * 12;
+      for (const i of G.candles) { const [cx, cy] = CANDLES[i], dd = wx - cx; if (Math.abs(dd) < 40 && Math.abs(wy - cy) < 70) wx = cx + Math.sign(dd || 1) * 40; }
+      e.x = lerp(e.x, wx, Math.min(1, dt * 4)); e.y = wy; e.face = Math.cos(e.t * .45) > 0 ? 1 : -1;
       contact(e, 11, e.y);
     } else if (e.type === 'spider') {
       if (e.st === 'hang') { e.y = e.hy + Math.sin(e.t * 2) * 3; if (Math.abs(P.x - e.x) < 60) { e.st = 'drop'; sfx.squeak(); } }
@@ -1270,6 +1301,9 @@ function updateSideEnemies(dt) {
       const tx = P.x + Math.sin(e.t * 1.3) * 40, ty = P.y - 40 + Math.sin(e.t * 2.6) * 20;
       e.x += (tx - e.x) * dt * 1.2; e.y += (ty - e.y) * dt * 1.2; e.face = P.x > e.x ? 1 : -1;
       contact(e, 9, e.y);
+    } else if (e.type === 'heart') {
+      if (!e.ground) { e.vy = Math.min(e.vy + 300 * dt, 120); const py = e.y; e.y += e.vy * dt; landSimple(e, py); }
+      if (state === 'play' && Math.hypot(e.x - P.x, (e.y - 4) - (P.y - 12)) < 14) { e.dead = true; P.hp = Math.min(P.maxHp, P.hp + 1); sfx.pick(); burst(e.x, e.y - 4, 12, ['#ff4f6d', '#ffd0d8'], 60, 0, true, .4); toast('Heart restored.', 1.5); }
     } else if (e.type === 'vyrin') updateVyrin(e, dt);
     else if (e.type === 'prof') updateProf(e, dt);
     else if (e.type === 'wolf') updateWolf(e, dt);
@@ -1287,25 +1321,25 @@ function updateVyrin(e, dt) {
   const ph2 = e.hp < e.maxHp * .5;
   if (e.st === 'idle') {
     const [nx, ny] = VNODES[e.node]; e.x = lerp(e.x, nx, dt * 2); e.y = lerp(e.y, ny + Math.sin(e.t * 2) * 4, dt * 2);
-    if (e.dmgSince >= 6) { e.dmgSince = 0; e.st = 'tele'; e.st_t = .5; sfx.tele(); batBurst(e); }
+    if (e.dmgSince >= 8) { e.dmgSince = 0; e.st = 'tele'; e.st_t = .5; sfx.tele(); batBurst(e); }
     else if (e.cd <= 0) {
-      if (ph2 && R() < .3 && enemies.filter(x => x.type === 'bat').length < 3) { e.st = 'summon'; e.st_t = .7; }
-      else { e.st = 'cast'; e.st_t = ph2 ? .45 : .65; }
+      if (ph2 && R() < .25 && enemies.filter(x => x.type === 'bat').length < 2) { e.st = 'summon'; e.st_t = .7; }
+      else { e.st = 'cast'; e.st_t = ph2 ? .7 : .9; }
     }
   } else if (e.st === 'cast') {
     e.st_t -= dt;
     if (R() < dt * 30) { const a = R() * 6.283; parts.push({ x: e.x + Math.cos(a) * 18, y: e.y + Math.sin(a) * 18, vx: -Math.cos(a) * 70, vy: -Math.sin(a) * 70, g: 0, life: .25, max: .25, col: '#ff3050', em: true, sz: 1 }); }
     if (e.st_t <= 0) {
-      const n = ph2 ? 7 : 5, base = Math.atan2((P.y - 14) - e.y, P.x - e.x), spread = ph2 ? 1.1 : .8;
-      for (let i = 0; i < n; i++) { const a = base + (i / (n - 1) - .5) * spread; eshots.push({ x: e.x, y: e.y, vx: Math.cos(a) * 95, vy: Math.sin(a) * 95, life: 5, col: 'blood' }); }
-      sfx.shot(); e.st = 'idle'; e.cd = ph2 ? 1.1 : 1.6;
-      if (R() < .4) { e.st = 'tele'; e.st_t = .5; sfx.tele(); batBurst(e); }
+      const n = ph2 ? 5 : 3, base = Math.atan2((P.y - 14) - e.y, P.x - e.x), spread = ph2 ? 1.0 : .7;
+      for (let i = 0; i < n; i++) { const a = base + (i / (n - 1) - .5) * spread; eshots.push({ x: e.x, y: e.y, vx: Math.cos(a) * 78, vy: Math.sin(a) * 78, life: 5, col: 'blood' }); }
+      sfx.shot(); e.st = 'idle'; e.cd = ph2 ? 1.7 : 2.3;
+      if (R() < .25) { e.st = 'tele'; e.st_t = .5; sfx.tele(); batBurst(e); }
     }
   } else if (e.st === 'tele') {
     e.st_t -= dt; e.vis = 0;
     if (e.st_t <= 0) { let n = e.node; while (n === e.node) n = Math.floor(R() * VNODES.length); e.node = n; [e.x, e.y] = VNODES[n]; e.vis = 1; batBurst(e); e.st = 'idle'; e.cd = .9; }
   } else if (e.st === 'summon') {
-    e.st_t -= dt; if (e.st_t <= 0) { for (let i = 0; i < 2; i++) enemies.push(mkBat(e.x + (i ? 20 : -20), e.y)); sfx.squeak(); e.st = 'idle'; e.cd = 1.2; }
+    e.st_t -= dt; if (e.st_t <= 0) { enemies.push(mkBat(e.x + 20, e.y)); sfx.squeak(); e.st = 'idle'; e.cd = 1.2; }
   }
   if (e.vis) contact(e, 13, e.y);
 }
@@ -1322,7 +1356,7 @@ function updateProf(e, dt) {
     e.morph -= 1 / 60 * (dt * 60); shake = 2; flash = Math.max(flash, Math.floor(e.t * 8) % 2 ? .3 : 0);
     if (e.morph <= 0) {
       e.dead = true;
-      const w = { type: 'wolf', x: e.x, y: FLOOR, vx: 0, vy: 0, hp: 46, maxHp: 46, st: 'howl', st_t: 1.2, face: -1, t: 0, flash: 0, ground: true, anim: 0, howlCd: 9, dmgSince: 0 };
+      const w = { type: 'wolf', x: e.x, y: FLOOR, vx: 0, vy: 0, hp: 34, maxHp: 34, drops: 0, st: 'howl', st_t: 1.2, face: -1, t: 0, flash: 0, ground: true, anim: 0, howlCd: 9, dmgSince: 0 };
       enemies.push(w); sfx.howl(); flash = 1; shake = 8;
       banner('Full moon. Full wolf.', 2); musPlay('boss'); $('bossname').textContent = 'The Wolf'; $('bossbar').hidden = false; updBoss(w); state = 'play';
     }
@@ -1333,9 +1367,9 @@ function updateWolf(e, dt) {
   const dx = P.x - e.x, ph2 = e.hp < e.maxHp * .5, sp = ph2 ? 70 : 54;
   if (e.st === 'prowl') {
     e.face = dx > 0 ? 1 : -1; e.vx = lerp(e.vx, e.face * sp, dt * 3); e.anim += dt * Math.abs(e.vx) / 8;
-    if (Math.abs(dx) < 36 && Math.abs(P.y - e.y) < 30) { e.st = 'wind'; e.st_t = ph2 ? .25 : .35; e.vx = 0; }
-    else if (Math.abs(dx) > 90 && e.st_t <= 0) { e.st = 'crouch'; e.st_t = ph2 ? .4 : .55; e.vx = 0; sfx.hit(); }
-    else if (e.howlCd <= 0) { e.st = 'howl'; e.st_t = 1.1; e.vx = 0; e.howlCd = 9; sfx.howl(); if (ph2) { enemies.push(mkBat(e.x - 30, 80), mkBat(e.x + 30, 80)); } }
+    if (Math.abs(dx) < 36 && Math.abs(P.y - e.y) < 30) { e.st = 'wind'; e.st_t = ph2 ? .38 : .5; e.vx = 0; }
+    else if (Math.abs(dx) > 90 && e.st_t <= 0) { e.st = 'crouch'; e.st_t = ph2 ? .55 : .7; e.vx = 0; sfx.hit(); }
+    else if (e.howlCd <= 0) { e.st = 'howl'; e.st_t = 1.1; e.vx = 0; e.howlCd = 9; sfx.howl(); if (ph2) { enemies.push(mkBat(e.x - 30, 80)); } }
   } else if (e.st === 'crouch') { e.vx = 0; if (e.st_t <= 0) { e.st = 'leap'; e.vy = -300; e.vx = clamp(dx / .75, -240, 240); e.ground = false; } }
   else if (e.st === 'leap') { if (e.ground) { e.st = 'prowl'; e.st_t = 1.2 + R(); shake = 6; sfx.boom(); burst(e.x, FLOOR - 2, 14, ['#3a3448', '#2a2436'], 90, 200, false, .5); } }
   else if (e.st === 'wind') { if (e.st_t <= 0) { e.st = 'slash'; e.st_t = .22; sfx.hit(); } }
@@ -1400,7 +1434,7 @@ function updateShots(dt) {
     s.x += s.vx * dt; s.y += s.vy * dt; s.life -= dt;
     if (R() < .7) parts.push({ x: s.x, y: s.y, vx: (R() - .5) * 20, vy: (R() - .5) * 20, g: 0, life: .2, max: .2, col: s.silver ? '#ffffff' : '#a8ffe6', em: true, sz: 1 });
     for (const e of enemies) {
-      if (e.dead || e.type === 'skel' || e.type === 'wraith' || e.type === 'prof' || e.vis === 0) continue;
+      if (e.dead || e.type === 'skel' || e.type === 'wraith' || e.type === 'prof' || e.type === 'heart' || e.vis === 0) continue;
       const ey = e.type === 'wolf' ? e.y - 16 : e.type === 'spider' ? e.y - 3 : e.y, r = e.type === 'wolf' ? 16 : e.type === 'vyrin' ? 13 : 9;
       if (Math.hypot(e.x - s.x, ey - s.y) < r) { damage(e, 1); s.life = 0; break; }
     }
@@ -1491,6 +1525,7 @@ function step(dt) {
     if (scene.kind === 'side') {
       if (state === 'play') updateSidePlayer(dt); else { actReq = castReq = false; near = null; P.vx *= Math.pow(.01, dt); }
       updateSideEnemies(dt); if (scene.update) scene.update(dt);
+      if (sceneId === 'chapel') { if (G.bellT > 0) G.bellT -= dt; updateVesper(dt); }
       const target = clamp(P.x - W / 2 + P.face * 20, 0, Math.max(0, WW - W)); camX = lerp(camX, target, 1 - Math.pow(.01, dt));
     } else { updateFly(dt); actReq = castReq = false; }
     updateShots(dt);
@@ -1590,6 +1625,7 @@ function drawSide() {
   for (const e of enemies) {
     if (e.type === 'skel') { const f = SK[Math.floor(e.anim) % 4]; spr(f.n, e.x, e.y, e.face, 9, 25); }
     else if (e.type === 'spider') drawSpider(e);
+    else if (e.type === 'heart') { glow(ctx, GL.gold, e.x, e.y - 4, 12, .5 + .2 * Math.sin(time * 6)); ctx.drawImage(HEART, Math.round(e.x) - 3, Math.round(e.y - 8 + Math.sin(time * 4) * 1.5)); }
     else if (e.type === 'bat') { const f = BAT[Math.floor(e.t * 10) % 2]; spr(e.flash > 0 ? f.w : f.n, e.x, e.y, e.face, 9, 6); }
     else if (e.type === 'vyrin' && e.vis) { const f = (e.st === 'cast' || e.st === 'summon' ? VY.cast : VY.idle)[Math.floor(e.t * 3) % 2]; spr(e.flash > 0 ? f.w : f.n, e.x, e.y + 22, e.face, 18, 34); }
     else if (e.type === 'prof') { const f = PROF[Math.floor(e.t * 2) % 2]; if (e.morph > 0 && Math.floor(e.t * 10) % 2) spr(WOLF.howl.n, e.x, e.y, e.face, 22, 35); else spr(f.n, e.x, e.y, e.face, 11, 29); }
@@ -1628,6 +1664,10 @@ function drawSide() {
   }
   if (sceneId === 'chapel') {
     G.candles.forEach(i => flame(CANDLES[i][0], CANDLES[i][1] - 8, .8));
+    G.candles.forEach(i => { if (CANDLES[i][1] !== 190) return; ctx.globalAlpha = .18 + .06 * Math.sin(time * 3 + i); ctx.fillStyle = '#ffd27a'; ctx.fillRect(CANDLES[i][0] - WARD, FLOOR - 1, WARD * 2, 2); for (const sx of [-WARD, WARD - 1]) ctx.fillRect(CANDLES[i][0] + sx, FLOOR - 6, 1, 6); ctx.globalAlpha = 1; });
+    { const sw = G.bellT > 0 ? Math.sin(time * 9) * 3 : 0; ctx.fillStyle = '#c9a03a'; ctx.fillRect(676 + Math.round(sw), 20, 9, 8); ctx.fillRect(675 + Math.round(sw), 27, 11, 2); ctx.fillStyle = '#6a5a2a'; ctx.fillRect(680 + Math.round(sw), 29, 2, 2);
+      ctx.fillStyle = '#7a5a3a'; for (let y = 31; y < 98; y += 2) ctx.fillRect(681 + Math.round(sw * (98 - y) / 70), y, 1, 1); }
+    if (G.bellT > 0) { ctx.globalAlpha = Math.min(.25, G.bellT * .05); ctx.fillStyle = '#ff3050'; ctx.fillRect(camX, 0, W, 4); ctx.globalAlpha = 1; }
     SPIRITS.forEach((s, i) => { if (spiritSeen(i) && !G.spirits.includes(s.name)) drawGhost(s.x, s.y + Math.sin(time * 1.6 + i) * 3, { col: s.col, w: s.small ? 8 : 11, h: s.tall ? 22 : s.small ? 12 : 17, a: .65, horns: s.horns || s.small, edge: '#ffffff' }); });
     for (const e of enemies) if (e.type === 'wraith') drawGhost(e.x, e.y + 8, { col: 'rgba(150,170,210,1)', w: 12, h: 20, a: .45, edge: '#c8d8ff', eye: '#ffffff' });
     for (const e of enemies) if (e.type === 'skel') spr(SK[Math.floor(e.anim) % 4].e, e.x, e.y, e.face, 9, 25);
@@ -1878,7 +1918,7 @@ function loop(now) {
 buildFlight(false);
 if (checkpoint) { $('cont').hidden = false; $('cont').textContent = `Continue: ${CHAPTER[checkpoint.id] || 'last chapter'}`; }
 layout();
-if (/[?&]debug/.test(location.search)) window.__mh = { G: () => G, P, go(id) { hideScreens(); $('hud').hidden = false; goScene(id); }, info() { return { state, sceneId, hp: P.hp, x: Math.round(P.x), near: near ? (typeof near.label === 'function' ? near.label() : near.label) : null, enemies: enemies.map(e => e.type + ':' + (e.hp ?? '') + (e.st ? ':' + e.st : '')) }; }, act() { actReq = true; }, adv() { advance(); }, setG(o) { Object.assign(G, o); }, killAll() { for (const e of enemies) if (e.hp !== undefined) { e.hp = 0; scene.kind === 'fly' ? killFly(e) : kill(e); } }, god() { P.hp = P.maxHp = 99; }, tp(x) { P.x = x; }, skipFly() { if (scene.kind === 'fly') scene.t = scene.len; } };
+if (/[?&]debug/.test(location.search)) window.__mh = { G: () => G, P, go(id) { hideScreens(); $('hud').hidden = false; goScene(id); }, info() { return { state, sceneId, hp: P.hp, x: Math.round(P.x), near: near ? (typeof near.label === 'function' ? near.label() : near.label) : null, enemies: enemies.map(e => e.type + ':' + (e.hp ?? '') + (e.st ? ':' + e.st : '')) }; }, act() { actReq = true; }, adv() { advance(); }, setG(o) { Object.assign(G, o); }, killAll() { for (const e of enemies) if (e.hp !== undefined) { e.hp = 0; scene.kind === 'fly' ? killFly(e) : kill(e); } }, god() { P.hp = P.maxHp = 99; }, tp(x, y) { P.x = x; if (y != null) { P.y = y; P.vy = 0; } }, ves: () => VES, en: () => enemies, sc: () => scene, skipFly() { if (scene.kind === 'fly') scene.t = scene.len; } };
 requestAnimationFrame(t => { last = t; loop(t); });
 
 })();
