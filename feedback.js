@@ -3,7 +3,7 @@
    Usage: <script src="feedback.js" data-game="Trash Shift" defer></script>  (data-mode="inline" on the homepage) */
 (() => {
   const ACCESS_KEY = ''; /* paste the Web3Forms access key here */
-  const GAMES = ['Stormbound', 'The Witch of Moonlit Hollow', 'Forest Gathering', 'Last Arrow', 'Trash Shift', 'Schoolyard Bully', 'Jelly Riot', 'Tiny Kiwi', 'Storm//Duel', 'The whole site'];
+  const GAMES = ['Stormbound', 'The Witch of Moonlit Hollow', 'Forest Gathering', 'Last Arrow', 'Breadcrumbs', 'Trash Shift', 'Schoolyard Bully', 'Jelly Riot', 'Tiny Kiwi', 'Storm//Duel', 'The whole site'];
   const me = document.currentScript, GAME = (me && me.dataset.game) || '', INLINE = me && me.dataset.mode === 'inline';
   if (!ACCESS_KEY && !/[?&]fbtest/.test(location.search)) return;
 
