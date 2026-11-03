@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>White Silence: a free solo ice climbing game | Stormie Games</title>
+  <meta name="description" content="White Silence is a free first-person ice climbing game set in Patagonia. No rope. Swing your tools, kick in your crampons and reach the summit ridge. Play instantly in your browser." />
+  <meta name="theme-color" content="#0b1424" />
+  <link rel="canonical" href="https://stormie.app/white-silence/" />
+  <meta property="og:title" content="White Silence | Stormie Games" />
+  <meta property="og:description" content="Patagonia. No rope. Fifteen metres of ice to the summit ridge." />
+  <meta property="og:url" content="https://stormie.app/white-silence/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="https://stormie.app/white-silence/poster.jpg" />
+  <meta property="og:image:width" content="1280" />
+  <meta property="og:image:height" content="720" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"VideoGame","name":"White Silence","url":"https://stormie.app/white-silence/","description":"A free first-person ice climbing game set in Patagonia.","genre":["Climbing","Simulation"],"gamePlatform":"Web browser","operatingSystem":"Any","applicationCategory":"Game","image":"https://stormie.app/white-silence/poster.jpg","offers":{"@type":"Offer","price":"0","priceCurrency":"EUR"},"author":{"@type":"Person","name":"Storm Kolmodin"},"publisher":{"@type":"Organization","name":"Stormie Games","url":"https://stormie.app/"}}
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600&family=DM+Sans:opsz,wght@9..40,400;9..40,500&family=Fraunces:opsz,wght@9..144,300&display=swap" rel="stylesheet">
+  <style>
+    /* Layout: one cinematic column, trailer first, then the climb explained in the order you play it. */
+    :root {
+      --night: #0b1424; --deep: #111e33; --ink: #f2f6fb; --dim: #b4c1d4; --ice: #bfeeff; --ember: #e0542a; --line: #ffffff24;
+      --display: "Fraunces", Georgia, serif; --ui: "Barlow Condensed", "Arial Narrow", sans-serif; --body: "DM Sans", system-ui, sans-serif;
+      color-scheme: dark;
+    }
+    * { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; }
+    body { margin: 0; background: var(--night); color: var(--ink); font: 400 17px/1.6 var(--body); }
+    a { color: inherit; }
+    a:focus-visible, button:focus-visible { outline: 2px solid var(--ice); outline-offset: 3px; }
+    .wrap { width: min(1080px, 100%); margin-inline: auto; padding-left: max(20px, env(safe-area-inset-left, 0px)); padding-right: max(20px, env(safe-area-inset-right, 0px)); }
+    .top { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-block: 18px; }
+    .top img { display: block; height: 26px; width: auto; }
+    .back { font: 600 15px/1 var(--ui); letter-spacing: .08em; text-transform: uppercase; color: var(--dim); text-decoration: none; padding: 12px 0; }
+    .back:hover { color: var(--ink); }
+    h1 { margin: 26px 0 12px; font: 300 clamp(58px, 12vw, 124px)/.96 var(--display); letter-spacing: -.02em; text-wrap: balance; }
+    .pitch { margin: 0 0 28px; max-width: 34ch; font-size: clamp(20px, 2.6vw, 25px); line-height: 1.35; color: var(--ink); text-wrap: balance; }
+    .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 22px; margin-bottom: 34px; }
+    .play { display: inline-flex; align-items: center; justify-content: center; min-height: 60px; padding: 0 44px; border-radius: 30px; background: var(--ice); color: #0d2233; font: 600 22px/1 var(--ui); letter-spacing: .1em; text-transform: uppercase; text-decoration: none; transition: transform .15s, box-shadow .15s; }
+    .play:hover { transform: translateY(-2px); box-shadow: 0 10px 30px #bfeeff40; }
+    .facts { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 0; padding: 0; list-style: none; font: 500 17px/1.3 var(--ui); letter-spacing: .05em; color: var(--dim); }
+    .film { position: relative; margin: 0; aspect-ratio: 16 / 9; max-width: 100%; border-radius: 10px; overflow: hidden; background: var(--deep); }
+    .film video { display: block; width: 100%; height: 100%; object-fit: cover; }
+    section { padding-block: 62px 8px; }
+    h2 { margin: 0 0 22px; font: 300 clamp(34px, 5vw, 50px)/1.08 var(--display); text-wrap: balance; }
+    .shots { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 0; padding: 0; list-style: none; }
+    .shots li:first-child { grid-column: 1 / -1; }
+    .shots img { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 8px; background: var(--deep); }
+    .shots li:first-child img { aspect-ratio: 21 / 9; }
+    .steps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 26px; margin: 0; padding: 0; list-style: none; counter-reset: s; }
+    .steps li { counter-increment: s; min-width: 0; padding-top: 14px; border-top: 1px solid var(--line); }
+    .steps li::before { content: counter(s); display: block; margin-bottom: 8px; font: 600 18px/1 var(--ui); color: var(--ice); }
+    .steps h3 { margin: 0 0 6px; font: 600 23px/1.15 var(--ui); letter-spacing: .03em; }
+    .steps p { margin: 0; color: var(--dim); font-size: 16px; }
+    .rule { margin: 26px 0 0; padding: 16px 18px; border-radius: 8px; background: var(--deep); color: var(--ink); }
+    .rule b { color: var(--ice); font-weight: 500; }
+    .rule i { color: #ffb15c; font-style: normal; }
+    .closing { padding-block: 70px 30px; text-align: center; }
+    .closing h2 { margin-bottom: 24px; }
+    footer { padding-block: 26px 44px; border-top: 1px solid var(--line); color: var(--dim); font-size: 15px; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 24px; }
+    @media (max-width: 760px) {
+      body { font-size: 16px; }
+      .shots { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .shots li:last-child { grid-column: 1 / -1; }
+      .steps { grid-template-columns: 1fr 1fr; gap: 22px 18px; }
+      section { padding-block-start: 46px; }
+      .play { width: 100%; }
+    }
+    @media (max-width: 420px) { .steps { grid-template-columns: 1fr; } }
+    @media (prefers-reduced-motion: reduce) { .play { transition: none; } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="top">
+      <a href="/" aria-label="Stormie Games home"><img src="../logo-white.png" alt="Stormie Games" width="912" height="215"></a>
+      <a class="back" href="/#gateway">All games</a>
+    </header>
+
+    <main>
+      <h1>White Silence</h1>
+      <p class="pitch">Patagonia. No rope. Fifteen metres of ice to the summit ridge.</p>
+      <div class="actions">
+        <a class="play" href="../white-silence.html">Play free</a>
+        <ul class="facts"><li>3 to 5 minutes</li><li>Mobile and desktop</li><li>No download</li><li>No account</li></ul>
+      </div>
+
+      <figure class="film">
+        <video id="film" controls playsinline preload="none" poster="poster.jpg" aria-label="White Silence trailer">
+          <source src="trailer.mp4" type="video/mp4">
+        </video>
+      </figure>
+
+      <section aria-labelledby="look">
+        <h2 id="look">Alone on the wall</h2>
+        <ul class="shots">
+          <li><img src="shot-feet.jpg" alt="Looking down past your boots at the drop beside the ice" width="1280" height="720" loading="lazy"></li>
+          <li><img src="shot-wall.jpg" alt="A steep blue ice runnel rising to a snow ledge" width="1280" height="720" loading="lazy"></li>
+          <li><img src="shot-spindrift.jpg" alt="Spindrift pouring down the ice around your arms" width="1280" height="720" loading="lazy"></li>
+          <li><img src="shot-fall.jpg" alt="Tumbling through the air above the glacier" width="1280" height="720" loading="lazy"></li>
+        </ul>
+      </section>
+
+      <section aria-labelledby="how">
+        <h2 id="how">How to climb</h2>
+        <ol class="steps">
+          <li><h3>Swing your tools</h3><p>Tap or click a ring to drive an ice tool into the wall.</p></li>
+          <li><h3>Look down</h3><p>When your feet fall behind, the view tilts to your crampons and the drop below.</p></li>
+          <li><h3>Kick in</h3><p>Tap a ring to set each foot. Good feet save your arms.</p></li>
+          <li><h3>Pull up</h3><p>When tools and feet are set, pull up. Then do it again.</p></li>
+        </ol>
+        <p class="rule"><b>Left rings move your left limb. Right rings move your right limb.</b> <i>Orange holds</i> crumble, so get off them fast. Rest on the snow ledges, and watch your stamina. If you slip, you have seconds to catch yourself.</p>
+      </section>
+
+      <section class="closing" aria-labelledby="go">
+        <h2 id="go">The summit is waiting</h2>
+        <a class="play" href="../white-silence.html">Play free</a>
+      </section>
+    </main>
+
+    <footer>
+      <span>A game by Storm Kolmodin, Stormie Games, Stockholm.</span>
+      <a href="/">More Stormie Games</a>
+    </footer>
+  </div>
+</body>
+</html>
