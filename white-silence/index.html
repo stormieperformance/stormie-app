@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>White Silence: a free solo ice climbing game | Stormie Games</title>
-  <meta name="description" content="White Silence is a free first-person ice climbing game set in Patagonia. No rope. Swing your tools, kick in your crampons and reach the summit ridge. Play instantly in your browser." />
+  <title>White Silence: ice climbing horror game | Stormie Games</title>
+  <meta name="description" content="White Silence is a free first-person ice climbing horror game set in Patagonia. No rope, and infected creatures climbing after you. Swing your axes, kick them off the wall and reach the summit ridge. Play instantly in your browser." />
   <meta name="theme-color" content="#0b1424" />
   <link rel="canonical" href="https://stormie.app/white-silence/" />
   <meta property="og:title" content="White Silence | Stormie Games" />
-  <meta property="og:description" content="Patagonia. No rope. Fifteen metres of ice to the summit ridge." />
+  <meta property="og:description" content="Patagonia. No rope. Something is climbing the ice after you." />
   <meta property="og:url" content="https://stormie.app/white-silence/" />
   <meta property="og:type" content="website" />
   <meta property="og:image" content="https://stormie.app/white-silence/poster.jpg" />
@@ -16,7 +16,7 @@
   <meta property="og:image:height" content="720" />
   <meta name="twitter:card" content="summary_large_image" />
   <script type="application/ld+json">
-  {"@context":"https://schema.org","@type":"VideoGame","name":"White Silence","url":"https://stormie.app/white-silence/","description":"A free first-person ice climbing game set in Patagonia.","genre":["Climbing","Simulation"],"gamePlatform":"Web browser","operatingSystem":"Any","applicationCategory":"Game","image":"https://stormie.app/white-silence/poster.jpg","offers":{"@type":"Offer","price":"0","priceCurrency":"EUR"},"author":{"@type":"Person","name":"Storm Kolmodin"},"publisher":{"@type":"Organization","name":"Stormie Games","url":"https://stormie.app/"}}
+  {"@context":"https://schema.org","@type":"VideoGame","name":"White Silence","url":"https://stormie.app/white-silence/","description":"A free first-person ice climbing horror game set in Patagonia.","genre":["Climbing","Horror","Action"],"gamePlatform":"Web browser","operatingSystem":"Any","applicationCategory":"Game","image":"https://stormie.app/white-silence/poster.jpg","offers":{"@type":"Offer","price":"0","priceCurrency":"EUR"},"author":{"@type":"Person","name":"Storm Kolmodin"},"publisher":{"@type":"Organization","name":"Stormie Games","url":"https://stormie.app/"}}
   </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600&family=DM+Sans:opsz,wght@9..40,400;9..40,500&family=Fraunces:opsz,wght@9..144,300&display=swap" rel="stylesheet">
@@ -83,37 +83,33 @@
 
     <main>
       <h1>White Silence</h1>
-      <p class="pitch">Patagonia. No rope. Fifteen metres of ice to the summit ridge.</p>
+      <p class="pitch">Patagonia. No rope. Something is climbing the ice after you.</p>
       <div class="actions">
         <a class="play" href="../white-silence.html">Play free</a>
         <ul class="facts"><li>3 to 5 minutes</li><li>Mobile and desktop</li><li>No download</li><li>No account</li></ul>
       </div>
 
-      <figure class="film">
-        <video id="film" controls playsinline preload="none" poster="poster.jpg" aria-label="White Silence trailer">
-          <source src="trailer.mp4" type="video/mp4">
-        </video>
-      </figure>
+      <figure class="film"><img src="poster.jpg" alt="An infected creature crawling across the ice toward the climber" width="1280" height="720" style="display:block;width:100%;height:100%;object-fit:cover"></figure>
 
       <section aria-labelledby="look">
-        <h2 id="look">Alone on the wall</h2>
+        <h2 id="look">Not alone on the wall</h2>
         <ul class="shots">
-          <li><img src="shot-feet.jpg" alt="Looking down past your boots at the drop beside the ice" width="1280" height="720" loading="lazy"></li>
-          <li><img src="shot-wall.jpg" alt="A steep blue ice runnel rising to a snow ledge" width="1280" height="720" loading="lazy"></li>
-          <li><img src="shot-spindrift.jpg" alt="Spindrift pouring down the ice around your arms" width="1280" height="720" loading="lazy"></li>
-          <li><img src="shot-fall.jpg" alt="Tumbling through the air above the glacier" width="1280" height="720" loading="lazy"></li>
+          <li><img src="shot-feet.jpg" alt="A creature crawling across the ice toward you" width="1280" height="720" loading="lazy"></li>
+          <li><img src="shot-wall.jpg" alt="An ice axe swinging into a creature beside you" width="1280" height="720" loading="lazy"></li>
+          <li><img src="shot-spindrift.jpg" alt="A crampon kick sending a creature off the wall" width="1280" height="720" loading="lazy"></li>
+          <li><img src="shot-fall.jpg" alt="Looking down at creatures climbing up from below" width="1280" height="720" loading="lazy"></li>
         </ul>
       </section>
 
       <section aria-labelledby="how">
-        <h2 id="how">How to climb</h2>
+        <h2 id="how">How to survive</h2>
         <ol class="steps">
-          <li><h3>Swing your tools</h3><p>Tap or click a ring to drive an ice tool into the wall.</p></li>
-          <li><h3>Look down</h3><p>When your feet fall behind, the view tilts to your crampons and the drop below.</p></li>
-          <li><h3>Kick in</h3><p>Tap a ring to set each foot. Good feet save your arms.</p></li>
-          <li><h3>Pull up</h3><p>When tools and feet are set, pull up. Then do it again.</p></li>
+          <li><h3>Climb</h3><p>Tap or click a ring to swing an axe into the ice and pull up. Gold rings are long leaps.</p></li>
+          <li><h3>Listen</h3><p>You hear them before you see them. Arrows at the edge of the screen show where they are.</p></li>
+          <li><h3>Kick</h3><p>Anything below you gets a crampon in the face. A falling creature takes others down with it.</p></li>
+          <li><h3>Strike</h3><p>Anything beside or above you needs the axe. Two hits and it lets go.</p></li>
         </ol>
-        <p class="rule"><b>Left rings move your left limb. Right rings move your right limb.</b> <i>Orange holds</i> crumble, so get off them fast. Rest on the snow ledges, and watch your stamina. If you slip, you have seconds to catch yourself.</p>
+        <p class="rule"><b>Every move costs breath.</b> Hang still to get it back, or reach a <i>snow ledge</i> to recover fast. Three bites and you are torn from the wall. Drag to look around, or use the Look button to check below you.</p>
       </section>
 
       <section class="closing" aria-labelledby="go">
