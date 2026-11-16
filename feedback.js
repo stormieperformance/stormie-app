@@ -3,7 +3,7 @@
    Usage: <script src="feedback.js" data-game="Trash Shift" defer></script>  (data-mode="inline" on the homepage) */
 (() => {
   const ACCESS_KEY = ''; /* paste the Web3Forms access key here */
-  const GAMES = ['White Silence', 'Stormbound', 'The Witch of Moonlit Hollow', 'Forest Gathering', 'Last Arrow', 'Breadcrumbs', 'Trash Shift', 'Schoolyard Bully', 'Jelly Riot', 'Tiny Kiwi', 'Storm//Duel', 'The whole site'];
+  const GAMES = ['White Silence', 'Crypt Breaker', 'Stormbound', 'The Witch of Moonlit Hollow', 'Forest Gathering', 'Last Arrow', 'Breadcrumbs', 'Trash Shift', 'Schoolyard Bully', 'Jelly Riot', 'Tiny Kiwi', 'Storm//Duel', 'The whole site'];
   const me = document.currentScript, GAME = (me && me.dataset.game) || '', INLINE = me && me.dataset.mode === 'inline';
   if (!ACCESS_KEY && !/[?&]fbtest/.test(location.search)) return;
 
@@ -127,7 +127,8 @@
   document.addEventListener('DOMContentLoaded', () => {
     document.body.appendChild(wrap);
     if (INLINE) {
-      for (const slot of document.querySelectorAll('[data-feedback-slot]')) { const b = el('button', { type: 'button', class: 'sfb-inline', text: 'Give playtest feedback' }); b.addEventListener('click', show); slot.appendChild(b); }
+      for (const slot of document.querySelectorAll('[data-feedback-slot]')) { const b = el('button', { type: 'button', class: 'sfb-inline', text: 'Give feedback' }); b.addEventListener('click', show); slot.appendChild(b); }
+      for (const a of document.querySelectorAll('[data-feedback-open]')) { a.hidden = false; a.addEventListener('click', e => { e.preventDefault(); show(); }); }
       return;
     }
     /* games: a side tab that only shows on menus and end screens, never over live play */

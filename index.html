@@ -552,7 +552,9 @@
       transition: opacity 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.05s, transform 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.05s, filter 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.05s;
     }
     .about-body { max-width: 640px; }
-    .fb-slot { margin-top: 22px; color: var(--gold); }
+    .fb-slot { margin-top: 26px; color: var(--gold); scroll-margin-top: 120px; }
+    .fb-slot .sfb-inline { background: var(--gold); color: #1a1208; border-color: var(--gold); font-weight: 600; padding: 15px 28px; }
+    .fb-slot .sfb-inline:hover { filter: brightness(1.1); }
     .fb-slot:empty { display: none; }
     .about-body p {
       font-family: var(--sans);
@@ -953,6 +955,7 @@
               <a href="white-silence.html">White Silence</a>
               <a href="crypt-breaker.html">Crypt Breaker</a>
               <a href="#next">Coming next</a>
+              <a href="#feedback" data-feedback-open hidden>Give feedback</a>
               <a href="#arcade">2D Arcade Retro</a>
             </nav>
           </div>
@@ -987,7 +990,6 @@
 
         <div class="hero-bottom">
           <p class="hero-desc">Free games you can play instantly in your browser. No downloads. No accounts. Just pick a game and play.</p>
-          <a class="hero-new" href="crypt-breaker.html"><span>New</span> Crypt Breaker is out. Nine chambers, one Bone King</a>
           <div class="hero-actions">
             <div class="hero-buttons">
               <a class="enter-btn" href="white-silence.html"><span>Play now</span></a>
@@ -1176,8 +1178,7 @@
         <h2 class="about-title">ABOUT STORMIE GAMES</h2>
         <div class="about-body">
           <p>Stormie Games makes short, original browser games designed to be played whenever you have a few minutes to spare. No installation, no account and no commitment. Open a game, play and get back to your day.</p>
-          <p>Every game here is still being tuned. Played one? Tell me what to make better.</p>
-          <div class="fb-slot" data-feedback-slot></div>
+          <div class="fb-slot" id="feedback" data-feedback-slot></div>
         </div>
       </div>
     </section>
@@ -1189,6 +1190,7 @@
       <p class="footer-tagline">Free short games in your browser.</p>
 
       <div class="footer-network">
+        <a href="#feedback" data-feedback-open hidden>Give feedback</a>
         <a href="https://stormiestudios.com">Stormie Studios</a>
       </div>
 
