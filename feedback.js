@@ -2,7 +2,7 @@
    One shared widget for every game. Submissions go to Web3Forms, which emails them to the inbox tied to the access key.
    Usage: <script src="feedback.js" data-game="Trash Shift" defer></script>  (data-mode="inline" on the homepage) */
 (() => {
-  const ACCESS_KEY = ''; /* paste the Web3Forms access key here */
+  const ACCESS_KEY = '6144f505-a281-4ca7-bde7-ec6ee1feaf7a'; /* Web3Forms public form key (form: Stormie Games, site: stormie.app) */
   const GAMES = ['White Silence', 'Crypt Breaker', 'Stormbound', 'The Witch of Moonlit Hollow', 'Forest Gathering', 'Last Arrow', 'Breadcrumbs', 'Trash Shift', 'Schoolyard Bully', 'Jelly Riot', 'Tiny Kiwi', 'Storm//Duel', 'The whole site'];
   const me = document.currentScript, GAME = (me && me.dataset.game) || '', INLINE = me && me.dataset.mode === 'inline';
   if (!ACCESS_KEY && !/[?&]fbtest/.test(location.search)) return;
