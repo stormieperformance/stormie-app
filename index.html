@@ -3,21 +3,21 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Stormie Games | Free horror games in your browser</title>
-  <meta name="description" content="Stormie Games is an indie studio by Storm Kolmodin, a web developer in Stockholm. Free horror games you can play in your browser, plus an arcade of 2D retro games. No downloads and no account required." />
+  <title>Stormie Games | Free short games in your browser</title>
+  <meta name="description" content="Stormie Games is an indie studio by Storm Kolmodin, a web developer in Stockholm. Free short games you can play in your browser. No downloads and no account required." />
   <meta name="author" content="Storm Kolmodin" />
   <meta name="theme-color" content="#0c0c0b" />
-  <meta property="og:title" content="Stormie Games | Free horror games in your browser" />
-  <meta property="og:description" content="Free horror games you can play in your browser. No downloads and no account required." />
+  <meta property="og:title" content="Stormie Games | Free short games in your browser" />
+  <meta property="og:description" content="Free short games you can play in your browser. No downloads and no account required." />
   <meta property="og:url" content="https://stormie.app" />
   <meta property="og:type" content="website" />
   <meta property="og:image" content="https://stormie.app/stormie-app-og-v3.jpg" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
-  <meta property="og:image:alt" content="Stormie Games: free horror games in your browser" />
+  <meta property="og:image:alt" content="Stormie Games: free short games in your browser" />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="Stormie Games | Free horror games in your browser" />
-  <meta name="twitter:description" content="Free horror games you can play in your browser. No downloads and no account required." />
+  <meta name="twitter:title" content="Stormie Games | Free short games in your browser" />
+  <meta name="twitter:description" content="Free short games you can play in your browser. No downloads and no account required." />
   <meta name="twitter:image" content="https://stormie.app/stormie-app-og-v3.jpg" />
   <link rel="canonical" href="https://stormie.app/" />
   <script type="application/ld+json">
@@ -641,13 +641,14 @@
     }
     .game-card { display: flex; flex-direction: column; min-width: 0; }
     .gw-block { margin-top: 84px; scroll-margin-top: 84px; }
-    .games-grid--feat { grid-template-columns: 1fr; }
+    .games-grid--feat { grid-template-columns: 1fr; row-gap: 64px; }
     .games-grid--feat .game-card { flex-direction: row; align-items: center; gap: 38px; }
     .games-grid--feat .gc-screen { flex: 1.35 1 0; }
     .games-grid--feat .gc-body { flex: 1 1 0; padding-top: 0; }
     .games-grid--feat .gc-name { font-size: clamp(18px, 2.4vw, 26px); }
     .games-grid--feat .gc-desc { font-size: 16px; }
     .games-grid--feat .gc-play { margin-top: 0; }
+    .games-grid--feat .game-card.gc-feat--flip { flex-direction: row-reverse; }
     .game-card .tease-screen { display: grid; place-items: center; background: repeating-linear-gradient(0deg, rgba(255,255,255,0.035) 0 1px, transparent 1px 4px), radial-gradient(90% 70% at 50% 110%, rgba(150,24,16,0.55), transparent 70%), #070606; }
     .game-card .tease-screen--b { background: repeating-linear-gradient(0deg, rgba(255,255,255,0.035) 0 1px, transparent 1px 4px), radial-gradient(90% 70% at 50% 110%, rgba(60,90,70,0.6), transparent 70%), #060707; }
     .tease-word { font-family: var(--pixel); font-size: clamp(16px, 3vw, 26px); line-height: 1.7; text-align: center; color: rgba(232,228,220,0.34); position: relative; z-index: 2; text-shadow: 0 0 22px rgba(190,40,25,0.5); animation: teaseFlicker 5s steps(1) infinite; }
@@ -888,7 +889,7 @@
     /* RESPONSIVE */
     @media (max-width: 900px) {
       .games-grid { grid-template-columns: 1fr; max-width: 520px; margin: 0 auto; gap: 44px; }
-      .games-grid--feat .game-card { flex-direction: column; align-items: stretch; gap: 0; }
+      .games-grid--feat .game-card, .games-grid--feat .game-card.gc-feat--flip { flex-direction: column; align-items: stretch; gap: 0; }
       .games-grid--feat .gc-screen { flex: none; }
       .games-grid--feat .gc-body { padding-top: 22px; }
       .gw-block { margin-top: 64px; }
@@ -950,6 +951,7 @@
             </button>
             <nav class="games-menu" id="gamesMenu">
               <a href="white-silence.html">White Silence</a>
+              <a href="crypt-breaker.html">Crypt Breaker</a>
               <a href="#next">Coming next</a>
               <a href="#arcade">2D Arcade Retro</a>
             </nav>
@@ -981,14 +983,14 @@
           <img class="hero-logo-img" src="logo-white.png" alt="Stormie Games" width="912" height="215">
         </div>
 
-        <h1 class="hero-headline">SHORT HORROR GAMES. PLAYED IN YOUR BROWSER.</h1>
+        <h1 class="hero-headline">SHORT GAMES. PLAYED IN YOUR BROWSER.</h1>
 
         <div class="hero-bottom">
-          <p class="hero-desc">Free horror games you can play instantly in your browser. No downloads. No accounts. Start with White Silence.</p>
-          <a class="hero-new" href="white-silence/"><span>New version</span> White Silence. They climb too</a>
+          <p class="hero-desc">Free games you can play instantly in your browser. No downloads. No accounts. Just pick a game and play.</p>
+          <a class="hero-new" href="crypt-breaker.html"><span>New</span> Crypt Breaker is out. Nine chambers, one Bone King</a>
           <div class="hero-actions">
             <div class="hero-buttons">
-              <a class="enter-btn" href="white-silence.html"><span>Play White Silence</span></a>
+              <a class="enter-btn" href="white-silence.html"><span>Play now</span></a>
               <a class="enter-btn enter-btn--ghost" href="#gateway"><span>All games</span></a>
             </div>
             <ul class="trust-badges" aria-label="Why play here">
@@ -1004,7 +1006,7 @@
 
     <div class="gateway-wrap">
     <section class="gateway" id="gateway">
-      <span class="gateway-label">Featured · Horror</span>
+      <span class="gateway-label">Featured</span>
       <h2 class="gateway-title">PLAY NOW</h2>
       <ul class="games-grid games-grid--feat">
       <li class="game-card gc-feat" data-playable>
@@ -1025,28 +1027,36 @@
           <a class="gc-more" href="white-silence/">About the game</a>
         </div>
       </li>
-      </ul>
-
-      <div class="gw-block" id="next">
-      <span class="gateway-label">Coming next</span>
-      <h2 class="gateway-title">MORE HORROR ON THE WAY</h2>
-      <ul class="games-grid">
-      <li class="game-card tease">
-        <div class="gc-screen tease-screen" aria-hidden="true"><span class="tease-word">DUSK<br>DISTRICT</span><span class="gc-flag tease-flag">In development</span></div>
-        <div class="gc-body">
-          <p class="gc-genre">First person · Survival horror</p>
-          <h3 class="gc-name">Dusk District</h3>
-          <p class="gc-desc">One district after dark. Cross it, bring the power back and get to the safe house. Stay quiet. It hunts by sound.</p>
-          <ul class="gc-meta"><li>Desktop first</li></ul>
-        </div>
-      </li>
-      <li class="game-card tease">
-        <div class="gc-screen tease-screen tease-screen--b" aria-hidden="true"><span class="tease-word">CRYPT<br>BREAKER</span><span class="gc-flag tease-flag">In playtest</span></div>
+      <li class="game-card gc-feat gc-feat--flip" data-playable>
+        <a class="gc-screen" href="crypt-breaker.html" data-name="Crypt Breaker" aria-hidden="true" tabindex="-1">
+          <img src="crypt-breaker-preview.jpg" alt="" width="1280" height="800" loading="lazy" decoding="async" onerror="this.style.display='none'">
+          <span class="tilt-shine"></span>
+          <span class="gc-flag">New</span>
+        </a>
         <div class="gc-body">
           <p class="gc-genre">First person · Skeleton shooter</p>
           <h3 class="gc-name">Crypt Breaker</h3>
           <p class="gc-desc">Nine chambers of skeletons and a Bone King at the bottom. Pick a new power after every fight.</p>
-          <ul class="gc-meta"><li>Mobile + desktop</li></ul>
+          <ul class="gc-meta">
+            <li class="gc-time">5 min a run</li>
+            <li>Mobile + desktop</li>
+          </ul>
+          <a class="enter-btn gc-play" href="crypt-breaker.html" aria-label="Play Crypt Breaker now"><span>Play now</span></a>
+        </div>
+      </li>
+      </ul>
+
+      <div class="gw-block" id="next">
+      <span class="gateway-label">Coming next</span>
+      <h2 class="gateway-title">IN DEVELOPMENT</h2>
+      <ul class="games-grid games-grid--feat">
+      <li class="game-card tease">
+        <div class="gc-screen tease-screen" aria-hidden="true"><span class="tease-word">DUSK<br>DISTRICT</span><span class="gc-flag tease-flag">In development</span></div>
+        <div class="gc-body">
+          <p class="gc-genre">First person · Survival</p>
+          <h3 class="gc-name">Dusk District</h3>
+          <p class="gc-desc">One district after dark. Cross it, bring the power back and get to the safe house. Stay quiet. It hunts by sound.</p>
+          <ul class="gc-meta"><li>Desktop first</li></ul>
         </div>
       </li>
       </ul>
@@ -1165,8 +1175,7 @@
         <span class="about-rule"></span>
         <h2 class="about-title">ABOUT STORMIE GAMES</h2>
         <div class="about-body">
-          <p>Stormie Games makes short, original horror games for the browser. No installation, no account and no commitment. Open a game, turn the sound up and see how far you get.</p>
-          <p>The earlier 2D games are still here in the arcade.</p>
+          <p>Stormie Games makes short, original browser games designed to be played whenever you have a few minutes to spare. No installation, no account and no commitment. Open a game, play and get back to your day.</p>
           <p>Every game here is still being tuned. Played one? Tell me what to make better.</p>
           <div class="fb-slot" data-feedback-slot></div>
         </div>
@@ -1177,7 +1186,7 @@
     <div class="hud-frame footer-shell">
     <footer>
       <img class="footer-logo" src="logo-white.png" alt="Stormie Games" width="912" height="215" loading="lazy">
-      <p class="footer-tagline">Free horror games in your browser.</p>
+      <p class="footer-tagline">Free short games in your browser.</p>
 
       <div class="footer-network">
         <a href="https://stormiestudios.com">Stormie Studios</a>
